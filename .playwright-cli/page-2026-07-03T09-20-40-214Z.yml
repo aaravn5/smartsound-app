@@ -1,0 +1,109 @@
+- generic [ref=f3e3]:
+  - banner [ref=f3e4]:
+    - generic [ref=f3e7]: SmartSound
+    - button "Launch SmartSound" [ref=f3e8] [cursor=pointer]:
+      - generic [ref=f3e9]: Launch SmartSound
+  - generic [ref=f3e10]:
+    - generic:
+      - heading "Sound that listens back" [level=1]
+      - paragraph: SmartSound reads your pulse through the camera and reshapes a generative soundscape in real time — a closed loop between your body and what you hear.
+      - button "Launch SmartSound" [ref=f3e12] [cursor=pointer]:
+        - generic [ref=f3e13]: Launch SmartSound
+  - generic [ref=f3e15]:
+    - generic [ref=f3e17]:
+      - generic [ref=f3e20]:
+        - heading "A loop between your body and the sound" [level=2] [ref=f3e21]
+        - generic [ref=f3e22]:
+          - generic [ref=f3e23]:
+            - generic [ref=f3e24]: "01"
+            - generic [ref=f3e25]:
+              - heading "It reads your pulse" [level=3] [ref=f3e26]
+              - paragraph [ref=f3e27]: The front camera detects tiny colour changes in your skin (rPPG) to estimate heart rate — on device, video never leaves your browser.
+          - generic [ref=f3e28]:
+            - generic [ref=f3e29]: "02"
+            - generic [ref=f3e30]:
+              - heading "The sound adapts" [level=3] [ref=f3e31]
+              - paragraph [ref=f3e32]: A generative engine shifts entrainment, tempo and brightness toward your target state as your heart rate moves.
+          - generic [ref=f3e33]:
+            - generic [ref=f3e34]: "03"
+            - generic [ref=f3e35]:
+              - heading "You see the loop" [level=3] [ref=f3e36]
+              - paragraph [ref=f3e37]: The biofeedback ring pulses with your heartbeat and warms or cools with your heart rate, so the loop is visible, not hidden.
+        - generic [ref=f3e38]:
+          - text: Live demo
+          - paragraph [ref=f3e39]: The ring, breathing
+          - generic [ref=f3e41]:
+            - img "Biofeedback ring — pulses with your heartbeat, warming as your heart rate rises" [ref=f3e43]
+            - generic: MOVE TO STEER · IN THE APP IT TRACKS YOUR PULSE
+      - generic [ref=f3e45]: How it works
+    - generic [ref=f3e50]:
+      - generic [ref=f3e52]: The science
+      - generic [ref=f3e58]:
+        - heading "Established techniques, applied as a calm feedback loop" [level=2] [ref=f3e59]
+        - paragraph [ref=f3e60]: "SmartSound stands on two well-studied ideas: remote photoplethysmography (reading pulse from a camera) and amplitude-modulation entrainment (a soundscape whose amplitude is gently modulated). It pairs them into a real-time loop that nudges you toward a chosen state. It is a wellness tool, not a medical device — it doesn’t diagnose or treat anything, and the heart-rate read is an estimate."
+    - generic [ref=f3e62]:
+      - generic [ref=f3e65]:
+        - heading "Free to start, honest to scale" [level=2] [ref=f3e66]
+        - paragraph [ref=f3e67]: One genuinely useful free tier, two ways to go further. No fake discounts, no invented urgency.
+        - generic [ref=f3e68]:
+          - generic [ref=f3e69]:
+            - generic [ref=f3e70]:
+              - generic [ref=f3e72]: Free
+              - paragraph [ref=f3e73]: One session a day, capped at 20 minutes — genuinely useful, not a trick.
+            - generic [ref=f3e74]:
+              - generic [ref=f3e75]: $0
+              - button "Start free" [ref=f3e76] [cursor=pointer]:
+                - generic [ref=f3e77]: Start free
+          - generic [ref=f3e78]:
+            - generic [ref=f3e79]:
+              - generic [ref=f3e80]:
+                - generic [ref=f3e81]: Pro
+                - generic [ref=f3e82]: Recommended
+              - paragraph [ref=f3e83]: Unlimited sessions, all soundscapes, full insights history.
+            - generic [ref=f3e84]:
+              - generic [ref=f3e85]: $9.99/mo · $79/yr
+              - button "Go Pro" [ref=f3e86] [cursor=pointer]:
+                - generic [ref=f3e87]: Go Pro
+          - generic [ref=f3e88]:
+            - generic [ref=f3e89]:
+              - generic [ref=f3e91]: Studio
+              - paragraph [ref=f3e92]: Custom multi-phase programs, data export, max audio fidelity.
+            - generic [ref=f3e93]:
+              - generic [ref=f3e94]: $19.99/mo · $179/yr
+              - button "Go Studio" [ref=f3e95] [cursor=pointer]:
+                - generic [ref=f3e96]: Go Studio
+      - generic [ref=f3e98]: Pricing
+    - generic [ref=f3e103]:
+      - generic [ref=f3e105]: FAQ
+      - generic [ref=f3e111]:
+        - heading "Questions, answered honestly" [level=2] [ref=f3e112]
+        - generic [ref=f3e114]:
+          - generic [ref=f3e115]:
+            - button "Do I need to wear anything?" [expanded] [ref=f3e116] [cursor=pointer]:
+              - generic [ref=f3e117]: Do I need to wear anything?
+            - paragraph [ref=f3e121]: No. SmartSound reads your pulse from your device’s front camera — no straps, watches, or chest belts. If you’d rather not use the camera, it runs a fixed soundscape instead.
+          - button "Does my video get uploaded?" [ref=f3e123] [cursor=pointer]:
+            - generic [ref=f3e124]: Does my video get uploaded?
+          - button "Is this binaural beats?" [ref=f3e129] [cursor=pointer]:
+            - generic [ref=f3e130]: Is this binaural beats?
+          - button "Is it a medical device?" [ref=f3e135] [cursor=pointer]:
+            - generic [ref=f3e136]: Is it a medical device?
+          - button "What if the camera can’t read me?" [ref=f3e141] [cursor=pointer]:
+            - generic [ref=f3e142]: What if the camera can’t read me?
+    - generic [ref=f3e147]:
+      - generic [ref=f3e150]:
+        - heading "Plain terms, real privacy" [level=2] [ref=f3e151]
+        - paragraph [ref=f3e152]: Camera frames process on-device and are never uploaded — only a derived heart-rate estimate is used. Full Terms of Service and Privacy Policy publish alongside billing; what's true today is documented now, not promised for later.
+        - button "Read Terms & Privacy" [ref=f3e154] [cursor=pointer]:
+          - generic [ref=f3e155]: Read Terms & Privacy
+      - generic [ref=f3e157]: Terms & Privacy
+    - generic [ref=f3e162]:
+      - generic [ref=f3e164]: Launch
+      - generic [ref=f3e170]:
+        - heading "Close the loop" [level=2] [ref=f3e171]
+        - paragraph [ref=f3e172]: Open the app, let it read your pulse, and hear the soundscape settle with you.
+        - button "Launch SmartSound" [ref=f3e173] [cursor=pointer]:
+          - generic [ref=f3e174]: Launch SmartSound
+  - contentinfo [ref=f3e175]:
+    - generic [ref=f3e178]: SmartSound
+    - generic [ref=f3e179]: A wellness tool, not a medical device · processed on-device

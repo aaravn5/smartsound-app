@@ -29,7 +29,7 @@ function NeuralMesh() {
       </mesh>
       <points>
         <icosahedronGeometry args={[1.35, 3]} />
-        <pointsMaterial color="#A78BFA" size={0.05} sizeAttenuation transparent opacity={0.9} blending={THREE.AdditiveBlending} depthWrite={false} />
+        <pointsMaterial color="#A78BFA" size={0.075} sizeAttenuation={false} transparent opacity={0.9} blending={THREE.AdditiveBlending} depthWrite={false} />
       </points>
     </group>
   )
