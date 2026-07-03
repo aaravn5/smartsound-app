@@ -1,0 +1,37 @@
+- generic [ref=e15]:
+  - banner [ref=e18]:
+    - button "Back" [ref=e38] [cursor=pointer]:
+      - img [ref=e40]
+    - button "Skip" [ref=e25] [cursor=pointer]
+  - main [ref=e26]:
+    - generic [ref=e27]:
+      - paragraph [ref=e42]: Your goal
+      - heading "What do you want more of?" [level=1] [ref=e43]:
+        - text: What do you want
+        - text: more of?
+      - paragraph [ref=e44]: We'll tune your first session around it.
+      - radiogroup "What do you want more of?" [ref=e45]:
+        - radio "Focus Steady beta rhythms for sustained, single-task work." [ref=e46] [cursor=pointer]:
+          - generic [ref=e48]:
+            - img [ref=e53]
+            - generic [ref=e57]: Focus
+            - generic [ref=e58]: Steady beta rhythms for sustained, single-task work.
+        - radio "Calm Alpha-paced ease for a settled, unhurried mind." [ref=e59] [cursor=pointer]:
+          - generic [ref=e61]:
+            - img [ref=e63]
+            - generic [ref=e66]: Calm
+            - generic [ref=e67]: Alpha-paced ease for a settled, unhurried mind.
+        - radio "Sleep Delta modulation that resolves toward letting go." [checked] [active] [ref=e68] [cursor=pointer]:
+          - generic [ref=e70]:
+            - img [ref=e90]
+            - img [ref=e72]
+            - generic [ref=e74]: Sleep
+            - generic [ref=e75]: Delta modulation that resolves toward letting go.
+        - radio "Meditate Slow theta pacing for stillness and presence." [ref=e76] [cursor=pointer]:
+          - generic [ref=e78]:
+            - img [ref=e80]
+            - generic [ref=e84]: Meditate
+            - generic [ref=e85]: Slow theta pacing for stillness and presence.
+  - contentinfo [ref=e31]:
+    - button "Continue" [ref=e86] [cursor=pointer]:
+      - generic [ref=e88]: Continue

@@ -156,7 +156,31 @@ export default defineConfig({
         // opacity only, GPU-cheap.
         sceneBloom: {
           '0%, 100%': { transform: 'translate3d(0, 0, 0) scale(1)', opacity: '0.55' },
-          '50%': { transform: 'translate3d(1.5%, -1.5%, 0) scale(1.1)', opacity: '0.9' },
+          '50%': { transform: 'translate3d(2.5%, -3%, 0) scale(1.14)', opacity: '0.92' },
+        },
+        // Two independently-paced organic blob drifts — the "cloud/aurora
+        // texture" depth layer. transform only (translate/rotate/scale),
+        // blurred once by a static filter so the compositor never re-blurs
+        // per frame.
+        cloudDriftA: {
+          '0%': { transform: 'translate3d(-4%, 2%, 0) rotate(0deg) scale(1)' },
+          '50%': { transform: 'translate3d(3%, -3%, 0) rotate(6deg) scale(1.08)' },
+          '100%': { transform: 'translate3d(-2%, 4%, 0) rotate(-4deg) scale(1.02)' },
+        },
+        cloudDriftB: {
+          '0%': { transform: 'translate3d(3%, -2%, 0) rotate(0deg) scale(1.05)' },
+          '50%': { transform: 'translate3d(-4%, 3%, 0) rotate(-5deg) scale(0.98)' },
+          '100%': { transform: 'translate3d(2%, -4%, 0) rotate(4deg) scale(1.06)' },
+        },
+        // A coarse, stepped micro-jitter for the film-grain overlay — reads
+        // as flicker without ever tweening (steps() = a handful of paints
+        // over many seconds, not a per-frame cost).
+        grainFlicker: {
+          '0%, 100%': { transform: 'translate3d(0, 0, 0)' },
+          '20%': { transform: 'translate3d(-1.5%, 1%, 0)' },
+          '40%': { transform: 'translate3d(1%, -1.5%, 0)' },
+          '60%': { transform: 'translate3d(-1%, -1%, 0)' },
+          '80%': { transform: 'translate3d(1.5%, 1%, 0)' },
         },
       },
       semanticTokens: {

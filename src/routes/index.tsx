@@ -1,14 +1,20 @@
-import { createFileRoute, useNavigate } from '@tanstack/react-router'
+import { createFileRoute, redirect, useNavigate } from '@tanstack/react-router'
 import { motion, useReducedMotion } from 'motion/react'
 import { css } from 'styled-system/css'
 import { LiquidGlass } from '~/design/LiquidGlass'
 import { Scene } from '~/design/Scene'
+import { hasOnboarded } from '~/lib/onboarding'
 
 /**
  * Welcome — the serene Calm-style landing. A dusk sky, one calm line, and a
- * single Liquid Glass door into the app. Nothing hurries.
+ * single Liquid Glass door into a short guided onboarding. A returning
+ * visitor (device already carries the onboarded flag) never sees this
+ * marketing screen again — `beforeLoad` sends them straight to `/app`.
  */
 export const Route = createFileRoute('/')({
+  beforeLoad: () => {
+    if (hasOnboarded()) throw redirect({ to: '/app' })
+  },
   component: Welcome,
 })
 
@@ -106,7 +112,7 @@ function Welcome() {
             as="button"
             variant="control"
             tint="rgba(139, 108, 246, 0.6)"
-            onClick={() => void navigate({ to: '/app' })}
+            onClick={() => void navigate({ to: '/onboarding/$step', params: { step: 'welcome' } })}
             className={css({
               minW: '220px',
               minH: '54px',

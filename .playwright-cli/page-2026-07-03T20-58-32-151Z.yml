@@ -1,0 +1,17 @@
+- generic [ref=e15]:
+  - banner [ref=e18]:
+    - button "Back" [ref=e38] [cursor=pointer]:
+      - img [ref=e40]
+  - main [ref=e26]:
+    - generic [ref=e27]:
+      - img [ref=e116] [cursor=pointer]
+      - paragraph [ref=e118]: You're set
+      - heading "Ready when you are" [level=1] [ref=e119]:
+        - text: Ready when
+        - text: you are
+      - paragraph [ref=e120]: We'll open with Sleep — tuned for feeling steady right now.
+  - contentinfo [ref=e31]:
+    - generic [ref=e32]:
+      - button "Begin" [ref=e121] [cursor=pointer]:
+        - generic [ref=e123]: Begin
+      - button "Take me to Today instead" [ref=e124] [cursor=pointer]

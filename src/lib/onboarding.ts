@@ -27,6 +27,72 @@ export const onboarding: OnboardingDraft = {
   account: null,
 }
 
+/**
+ * The guided goal-capture flow (§1 gap): welcome → goal → when → ready. A
+ * light, skippable four steps — never a hard gate — over an immersive
+ * `Scene`, ending in a "Begin" that carries the chosen goal into the player.
+ */
+export const ONBOARDING_STEPS = ['welcome', 'goal', 'when', 'ready'] as const
+export type OnboardingStep = (typeof ONBOARDING_STEPS)[number]
+
+export function isOnboardingStep(value: string): value is OnboardingStep {
+  return (ONBOARDING_STEPS as readonly string[]).includes(value)
+}
+
+export function stepIndex(step: OnboardingStep): number {
+  return ONBOARDING_STEPS.indexOf(step)
+}
+
+export function nextOnboardingStep(step: OnboardingStep): OnboardingStep | null {
+  return ONBOARDING_STEPS[stepIndex(step) + 1] ?? null
+}
+
+export function previousOnboardingStep(step: OnboardingStep): OnboardingStep | null {
+  return ONBOARDING_STEPS[stepIndex(step) - 1] ?? null
+}
+
+/** The "goal" step's four large choices — what the session should tune toward. */
+export interface GoalOption {
+  state: TargetState
+  label: string
+  blurb: string
+}
+
+export const GOAL_OPTIONS: GoalOption[] = [
+  { state: 'focus', label: 'Focus', blurb: 'Steady beta rhythms for sustained, single-task work.' },
+  { state: 'calm', label: 'Calm', blurb: 'Alpha-paced ease for a settled, unhurried mind.' },
+  { state: 'sleep', label: 'Sleep', blurb: 'Delta modulation that resolves toward letting go.' },
+  { state: 'winddown', label: 'Meditate', blurb: 'Slow theta pacing for stillness and presence.' },
+]
+
+/** The "when" step's self-report — how wired the user feels right now. */
+export interface FeelOption {
+  value: number
+  label: string
+}
+
+export const FEEL_SCALE: FeelOption[] = [
+  { value: 0.1, label: 'Drained' },
+  { value: 0.3, label: 'Relaxed' },
+  { value: 0.5, label: 'Steady' },
+  { value: 0.7, label: 'Alert' },
+  { value: 0.9, label: 'Wired' },
+]
+
+/** Nearest labeled point on `FEEL_SCALE` for a raw 0..1 value. */
+export function feelLabel(value: number): string {
+  let nearest = FEEL_SCALE[0]
+  let best = Infinity
+  for (const option of FEEL_SCALE) {
+    const d = Math.abs(option.value - value)
+    if (d < best) {
+      best = d
+      nearest = option
+    }
+  }
+  return nearest.label
+}
+
 const FLAG_KEY = 'ss_onboarded'
 
 /** True once this device has completed (or explicitly finished) onboarding. */

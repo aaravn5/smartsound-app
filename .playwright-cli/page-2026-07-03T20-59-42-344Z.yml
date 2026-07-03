@@ -1,0 +1,13 @@
+- generic [ref=f3e3]:
+  - banner [ref=f3e6]:
+    - button "Skip" [ref=f3e13] [cursor=pointer]
+  - main [ref=f3e14]:
+    - generic [ref=f3e15]:
+      - paragraph [ref=f3e16]: Before we begin
+      - heading "A couple of quiet questions, first" [level=1] [ref=f3e17]:
+        - text: A couple of quiet
+        - text: questions, first
+      - paragraph [ref=f3e18]: What you want more of, and how you're feeling right now — so your first session opens already tuned to you.
+  - contentinfo [ref=f3e19]:
+    - button "Continue" [ref=f3e21] [cursor=pointer]:
+      - generic [ref=f3e23]: Continue
