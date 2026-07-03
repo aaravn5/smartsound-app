@@ -1,9 +1,11 @@
-import { createFileRoute, Link, Outlet, useRouterState } from '@tanstack/react-router'
-import type { ReactNode } from 'react'
+import { createFileRoute, Link, Outlet, useNavigate, useRouterState } from '@tanstack/react-router'
+import { useEffect, type ReactNode } from 'react'
 import { motion, useReducedMotion } from 'motion/react'
 import { css } from 'styled-system/css'
 import { flex } from 'styled-system/patterns'
 import { TlxCheckIn } from '~/components/TlxCheckIn'
+import { pixelNoise } from '~/design/pixel'
+import { hasOnboarded } from '~/lib/onboarding'
 
 /**
  * AppShell — the GOAT-format app frame (Milestone 2). Full-bleed pure-black
@@ -74,10 +76,20 @@ const TABS: Tab[] = [
 function AppShell() {
   const pathname = useRouterState({ select: (s) => s.location.pathname })
   const isNow = pathname.startsWith('/app/now')
+  const navigate = useNavigate()
+
+  // Send a brand-new device through onboarding once (§2, §6.2) — a soft,
+  // non-fatal redirect keyed off a localStorage flag that fails open, never a
+  // hard gate on returning users or on storage errors.
+  useEffect(() => {
+    if (!hasOnboarded()) void navigate({ to: '/onboarding/$step', params: { step: 'goal' }, replace: true })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   return (
     <div
       className={css({
+        position: 'relative',
         display: 'grid',
         gridTemplateRows: '1fr auto',
         height: '100dvh',
@@ -86,7 +98,10 @@ function AppShell() {
         overflow: 'hidden',
       })}
     >
-      <main className={css({ overflowY: isNow ? 'hidden' : 'auto', minHeight: 0, WebkitOverflowScrolling: 'touch' })}>
+      {/* faint pixel-grid depth texture behind the whole shell, every tab (§1.3) */}
+      <div aria-hidden className={css({ ...pixelNoise, position: 'absolute' })} />
+
+      <main className={css({ position: 'relative', zIndex: '1', overflowY: isNow ? 'hidden' : 'auto', minHeight: 0, WebkitOverflowScrolling: 'touch' })}>
         {isNow ? (
           <div className={css({ height: '100%' })}>
             <Outlet />

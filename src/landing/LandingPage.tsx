@@ -11,6 +11,7 @@ const PixelHero = lazy(() => import('./PixelHero').then((m) => ({ default: m.Pix
 import { FaqAccordion, type FaqItem } from './FaqAccordion'
 import { BiofeedbackRing } from '~/design/BiofeedbackRing'
 import { useEngine } from '~/lib/engine-context'
+import { hasOnboarded } from '~/lib/onboarding'
 
 /**
  * LandingPage — sells SmartSound and launches into it (Part 5.B / v2 §6). Pixel
@@ -147,7 +148,13 @@ function DemoRing() {
 
 export function LandingPage() {
   const navigate = useNavigate()
-  const launch = useCallback(() => void navigate({ to: '/app' }), [navigate])
+  // New devices take one pass through onboarding (§2, §6.2) before landing in
+  // the app; returning users (or storage that can't persist the flag) skip
+  // straight there — non-fatal, never a hard gate.
+  const launch = useCallback(
+    () => void navigate(hasOnboarded() ? { to: '/app' } : { to: '/onboarding/$step', params: { step: 'goal' } }),
+    [navigate],
+  )
   const goPaywall = useCallback(() => void navigate({ to: '/app/paywall' }), [navigate])
   const goLegal = useCallback(() => void navigate({ to: '/legal' }), [navigate])
 

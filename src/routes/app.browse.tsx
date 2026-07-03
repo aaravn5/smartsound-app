@@ -3,6 +3,7 @@ import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { css } from 'styled-system/css'
 import { stack, flex } from 'styled-system/patterns'
 import { GlassButton } from '~/components/GlassButton'
+import { PixelSkeleton } from '~/design/PixelSkeleton'
 import { PROFILES, TARGET_STATES } from '~/engine/audio/profiles'
 import type { TargetState } from '~/engine/audio/types'
 import { SOUNDSCAPES, SCENARIOS, type Soundscape, type Scenario } from '~/lib/catalog'
@@ -146,7 +147,9 @@ function BrowseScreen() {
       </div>
 
       {results.length === 0 && (
-        <p className={css({ color: 'muted', textAlign: 'center', py: '10' })}>No matches — try clearing a filter.</p>
+        <div className={css({ py: '10' })}>
+          <PixelSkeleton label="No matches — try clearing a filter" height={72} />
+        </div>
       )}
     </div>
   )

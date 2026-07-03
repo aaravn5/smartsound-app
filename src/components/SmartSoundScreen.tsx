@@ -7,6 +7,7 @@ import { BiofeedbackRing } from '~/design/BiofeedbackRing'
 import { HeartRateReadout } from '~/components/HeartRateReadout'
 import { GlassButton } from '~/components/GlassButton'
 import { Slider } from '~/components/ui/Slider'
+import { pixelNoise } from '~/design/pixel'
 import { TARGET_STATES } from '~/engine/audio'
 import { arousalLabel, fmtClock, pct } from '~/lib/format'
 import type { TargetState } from '~/engine/audio/types'
@@ -106,19 +107,8 @@ export function SmartSoundScreen({ onBeginAttempt }: SmartSoundScreenProps = {})
         overflow: 'hidden',
       })}
     >
-      {/* faint pixel-grid texture for depth (Part 5.A) */}
-      <div
-        aria-hidden
-        className={css({
-          position: 'absolute',
-          inset: '0',
-          pointerEvents: 'none',
-          opacity: '0.5',
-          backgroundImage: 'radial-gradient(rgba(255,255,255,0.025) 1px, transparent 1px)',
-          backgroundSize: 'var(--pixel-size) var(--pixel-size)',
-          maskImage: 'radial-gradient(120% 80% at 50% 35%, #000 30%, transparent 80%)',
-        })}
-      />
+      {/* faint pixel-grid texture for depth (Part 5.A, §1.3) — shared material */}
+      <div aria-hidden className={css(pixelNoise)} />
 
       {/* minimal, unobtrusive top row (not nav chrome) */}
       <div className={flex({ justify: 'space-between', align: 'center', px: '5', pt: '5', position: 'relative', zIndex: '2' })}>

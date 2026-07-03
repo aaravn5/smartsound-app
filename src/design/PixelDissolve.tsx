@@ -124,7 +124,12 @@ export function PixelDissolve({
   }, [show])
 
   return (
-    <div ref={wrapRef} className={cx(css({ position: 'relative' }), className)}>
+    // `isolation: isolate` pins this as its own stacking context so the
+    // curtain canvas — the last child, painted on top by default — can't be
+    // out-ranked by a positive z-index somewhere inside `children` (e.g. the
+    // session screen's own layered controls) leaking past a non-isolated
+    // ancestor and painting over it.
+    <div ref={wrapRef} className={cx(css({ position: 'relative', isolation: 'isolate' }), className)}>
       {rendered ? children : null}
       <canvas
         ref={canvasRef}
@@ -136,6 +141,7 @@ export function PixelDissolve({
           height: '100%',
           pointerEvents: 'none',
           opacity: '0',
+          zIndex: '50',
         })}
       />
     </div>

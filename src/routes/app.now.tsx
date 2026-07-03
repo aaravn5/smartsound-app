@@ -4,6 +4,7 @@ import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
 import { css } from 'styled-system/css'
 import { flex } from 'styled-system/patterns'
 import { SmartSoundScreen } from '~/components/SmartSoundScreen'
+import { PixelDissolve } from '~/design/PixelDissolve'
 import { useEngine } from '~/lib/engine-context'
 import { useDailyUsage, FREE_DAILY_MIN } from '~/lib/entitlements'
 import type { TargetState } from '~/engine/audio/types'
@@ -111,48 +112,53 @@ function NowScreen() {
   }, [status, plan, addMinutes, stop, goToPaywall])
 
   return (
-    <div className={css({ height: '100%', position: 'relative' })}>
-      <AnimatePresence>
-        {warning && (
-          <motion.div
-            role="status"
-            initial={reduceMotion ? { opacity: 0 } : { opacity: 0, y: -12, scale: 0.96 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: -12, scale: 0.96 }}
-            transition={{ type: 'spring', stiffness: 260, damping: 26 }}
-            className={flex({
-              align: 'center',
-              justify: 'center',
-              gap: '2.5',
-              position: 'absolute',
-              top: 'calc(14px + env(safe-area-inset-top))',
-              left: '50%',
-              zIndex: '30',
-              px: '5',
-              py: '2.5',
-              rounded: 'full',
-              border: '1px solid token(colors.glassBorder)',
-              bg: 'glassFill',
-              textAlign: 'center',
-            })}
-            style={{
-              transform: 'translateX(-50%)',
-              backdropFilter: 'blur(var(--glass-blur)) saturate(1.5)',
-              WebkitBackdropFilter: 'blur(var(--glass-blur)) saturate(1.5)',
-              boxShadow: 'var(--glass-shadow)',
-            }}
-          >
-            <span
-              aria-hidden
-              className={css({ w: '1.5', h: '1.5', rounded: 'full', bg: 'signal', flexShrink: '0', boxShadow: '0 0 10px token(colors.signal)' })}
-            />
-            <span className={css({ fontFamily: 'mono', fontSize: '2xs', color: 'text', letterSpacing: '0.04em' })}>
-              3 minutes left on today's free session
-            </span>
-          </motion.div>
-        )}
-      </AnimatePresence>
-      <SmartSoundScreen onBeginAttempt={beginGate} />
-    </div>
+    // Brief pixel-dissolve every time this route mounts — "entering" the
+    // session screen (§1.3), not a spinner. Reduced-motion is instant (handled
+    // inside PixelDissolve itself).
+    <PixelDissolve duration={600} color="#000000" className={css({ height: '100%' })}>
+      <div className={css({ height: '100%', position: 'relative' })}>
+        <AnimatePresence>
+          {warning && (
+            <motion.div
+              role="status"
+              initial={reduceMotion ? { opacity: 0 } : { opacity: 0, y: -12, scale: 0.96 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: -12, scale: 0.96 }}
+              transition={{ type: 'spring', stiffness: 260, damping: 26 }}
+              className={flex({
+                align: 'center',
+                justify: 'center',
+                gap: '2.5',
+                position: 'absolute',
+                top: 'calc(14px + env(safe-area-inset-top))',
+                left: '50%',
+                zIndex: '30',
+                px: '5',
+                py: '2.5',
+                rounded: 'full',
+                border: '1px solid token(colors.glassBorder)',
+                bg: 'glassFill',
+                textAlign: 'center',
+              })}
+              style={{
+                transform: 'translateX(-50%)',
+                backdropFilter: 'blur(var(--glass-blur)) saturate(1.5)',
+                WebkitBackdropFilter: 'blur(var(--glass-blur)) saturate(1.5)',
+                boxShadow: 'var(--glass-shadow)',
+              }}
+            >
+              <span
+                aria-hidden
+                className={css({ w: '1.5', h: '1.5', rounded: 'full', bg: 'signal', flexShrink: '0', boxShadow: '0 0 10px token(colors.signal)' })}
+              />
+              <span className={css({ fontFamily: 'mono', fontSize: '2xs', color: 'text', letterSpacing: '0.04em' })}>
+                3 minutes left on today's free session
+              </span>
+            </motion.div>
+          )}
+        </AnimatePresence>
+        <SmartSoundScreen onBeginAttempt={beginGate} />
+      </div>
+    </PixelDissolve>
   )
 }

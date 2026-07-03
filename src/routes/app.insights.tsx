@@ -4,6 +4,7 @@ import { css } from 'styled-system/css'
 import { stack, hstack, flex } from 'styled-system/patterns'
 import { useEngine } from '~/lib/engine-context'
 import { arousalToLch, lchToCss, prefersReducedMotion } from '~/design/signal'
+import { PixelSkeleton } from '~/design/PixelSkeleton'
 import { getCheckIns } from '~/lib/calibration'
 import { pct } from '~/lib/format'
 
@@ -42,8 +43,14 @@ function InsightsScreen() {
           <h2 className={css({ fontFamily: 'display', fontWeight: '600', fontSize: 'lg' })}>Arousal vs. target — this session</h2>
           <span className={css({ fontFamily: 'mono', fontSize: '2xs', color: 'muted' })}>target: {profile.label}</span>
         </div>
-        <ArousalTrace getHistory={getArousalHistory} target={profile.targetArousal} live={status === 'running'} />
-        <Adherence getHistory={getArousalHistory} target={profile.targetArousal} />
+        {history.length > 1 ? (
+          <>
+            <ArousalTrace getHistory={getArousalHistory} target={profile.targetArousal} live={status === 'running'} />
+            <Adherence getHistory={getArousalHistory} target={profile.targetArousal} />
+          </>
+        ) : (
+          <PixelSkeleton label="No session data yet — start a session to see your real arousal trace" height={120} />
+        )}
       </section>
 
       <div className={css({ display: 'grid', gridTemplateColumns: { base: '1fr', md: '1fr 1fr' }, gap: '4' })}>
