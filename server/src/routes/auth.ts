@@ -97,7 +97,17 @@ authRoutes.get('/google/callback', requireConfig('google'), async (c) => {
 
 authRoutes.get('/apple', requireConfig('apple'), async (c) => {
   const state = generateState()
-  setCookie(c, STATE_COOKIE, state, { httpOnly: true, path: '/', maxAge: OAUTH_COOKIE_TTL_SEC, sameSite: 'Lax' })
+  // M1: Apple's callback is a cross-site `form_post` (the browser is POSTed
+  // here from appleid.apple.com), so a `Lax` cookie would not be sent along
+  // with it and `state` validation would always fail. `None` + `Secure` is
+  // required for a cookie to survive a cross-site top-level POST navigation.
+  setCookie(c, STATE_COOKIE, state, {
+    httpOnly: true,
+    path: '/',
+    maxAge: OAUTH_COOKIE_TTL_SEC,
+    sameSite: 'None',
+    secure: true,
+  })
   const url = appleClient().createAuthorizationURL(state, ['name', 'email'])
   // Apple requires form_post response mode whenever scopes are requested.
   url.searchParams.set('response_mode', 'form_post')

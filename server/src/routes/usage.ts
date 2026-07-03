@@ -55,7 +55,11 @@ sessionRoutes.post('/start', requireAuth, async (c) => {
 const endBody = z.object({
   sessionId: z.string().min(1),
   minutes: z.number().min(0).max(24 * 60),
-  arousalSamples: z.array(z.object({ t: z.number().min(0), arousal: z.number().min(0).max(1) })).default([]),
+  // M4: cap the batch size so one request can't insert an unbounded number of rows.
+  arousalSamples: z
+    .array(z.object({ t: z.number().min(0), arousal: z.number().min(0).max(1) }))
+    .max(5000)
+    .default([]),
 })
 
 sessionRoutes.post('/end', requireAuth, async (c) => {

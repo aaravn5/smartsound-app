@@ -122,6 +122,11 @@ billingRoutes.post('/webhook', requireConfig('stripe'), async (c) => {
     return c.json({ error: 'invalid_signature' }, 400)
   }
 
+  // L2 TODO: Stripe retries webhooks on any non-2xx response (and can send
+  // legitimate duplicates), so this handler should be idempotent per
+  // `event.id`. Add an `event_id` ledger table (unique constraint), check it
+  // at the top of this handler, and skip/short-circuit with `{received:true}`
+  // if we've already processed this event id before running the switch below.
   switch (event.type) {
     case 'checkout.session.completed': {
       const session = event.data.object
