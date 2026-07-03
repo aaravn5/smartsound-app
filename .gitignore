@@ -1,0 +1,10 @@
+node_modules
+dist
+dist-ssr
+styled-system
+src/routeTree.gen.ts
+*.local
+.DS_Store
+.env
+.env.*
+!.env.example

@@ -1,0 +1,37 @@
+{
+  "name": "smartsound",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "prepare": "panda codegen",
+    "routes": "tsr generate",
+    "dev": "panda codegen && vite",
+    "build": "panda codegen && tsr generate && tsc -b && vite build",
+    "typecheck": "panda codegen && tsr generate && tsc -b",
+    "emails": "tsx --tsconfig tsconfig.app.json scripts/render-emails.tsx",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@radix-ui/react-slider": "^1.4.2",
+    "@radix-ui/react-switch": "^1.3.2",
+    "@radix-ui/react-tabs": "^1.1.16",
+    "@react-email/components": "^0.0.25",
+    "@react-email/render": "^1.4.0",
+    "@tanstack/react-router": "^1.58.3",
+    "motion": "^11.11.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@pandacss/dev": "^0.47.0",
+    "@tanstack/router-cli": "^1.167.18",
+    "@tanstack/router-plugin": "^1.58.4",
+    "@types/react": "^18.3.11",
+    "@types/react-dom": "^18.3.0",
+    "@vitejs/plugin-react": "^4.3.2",
+    "tsx": "^4.22.5",
+    "typescript": "^5.6.2",
+    "vite": "^5.4.8"
+  }
+}
