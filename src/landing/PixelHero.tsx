@@ -1,7 +1,8 @@
-import { useEffect, useMemo, useRef } from 'react'
+import { useMemo, useRef } from 'react'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import * as THREE from 'three'
 import { prefersReducedMotion } from '~/design/signal'
+import { useReactivePointer } from '~/design/useReactivePointer'
 
 /**
  * PixelHero — the landing's anchor motif (Part 5.B): a full-viewport WebGL field
@@ -56,6 +57,8 @@ function Field() {
   const mouse = useRef(new THREE.Vector2(0, 0))
   const target = useRef(new THREE.Vector2(0, 0))
   const reduce = prefersReducedMotion()
+  // Touch + pointer reactivity (§1.5) — both mouse drags and finger drags move the field.
+  const pointer = useReactivePointer()
 
   const { geometry, uniforms } = useMemo(() => {
     const aspect = size.width / size.height
@@ -89,19 +92,12 @@ function Field() {
     return { geometry: g, uniforms: u }
   }, [size.width, size.height])
 
-  // pointer → clip space target
-  useEffect(() => {
-    const onMove = (e: PointerEvent) => {
-      target.current.set((e.clientX / window.innerWidth) * 2 - 1, -((e.clientY / window.innerHeight) * 2 - 1))
-    }
-    window.addEventListener('pointermove', onMove, { passive: true })
-    return () => window.removeEventListener('pointermove', onMove)
-  }, [])
-
   useFrame((_, delta) => {
     const m = matRef.current
     if (!m) return
-    // spring-ish settle toward the cursor target
+    // pointer/touch → clip space target, read live each frame (no listener churn)
+    target.current.set(pointer.current.x, pointer.current.y)
+    // spring-ish settle toward the cursor/finger target
     mouse.current.lerp(target.current, reduce ? 1 : Math.min(1, delta * 6))
     m.uniforms.uMouse.value.copy(mouse.current)
     if (!reduce) m.uniforms.uTime.value += delta

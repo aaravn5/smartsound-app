@@ -10,12 +10,12 @@
 
 export type CognitiveState = 'winddown' | 'settled' | 'focus' | 'elevated'
 
-/** OKLCH anchor points [L, C, H] per §5.2, ordered along the arousal axis. */
+/** OKLCH anchor points [L, C, H] per §1.2, ordered along the arousal axis. */
 export const STATE_ANCHORS: Record<CognitiveState, readonly [number, number, number]> = {
-  winddown: [0.55, 0.06, 285],
-  settled: [0.72, 0.11, 195],
-  focus: [0.68, 0.15, 275],
-  elevated: [0.78, 0.14, 75],
+  winddown: [0.55, 0.09, 285],
+  settled: [0.74, 0.13, 205],
+  focus: [0.70, 0.17, 265],
+  elevated: [0.80, 0.16, 70],
 }
 
 const AROUSAL_ORDER: CognitiveState[] = ['winddown', 'settled', 'focus', 'elevated']

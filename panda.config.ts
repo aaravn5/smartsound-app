@@ -20,18 +20,19 @@ export default defineConfig({
     extend: {
       tokens: {
         colors: {
-          // Base palette (§5.3) — near-navy graphite, never pure black.
-          ink: { value: 'oklch(0.19 0.02 265)' },
-          surface: { value: 'oklch(0.24 0.02 265)' },
-          mist: { value: 'oklch(0.86 0.01 265)' },
-          haze: { value: 'oklch(0.62 0.015 265)' },
-          line: { value: 'oklch(0.34 0.015 265)' },
-          // State-signal arc (§5.2) — the dynamic accent's anchor points.
+          // Base palette (§1.2) — deep graphite, richer + higher-chroma than v1.
+          ink: { value: 'oklch(0.16 0.02 265)' },
+          surface: { value: 'oklch(0.21 0.02 265)' },
+          mist: { value: 'oklch(0.96 0.01 265)' },
+          haze: { value: 'oklch(0.70 0.015 265)' },
+          dim: { value: 'oklch(0.55 0.015 265)' },
+          line: { value: 'oklch(0.30 0.015 265)' },
+          // State-signal arc (§1.2) — the dynamic accent's anchor points.
           state: {
-            settled: { value: 'oklch(0.72 0.11 195)' }, // deep cyan-teal
-            focus: { value: 'oklch(0.68 0.15 275)' }, // indigo-violet
-            elevated: { value: 'oklch(0.78 0.14 75)' }, // warm amber (never red)
-            winddown: { value: 'oklch(0.55 0.06 285)' }, // dim slate-lavender
+            winddown: { value: 'oklch(0.55 0.09 285)' }, // slate-lavender
+            settled: { value: 'oklch(0.74 0.13 205)' }, // deep cyan-teal
+            focus: { value: 'oklch(0.70 0.17 265)' }, // indigo-violet
+            elevated: { value: 'oklch(0.80 0.16 70)' }, // warm amber (never red)
           },
           // Part 4 (COMPLETE.md) — pure-black canvas + ring gradient + Liquid Glass.
           black: { value: '#000000' },
@@ -43,10 +44,11 @@ export default defineConfig({
           glassHighlight: { value: 'rgba(255,255,255,0.20)' },
         },
         fonts: {
-          // §5.4 — open fallbacks for the named commercial faces.
-          display: { value: '"Space Grotesk", system-ui, sans-serif' },
-          body: { value: '"DM Sans", system-ui, sans-serif' },
+          // §1.1 — distinctive display/body/mono faces via Fontshare, no basic faces.
+          display: { value: '"Clash Display", system-ui, sans-serif' },
+          body: { value: '"General Sans", system-ui, sans-serif' },
           mono: { value: '"JetBrains Mono", ui-monospace, monospace' },
+          serif: { value: '"Fraunces", Georgia, serif' },
         },
         fontSizes: {
           '2xs': { value: '0.6875rem' },
@@ -68,6 +70,7 @@ export default defineConfig({
           panel: { value: '{colors.surface}' },
           text: { value: '{colors.mist}' },
           muted: { value: '{colors.haze}' },
+          faint: { value: '{colors.dim}' },
           hairline: { value: '{colors.line}' },
           bgBase: { value: '{colors.black}' }, // pure-black canvas for the reskin + landing
           // The living accent. Defaults to focus until the loop sets --signal.
@@ -84,10 +87,15 @@ export default defineConfig({
   },
   globalCss: {
     ':root': {
-      '--signal': 'oklch(0.68 0.15 275)',
+      // §1.2 signal arc — defaults to the focus anchor until the loop sets --signal.
+      '--signal': 'oklch(0.70 0.17 265)',
+      // Narrow bloom halo bound to the live signal color (§1.2).
+      '--signal-glow': '0 0 48px color-mix(in oklab, var(--signal) 55%, transparent)',
       colorScheme: 'dark',
       // Part 4 raw CSS vars — for shaders, canvas, and inline styles that can't read Panda tokens.
       '--bg-base': '#000000',
+      '--bg-1': 'oklch(0.16 0.02 265)',
+      '--bg-2': 'oklch(0.21 0.02 265)',
       '--bg-alt': '#0A0A0F',
       '--ring-cool': '#38BDF8',
       '--ring-warm': '#A78BFA',
