@@ -1,17 +1,14 @@
-import { createFileRoute, Link, Outlet, useNavigate, useRouterState } from '@tanstack/react-router'
-import { useEffect, type ReactNode } from 'react'
-import { motion, useReducedMotion } from 'motion/react'
+import { createFileRoute, Link, Outlet, useRouterState } from '@tanstack/react-router'
+import type { CSSProperties, ReactNode } from 'react'
 import { css } from 'styled-system/css'
-import { flex } from 'styled-system/patterns'
-import { TlxCheckIn } from '~/components/TlxCheckIn'
-import { pixelNoise } from '~/design/pixel'
-import { hasOnboarded } from '~/lib/onboarding'
+import { LiquidGlass } from '~/design/LiquidGlass'
+import { Scene, type SceneVariant } from '~/design/Scene'
 
 /**
- * AppShell — the GOAT-format app frame (Milestone 2). Full-bleed pure-black
- * canvas, an <Outlet/> for the five tabs, and a glass bottom tab bar that
- * lives in normal document flow (never overlaps page content, including the
- * Now tab's own transport bar). Safe-area aware for iOS home-indicator devices.
+ * AppShell — the Calm-native frame. An immersive Scene sky fills the frame,
+ * content scrolls above it, and a floating Liquid Glass HIG tab bar carries
+ * the five sections: Today · Explore · Player · Progress · Profile.
+ * Each tab keys its own scene + calm accent; the sky cross-fades between tabs.
  */
 export const Route = createFileRoute('/app')({
   component: AppShell,
@@ -22,182 +19,200 @@ interface Tab {
   label: string
   icon: ReactNode
   exact?: boolean
+  scene: SceneVariant
+  accent: string
 }
 
 const iconAttrs = {
-  width: 21,
-  height: 21,
+  width: 23,
+  height: 23,
   viewBox: '0 0 24 24',
   fill: 'none' as const,
   stroke: 'currentColor',
-  strokeWidth: 1.7,
+  strokeWidth: 1.8,
   strokeLinecap: 'round' as const,
   strokeLinejoin: 'round' as const,
   'aria-hidden': true,
 }
 
-const DiscoverIcon = () => (
-  <svg {...iconAttrs} strokeLinejoin="round">
-    <path d="M12 3l1.9 5.7L19.8 10.5 13.9 12.4 12 21l-1.9-8.6L4.2 10.5l5.9-1.8L12 3z" />
+/** sun.max — the day begins here. */
+const TodayIcon = () => (
+  <svg {...iconAttrs}>
+    <circle cx="12" cy="12" r="4.1" />
+    <path d="M12 2.8v2.2M12 19v2.2M21.2 12H19M5 12H2.8M18.5 5.5L17 7M7 17l-1.5 1.5M18.5 18.5L17 17M7 7L5.5 5.5" />
   </svg>
 )
-const BrowseIcon = () => (
+/** safari-style compass needle. */
+const ExploreIcon = () => (
   <svg {...iconAttrs}>
-    <circle cx="10.5" cy="10.5" r="6.3" />
-    <path d="M19.5 19.5l-4.6-4.6" />
+    <circle cx="12" cy="12" r="8.8" />
+    <path d="M15.4 8.6l-2 4.8-4.8 2 2-4.8 4.8-2z" />
   </svg>
 )
-const NowIcon = () => (
+/** play within the session circle. */
+const PlayerIcon = () => (
   <svg {...iconAttrs}>
-    <circle cx="12" cy="12" r="8.6" />
-    <path d="M7.4 12h2l1.4-3.6L13.2 15l1.3-3h2.1" />
+    <circle cx="12" cy="12" r="8.8" />
+    <path d="M10.2 8.9l5 3.1-5 3.1V8.9z" fill="currentColor" stroke="none" />
   </svg>
 )
-const InsightsIcon = () => (
+/** the rings themselves. */
+const ProgressIcon = () => (
   <svg {...iconAttrs}>
-    <path d="M5 19v-6.4M12 19V7.6M19 19v-9.8" />
+    <path d="M12 3.2a8.8 8.8 0 1 1-6.2 2.6" />
+    <path d="M12 6.4a5.6 5.6 0 1 1-4 1.7" />
+    <circle cx="12" cy="12" r="2.3" />
   </svg>
 )
-const MeIcon = () => (
+/** person.crop.circle. */
+const ProfileIcon = () => (
   <svg {...iconAttrs}>
-    <circle cx="12" cy="8.2" r="3.3" />
-    <path d="M5.1 20c1.2-3.9 3.9-5.8 6.9-5.8s5.7 1.9 6.9 5.8" />
+    <circle cx="12" cy="12" r="8.8" />
+    <circle cx="12" cy="9.7" r="2.9" />
+    <path d="M6.4 18.3c1.3-2.6 3.3-3.9 5.6-3.9s4.3 1.3 5.6 3.9" />
   </svg>
 )
 
 const TABS: Tab[] = [
-  { to: '/app', label: 'Discover', icon: <DiscoverIcon />, exact: true },
-  { to: '/app/browse', label: 'Browse', icon: <BrowseIcon /> },
-  { to: '/app/now', label: 'Now', icon: <NowIcon /> },
-  { to: '/app/insights', label: 'Insights', icon: <InsightsIcon /> },
-  { to: '/app/me', label: 'Me', icon: <MeIcon /> },
+  { to: '/app', label: 'Today', icon: <TodayIcon />, exact: true, scene: 'dusk', accent: '#A78BFA' },
+  { to: '/app/explore', label: 'Explore', icon: <ExploreIcon />, scene: 'aurora', accent: '#5EEAD4' },
+  { to: '/app/player', label: 'Player', icon: <PlayerIcon />, scene: 'ocean', accent: '#7DD3FC' },
+  { to: '/app/progress', label: 'Progress', icon: <ProgressIcon />, scene: 'dawn', accent: '#FDBA74' },
+  { to: '/app/profile', label: 'Profile', icon: <ProfileIcon />, scene: 'dusk', accent: '#A78BFA' },
 ]
+
+function activeTab(pathname: string): Tab {
+  return (
+    TABS.find((tab) => (tab.exact ? pathname === tab.to : pathname.startsWith(tab.to))) ?? TABS[0]
+  )
+}
 
 function AppShell() {
   const pathname = useRouterState({ select: (s) => s.location.pathname })
-  const isNow = pathname.startsWith('/app/now')
-  const navigate = useNavigate()
-
-  // Send a brand-new device through onboarding once (§2, §6.2) — a soft,
-  // non-fatal redirect keyed off a localStorage flag that fails open, never a
-  // hard gate on returning users or on storage errors.
-  useEffect(() => {
-    if (!hasOnboarded()) void navigate({ to: '/onboarding/$step', params: { step: 'goal' }, replace: true })
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  const tab = activeTab(pathname)
 
   return (
     <div
       className={css({
         position: 'relative',
-        display: 'grid',
-        gridTemplateRows: '1fr auto',
         height: '100dvh',
-        bg: 'bgBase',
-        color: 'text',
         overflow: 'hidden',
+        color: 'text',
+        bg: 'bgDeep',
       })}
+      style={
+        {
+          // Panda resolves token vars at :root, so re-declare them here where
+          // the per-tab scene accent is known — they then inherit downward.
+          '--scene-accent': tab.accent,
+          '--colors-accent': tab.accent,
+          '--colors-accent-soft': `color-mix(in oklab, ${tab.accent} 24%, transparent)`,
+        } as CSSProperties
+      }
     >
-      {/* faint pixel-grid depth texture behind the whole shell, every tab (§1.3) */}
-      <div aria-hidden className={css({ ...pixelNoise, position: 'absolute' })} />
+      <Scene variant={tab.scene} />
 
-      <main className={css({ position: 'relative', zIndex: '1', overflowY: isNow ? 'hidden' : 'auto', minHeight: 0, WebkitOverflowScrolling: 'touch' })}>
-        {isNow ? (
-          <div className={css({ height: '100%' })}>
-            <Outlet />
-          </div>
-        ) : (
-          <div className={css({ maxW: '1120px', mx: 'auto', px: { base: '5', md: '9' }, py: { base: '7', md: '10' } })}>
-            <Outlet />
-          </div>
-        )}
+      <main
+        className={css({
+          position: 'relative',
+          zIndex: '1',
+          height: '100%',
+          overflowY: 'auto',
+          WebkitOverflowScrolling: 'touch',
+        })}
+      >
+        <div
+          className={css({
+            maxW: '640px',
+            mx: 'auto',
+            px: '5',
+            pt: 'calc(env(safe-area-inset-top) + 28px)',
+            pb: 'calc(env(safe-area-inset-bottom) + 132px)',
+          })}
+        >
+          <Outlet />
+        </div>
       </main>
 
       <TabBar pathname={pathname} />
-      <TlxCheckIn />
     </div>
   )
 }
 
 function TabBar({ pathname }: { pathname: string }) {
-  const reduce = useReducedMotion()
-
   return (
-    <nav
-      aria-label="Primary"
-      className={flex({
-        justify: 'center',
-        position: 'relative',
+    <div
+      className={css({
+        position: 'fixed',
+        left: '0',
+        right: '0',
+        bottom: 'calc(env(safe-area-inset-bottom) + 14px)',
         zIndex: '20',
-        borderTop: '1px solid token(colors.glassBorder)',
-        bg: 'glassFill',
-        px: '3',
-        pt: '2',
-        pb: 'calc(8px + env(safe-area-inset-bottom))',
+        display: 'flex',
+        justifyContent: 'center',
+        px: '4',
+        pointerEvents: 'none',
       })}
-      style={{ backdropFilter: 'blur(var(--glass-blur)) saturate(1.6)', WebkitBackdropFilter: 'blur(var(--glass-blur)) saturate(1.6)' }}
     >
-      <div className={flex({ w: 'full', maxW: '560px', justify: 'space-between', gap: '1' })}>
-        {TABS.map((tab) => {
-          const active = tab.exact ? pathname === tab.to : pathname.startsWith(tab.to)
-          return (
-            <Link
-              key={tab.to}
-              to={tab.to}
-              className={css({
-                position: 'relative',
-                display: 'flex',
-                flexDir: 'column',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '1',
-                flex: '1',
-                minH: '44px',
-                py: '1.5',
-                rounded: 'xl',
-                textDecoration: 'none',
-                WebkitTapHighlightColor: 'transparent',
-                touchAction: 'manipulation',
-                transition: 'background token(durations.instant)',
-                _hover: { bg: 'rgba(255,255,255,0.045)' },
-              })}
-            >
-              <span className={css({ color: active ? 'signal' : 'muted', transition: 'color token(durations.instant)', lineHeight: '0' })}>
-                {tab.icon}
-              </span>
-              <span
+      <LiquidGlass
+        as="nav"
+        variant="bar"
+        aria-label="Primary"
+        className={css({ pointerEvents: 'auto', w: 'full', maxW: '420px' })}
+      >
+        <div className={css({ display: 'flex', px: '2', py: '1.5' })}>
+          {TABS.map((tab) => {
+            const active = tab.exact ? pathname === tab.to : pathname.startsWith(tab.to)
+            return (
+              <Link
+                key={tab.to}
+                to={tab.to}
+                aria-current={active ? 'page' : undefined}
                 className={css({
-                  fontFamily: 'mono',
-                  fontSize: '2xs',
-                  letterSpacing: '0.06em',
-                  textTransform: 'uppercase',
-                  color: active ? 'signal' : 'faint',
-                  transition: 'color token(durations.instant)',
+                  flex: '1',
+                  minH: '48px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '0.5',
+                  borderRadius: 'capsule',
+                  textDecoration: 'none',
+                  WebkitTapHighlightColor: 'transparent',
+                  touchAction: 'manipulation',
+                  transition: 'transform token(durations.quick) token(easings.calm)',
+                  _active: { transform: 'scale(0.94)' },
+                  '@media (prefers-reduced-motion: reduce)': {
+                    transition: 'none',
+                    _active: { transform: 'none' },
+                  },
                 })}
-                style={{ fontSize: '9px' }}
               >
-                {tab.label}
-              </span>
-              {active && (
-                <motion.span
-                  layoutId={reduce ? undefined : 'tab-dot'}
-                  aria-hidden
+                <span
                   className={css({
-                    position: 'absolute',
-                    bottom: '1px',
-                    width: '3.5',
-                    height: '3.5',
-                    rounded: 'full',
-                    bg: 'signal',
-                    boxShadow: '0 0 8px token(colors.signal)',
+                    lineHeight: '0',
+                    transition: 'color token(durations.gentle) ease',
                   })}
-                  transition={{ type: 'spring', stiffness: 500, damping: 32 }}
-                />
-              )}
-            </Link>
-          )
-        })}
-      </div>
-    </nav>
+                  style={{ color: active ? 'var(--scene-accent)' : 'rgba(235,235,248,0.52)' }}
+                >
+                  {tab.icon}
+                </span>
+                <span
+                  className={css({
+                    fontSize: '10px',
+                    fontWeight: active ? '600' : '500',
+                    letterSpacing: '0.01em',
+                    transition: 'color token(durations.gentle) ease',
+                  })}
+                  style={{ color: active ? 'var(--scene-accent)' : 'rgba(235,235,248,0.52)' }}
+                >
+                  {tab.label}
+                </span>
+              </Link>
+            )
+          })}
+        </div>
+      </LiquidGlass>
+    </div>
   )
 }
