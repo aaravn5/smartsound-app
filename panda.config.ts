@@ -33,6 +33,14 @@ export default defineConfig({
             elevated: { value: 'oklch(0.78 0.14 75)' }, // warm amber (never red)
             winddown: { value: 'oklch(0.55 0.06 285)' }, // dim slate-lavender
           },
+          // Part 4 (COMPLETE.md) — pure-black canvas + ring gradient + Liquid Glass.
+          black: { value: '#000000' },
+          bgAlt: { value: '#0A0A0F' },
+          ringCool: { value: '#38BDF8' }, // cyan — calm / low HR
+          ringWarm: { value: '#A78BFA' }, // violet — elevated HR
+          glassFill: { value: 'rgba(255,255,255,0.06)' },
+          glassBorder: { value: 'rgba(255,255,255,0.12)' },
+          glassHighlight: { value: 'rgba(255,255,255,0.20)' },
         },
         fonts: {
           // §5.4 — open fallbacks for the named commercial faces.
@@ -51,6 +59,7 @@ export default defineConfig({
         easings: {
           // Damped, instrument-like — nothing snappy or bouncy.
           settle: { value: 'cubic-bezier(0.22, 0.61, 0.36, 1)' },
+          calm: { value: 'cubic-bezier(0.22, 1, 0.36, 1)' }, // Part 4 --ease-calm
         },
       },
       semanticTokens: {
@@ -60,6 +69,7 @@ export default defineConfig({
           text: { value: '{colors.mist}' },
           muted: { value: '{colors.haze}' },
           hairline: { value: '{colors.line}' },
+          bgBase: { value: '{colors.black}' }, // pure-black canvas for the reskin + landing
           // The living accent. Defaults to focus until the loop sets --signal.
           signal: { value: 'var(--signal, {colors.state.focus})' },
           signalSoft: {
@@ -76,6 +86,20 @@ export default defineConfig({
     ':root': {
       '--signal': 'oklch(0.68 0.15 275)',
       colorScheme: 'dark',
+      // Part 4 raw CSS vars — for shaders, canvas, and inline styles that can't read Panda tokens.
+      '--bg-base': '#000000',
+      '--bg-alt': '#0A0A0F',
+      '--ring-cool': '#38BDF8',
+      '--ring-warm': '#A78BFA',
+      '--ring-glow': '0 0 60px rgba(120,170,255,0.45)',
+      '--glass-fill': 'rgba(255,255,255,0.06)',
+      '--glass-border': 'rgba(255,255,255,0.12)',
+      '--glass-blur': '24px',
+      '--glass-highlight': 'rgba(255,255,255,0.20)',
+      '--glass-shadow': '0 8px 32px rgba(0,0,0,0.45)',
+      '--pixel-size': '4px',
+      '--ease-calm': 'cubic-bezier(0.22, 1, 0.36, 1)',
+      '--fade-in': '800ms',
     },
     'html, body, #root': {
       minHeight: '100dvh',
