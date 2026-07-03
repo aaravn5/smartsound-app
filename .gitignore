@@ -8,3 +8,6 @@ src/routeTree.gen.ts
 .env
 .env.*
 !.env.example
+
+# TS build cache
+*.tsbuildinfo
