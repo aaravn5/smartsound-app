@@ -114,9 +114,14 @@ function AppShell() {
 
       <main
         className={css({
-          position: 'relative',
+          position: 'absolute',
+          inset: '0',
           zIndex: '1',
-          height: '100%',
+          // The scrollable viewport itself stops short of the floating tab
+          // bar's footprint (offset 14px + ~60px bar height + safe area, with
+          // a buffer) — so content can never render *behind* the bar, on
+          // first paint or otherwise, regardless of viewport height.
+          bottom: 'calc(env(safe-area-inset-bottom) + 96px)',
           overflowY: 'auto',
           WebkitOverflowScrolling: 'touch',
         })}
@@ -127,7 +132,7 @@ function AppShell() {
             mx: 'auto',
             px: '5',
             pt: 'calc(env(safe-area-inset-top) + 28px)',
-            pb: 'calc(env(safe-area-inset-bottom) + 132px)',
+            pb: '8',
           })}
         >
           <Outlet />

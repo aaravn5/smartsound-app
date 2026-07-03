@@ -56,11 +56,28 @@ export interface SettingsRowProps {
   value?: string
   detail: string
   last?: boolean
+  /** Read-only rows governed by the OS (e.g. Reduce Motion) — shown with a
+   * "System" badge instead of a chevron so they don't read as tappable/actionable. */
+  systemControlled?: boolean
 }
 
 const rowDivider = css({ borderBottom: '1px solid', borderColor: 'hairline' })
 
-export function SettingsRow({ icon, label, value, detail, last = false }: SettingsRowProps) {
+const systemBadge = css({
+  flexShrink: '0',
+  fontSize: 'caption2',
+  fontWeight: '600',
+  letterSpacing: '0.02em',
+  color: 'faint',
+  bg: 'rgba(255,255,255,0.06)',
+  border: '1px solid',
+  borderColor: 'hairline',
+  borderRadius: 'capsule',
+  px: '2',
+  py: '0.5',
+})
+
+export function SettingsRow({ icon, label, value, detail, last = false, systemControlled = false }: SettingsRowProps) {
   const [open, setOpen] = useState(false)
 
   return (
@@ -105,7 +122,7 @@ export function SettingsRow({ icon, label, value, detail, last = false }: Settin
         {value && (
           <span className={css({ fontSize: 'subhead', color: 'faint' })}>{value}</span>
         )}
-        <ChevronIcon open={open} />
+        {systemControlled ? <span className={systemBadge}>System</span> : <ChevronIcon open={open} />}
       </button>
       {open && (
         <div className={css({ px: '4', pb: '3.5' })} style={{ paddingLeft: '58px' }}>

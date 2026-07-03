@@ -335,6 +335,7 @@ function PlayerScreen() {
                 respirationBpm={reading.respiration}
                 heartBpm={reading.hr}
                 size={RING_SIZE}
+                label={`Signal ring — ${band}, ${ringStatusLabel(status, bioActive)}`}
               />
             </div>
           </div>
@@ -502,7 +503,6 @@ function PlayerScreen() {
                 step={0.01}
                 value={[params.neuralDepth]}
                 onValueChange={(v) => setNeuralIntensity(v[0])}
-                aria-label="Neural depth"
               >
                 <Slider.Track
                   className={css({
@@ -519,10 +519,11 @@ function PlayerScreen() {
                   />
                 </Slider.Track>
                 <Slider.Thumb
+                  aria-label="Neural depth"
                   className={css({
                     display: 'block',
-                    w: '22px',
-                    h: '22px',
+                    w: '28px',
+                    h: '28px',
                     borderRadius: 'full',
                     bg: 'white',
                     boxShadow: '0 2px 8px rgba(3,6,18,0.4)',
@@ -578,7 +579,7 @@ function PlayerScreen() {
                   className={css({
                     border: 'none',
                     minW: '64px',
-                    h: '36px',
+                    h: '44px',
                     flexShrink: '0',
                     display: 'flex',
                     alignItems: 'center',

@@ -1,0 +1,115 @@
+- generic [ref=f16e3]:
+  - main [ref=f16e6]:
+    - generic [ref=f16e7]:
+      - generic [ref=f16e8]:
+        - paragraph [ref=f16e9]: Library
+        - heading "Explore" [level=1] [ref=f16e10]
+      - generic [ref=f16e14] [cursor=pointer]:
+        - img [ref=f16e16]
+        - searchbox "Search sessions" [ref=f16e19]
+      - generic [ref=f16e20]:
+        - generic [ref=f16e21]:
+          - heading "Focus" [level=2] [ref=f16e22]
+          - paragraph [ref=f16e23]: Beta and alpha-beta modulation for single-thread work
+        - generic [ref=f16e24]:
+          - button "Deep Focus Beta · ~15 Hz · Open-ended" [ref=f16e26] [cursor=pointer]:
+            - generic [ref=f16e32]:
+              - paragraph [ref=f16e33]: Deep Focus
+              - paragraph [ref=f16e34]: Beta · ~15 Hz · Open-ended
+          - button "Open Flow Alpha–Beta · ~12 Hz · Open-ended" [ref=f16e36] [cursor=pointer]:
+            - generic [ref=f16e42]:
+              - paragraph [ref=f16e43]: Open Flow
+              - paragraph [ref=f16e44]: Alpha–Beta · ~12 Hz · Open-ended
+          - button "Pomodoro Beta · ~15 Hz · 25 min" [ref=f16e46] [cursor=pointer]:
+            - generic [ref=f16e52]:
+              - paragraph [ref=f16e53]: Pomodoro
+              - paragraph [ref=f16e54]: Beta · ~15 Hz · 25 min
+          - button "Deep Work Beta · ~15 Hz · 50 min" [ref=f16e56] [cursor=pointer]:
+            - generic [ref=f16e62]:
+              - paragraph [ref=f16e63]: Deep Work
+              - paragraph [ref=f16e64]: Beta · ~15 Hz · 50 min
+      - generic [ref=f16e65]:
+        - generic [ref=f16e66]:
+          - heading "Relax" [level=2] [ref=f16e67]
+          - paragraph [ref=f16e68]: Alpha-paced, unhurried — for a settled mind
+        - button "Still Alpha · ~10 Hz · Open-ended" [ref=f16e70] [cursor=pointer]:
+          - generic [ref=f16e76]:
+            - paragraph [ref=f16e77]: Still
+            - paragraph [ref=f16e78]: Alpha · ~10 Hz · Open-ended
+      - generic [ref=f16e79]:
+        - generic [ref=f16e80]:
+          - heading "Sleep" [level=2] [ref=f16e81]
+          - paragraph [ref=f16e82]: Descending toward delta-modulated noise
+        - generic [ref=f16e83]:
+          - button "Wind-down Theta · ~6 Hz · Open-ended" [ref=f16e85] [cursor=pointer]:
+            - generic [ref=f16e91]:
+              - paragraph [ref=f16e92]: Wind-down
+              - paragraph [ref=f16e93]: Theta · ~6 Hz · Open-ended
+          - button "Sleep Delta · ~2.5 Hz · 30 min" [ref=f16e95] [cursor=pointer]:
+            - generic [ref=f16e101]:
+              - paragraph [ref=f16e102]: Sleep
+              - paragraph [ref=f16e103]: Delta · ~2.5 Hz · 30 min
+          - button "Delta Sleep Delta · ~2.5 Hz · Open-ended" [ref=f16e105] [cursor=pointer]:
+            - generic [ref=f16e111]:
+              - paragraph [ref=f16e112]: Delta Sleep
+              - paragraph [ref=f16e113]: Delta · ~2.5 Hz · Open-ended
+      - generic [ref=f16e114]:
+        - generic [ref=f16e115]:
+          - heading "Meditate" [level=2] [ref=f16e116]
+          - paragraph [ref=f16e117]: A short breath, a short settle
+        - generic [ref=f16e118]:
+          - button "Breathe Alpha · ~10 Hz · 20 min" [ref=f16e119] [cursor=pointer]:
+            - generic [ref=f16e125]:
+              - paragraph [ref=f16e126]: Breathe
+              - paragraph [ref=f16e127]: Alpha · ~10 Hz · 20 min
+          - button "Settle Theta · ~6 Hz · 15 min" [ref=f16e128] [cursor=pointer]:
+            - generic [ref=f16e134]:
+              - paragraph [ref=f16e135]: Settle
+              - paragraph [ref=f16e136]: Theta · ~6 Hz · 15 min
+      - generic [ref=f16e137]:
+        - generic [ref=f16e138]:
+          - heading "Soundscapes" [level=2] [ref=f16e139]
+          - paragraph [ref=f16e140]: The five states, endless and open
+        - generic [ref=f16e141]:
+          - button "Deep Focus Beta · ~15 Hz · Open-ended" [ref=f16e143] [cursor=pointer]:
+            - generic [ref=f16e149]:
+              - paragraph [ref=f16e150]: Deep Focus
+              - paragraph [ref=f16e151]: Beta · ~15 Hz · Open-ended
+          - button "Open Flow Alpha–Beta · ~12 Hz · Open-ended" [ref=f16e153] [cursor=pointer]:
+            - generic [ref=f16e159]:
+              - paragraph [ref=f16e160]: Open Flow
+              - paragraph [ref=f16e161]: Alpha–Beta · ~12 Hz · Open-ended
+          - button "Still Alpha · ~10 Hz · Open-ended" [ref=f16e163] [cursor=pointer]:
+            - generic [ref=f16e169]:
+              - paragraph [ref=f16e170]: Still
+              - paragraph [ref=f16e171]: Alpha · ~10 Hz · Open-ended
+          - button "Wind-down Theta · ~6 Hz · Open-ended" [ref=f16e173] [cursor=pointer]:
+            - generic [ref=f16e179]:
+              - paragraph [ref=f16e180]: Wind-down
+              - paragraph [ref=f16e181]: Theta · ~6 Hz · Open-ended
+          - button "Delta Sleep Delta · ~2.5 Hz · Open-ended" [ref=f16e183] [cursor=pointer]:
+            - generic [ref=f16e189]:
+              - paragraph [ref=f16e190]: Delta Sleep
+              - paragraph [ref=f16e191]: Delta · ~2.5 Hz · Open-ended
+  - navigation "Primary" [ref=f16e192]:
+    - generic [ref=f16e194]:
+      - link "Today" [ref=f16e195] [cursor=pointer]:
+        - /url: /app
+        - img [ref=f16e197]
+        - generic [ref=f16e200]: Today
+      - link "Explore" [ref=f16e201] [cursor=pointer]:
+        - /url: /app/explore
+        - img [ref=f16e203]
+        - generic [ref=f16e206]: Explore
+      - link "Player" [ref=f16e207] [cursor=pointer]:
+        - /url: /app/player
+        - img [ref=f16e209]
+        - generic [ref=f16e212]: Player
+      - link "Progress" [ref=f16e213] [cursor=pointer]:
+        - /url: /app/progress
+        - img [ref=f16e215]
+        - generic [ref=f16e219]: Progress
+      - link "Profile" [ref=f16e220] [cursor=pointer]:
+        - /url: /app/profile
+        - img [ref=f16e222]
+        - generic [ref=f16e226]: Profile

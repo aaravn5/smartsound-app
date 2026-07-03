@@ -7,6 +7,14 @@ import { ScreenTitle } from '~/components/SereneScreen'
 import { Rail, SessionCard, STATE_SCENE } from '~/components/SessionCard'
 import { suggestFor, suggestedBlockMinutes } from '~/engine/circadian/model'
 import { SOUNDSCAPES, SCENARIOS } from '~/lib/catalog'
+import {
+  ATTUNE_GOAL,
+  MINUTES_GOAL,
+  STREAK_GOAL,
+  streakDays,
+  todayMinutes,
+  todaySessions,
+} from '~/lib/sample-stats'
 
 /** Today — the Calm "Daily" home: a featured session, today's rings, a rail. */
 export const Route = createFileRoute('/app/')({
@@ -218,9 +226,9 @@ function TodayScreen() {
             <SmartSoundRings
               variant="compact"
               size={92}
-              attune={{ progress: 0.68, value: 2, goal: 3 }}
-              minutes={{ progress: 0.6, value: 24, goal: 40 }}
-              streak={{ progress: 1, value: 5, goal: 5 }}
+              attune={{ progress: todaySessions / ATTUNE_GOAL, value: todaySessions, goal: ATTUNE_GOAL }}
+              minutes={{ progress: todayMinutes / MINUTES_GOAL, value: todayMinutes, goal: MINUTES_GOAL }}
+              streak={{ progress: streakDays / STREAK_GOAL, value: streakDays, goal: STREAK_GOAL }}
             />
             <div className={css({ flex: '1', minW: '0' })}>
               <p className={css({ m: '0', fontSize: 'headline', fontWeight: '600', color: 'text' })}>
@@ -234,7 +242,7 @@ function TodayScreen() {
                   color: 'muted',
                 })}`}
               >
-                Attune 2/3 · 24/40 min · 5-day streak
+                Attune {todaySessions}/{ATTUNE_GOAL} · {todayMinutes}/{MINUTES_GOAL} min · {streakDays}-day streak
               </p>
               <p
                 className={css({
@@ -274,12 +282,12 @@ function TodayScreen() {
         </h2>
         <Rail>
           {recommended.map((scenario, i) => (
-            <div key={scenario.id} className={css({ width: '168px', flexShrink: '0' })}>
+            <div key={scenario.id} className={css({ width: '196px', flexShrink: '0' })}>
               <SessionCard
                 state={scenario.state}
                 title={scenario.title.split(' · ')[0]}
                 meta={`${scenario.band} · ${scenario.minutes} min`}
-                height="168px"
+                height="172px"
                 delayMs={320 + i * 70}
               />
             </div>

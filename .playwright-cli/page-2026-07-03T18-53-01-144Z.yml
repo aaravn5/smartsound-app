@@ -1,0 +1,65 @@
+- generic [ref=f15e3]:
+  - main [ref=f15e6]:
+    - generic [ref=f15e7]:
+      - generic [ref=f15e8]:
+        - paragraph [ref=f15e9]: Friday, July 3
+        - heading "Good evening" [level=1] [ref=f15e10]
+      - generic [ref=f15e15]:
+        - paragraph [ref=f15e16]: Evening · Daily session
+        - heading "Deep Focus" [level=2] [ref=f15e17]
+        - paragraph [ref=f15e18]: Steady beta modulation under warm pads. For sustained single-task work.
+        - generic [ref=f15e19]:
+          - button "Begin" [ref=f15e20] [cursor=pointer]:
+            - generic [ref=f15e22]:
+              - text: Begin
+              - img [ref=f15e23]
+          - generic [ref=f15e25]: Beta · ~15 Hz · 50 min
+      - button "Attune 1 of 2, Minutes 24 of 40, Streak 4 of 7 Today’s rhythm Attune 1/2 · 24/40 min · 4-day streak Sample data" [ref=f15e27] [cursor=pointer]:
+        - generic [ref=f15e29]:
+          - img "Attune 1 of 2, Minutes 24 of 40, Streak 4 of 7" [ref=f15e32]
+          - generic [ref=f15e48]:
+            - paragraph [ref=f15e49]: Today’s rhythm
+            - paragraph [ref=f15e50]: Attune 1/2 · 24/40 min · 4-day streak
+            - paragraph [ref=f15e51]: Sample data
+          - img [ref=f15e53]
+      - generic [ref=f15e55]:
+        - heading "Recommended for now" [level=2] [ref=f15e56]
+        - generic [ref=f15e57]:
+          - button "Pomodoro Beta · ~15 Hz · 25 min" [ref=f15e59] [cursor=pointer]:
+            - generic [ref=f15e65]:
+              - paragraph [ref=f15e66]: Pomodoro
+              - paragraph [ref=f15e67]: Beta · ~15 Hz · 25 min
+          - button "Deep Work Beta · ~15 Hz · 50 min" [ref=f15e69] [cursor=pointer]:
+            - generic [ref=f15e75]:
+              - paragraph [ref=f15e76]: Deep Work
+              - paragraph [ref=f15e77]: Beta · ~15 Hz · 50 min
+          - button "Wind-down Theta · ~6 Hz · 15 min" [ref=f15e79] [cursor=pointer]:
+            - generic [ref=f15e85]:
+              - paragraph [ref=f15e86]: Wind-down
+              - paragraph [ref=f15e87]: Theta · ~6 Hz · 15 min
+          - button "Sleep Delta · ~2.5 Hz · 30 min" [ref=f15e89] [cursor=pointer]:
+            - generic [ref=f15e95]:
+              - paragraph [ref=f15e96]: Sleep
+              - paragraph [ref=f15e97]: Delta · ~2.5 Hz · 30 min
+  - navigation "Primary" [ref=f15e98]:
+    - generic [ref=f15e100]:
+      - link "Today" [ref=f15e101] [cursor=pointer]:
+        - /url: /app
+        - img [ref=f15e103]
+        - generic [ref=f15e106]: Today
+      - link "Explore" [ref=f15e107] [cursor=pointer]:
+        - /url: /app/explore
+        - img [ref=f15e109]
+        - generic [ref=f15e112]: Explore
+      - link "Player" [ref=f15e113] [cursor=pointer]:
+        - /url: /app/player
+        - img [ref=f15e115]
+        - generic [ref=f15e118]: Player
+      - link "Progress" [ref=f15e119] [cursor=pointer]:
+        - /url: /app/progress
+        - img [ref=f15e121]
+        - generic [ref=f15e125]: Progress
+      - link "Profile" [ref=f15e126] [cursor=pointer]:
+        - /url: /app/profile
+        - img [ref=f15e128]
+        - generic [ref=f15e132]: Profile

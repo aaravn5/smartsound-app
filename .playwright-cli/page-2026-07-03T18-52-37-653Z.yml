@@ -1,0 +1,90 @@
+- generic [ref=f12e3]:
+  - main [ref=f12e6]:
+    - generic [ref=f12e7]:
+      - generic [ref=f12e8]:
+        - paragraph [ref=f12e9]: Your practice
+        - heading "Progress" [level=1] [ref=f12e10]
+      - generic [ref=f12e13]:
+        - generic [ref=f12e14]:
+          - generic [ref=f12e15]:
+            - img "Attune 1 of 2, Minutes 24 of 40, Streak 4 of 7" [ref=f12e16]
+            - generic:
+              - generic: "24"
+              - generic: min today
+          - generic [ref=f12e32]:
+            - generic [ref=f12e33]:
+              - term [ref=f12e34]: Attune
+              - definition [ref=f12e36]:
+                - text: "1"
+                - generic [ref=f12e37]: /2
+            - generic [ref=f12e38]:
+              - term [ref=f12e39]: Minutes
+              - definition [ref=f12e41]:
+                - text: "24"
+                - generic [ref=f12e42]: /40
+            - generic [ref=f12e43]:
+              - term [ref=f12e44]: Streak
+              - definition [ref=f12e46]:
+                - text: "4"
+                - generic [ref=f12e47]: /7
+        - paragraph [ref=f12e48]: Sample data — your sessions will appear here
+      - generic [ref=f12e51]:
+        - heading "This week" [level=2] [ref=f12e52]
+        - paragraph [ref=f12e53]: Minutes practised, by day
+        - 'img "Minutes practised this week — Mon: 18 minutes, Tue: 32 minutes, Wed: 0 minutes, Thu: 41 minutes, Fri: 27 minutes, Sat: 35 minutes, Sun (today): 24 minutes" [ref=f12e54]':
+          - generic [ref=f12e55]:
+            - generic "Mon — 18 min" [ref=f12e57]
+            - generic "Tue — 32 min" [ref=f12e59]
+            - generic "Wed — 0 min" [ref=f12e61]
+            - generic "Thu — 41 min" [ref=f12e63]
+            - generic "Fri — 27 min" [ref=f12e65]
+            - generic "Sat — 35 min" [ref=f12e67]
+            - generic [ref=f12e68]:
+              - generic [ref=f12e69]: "24"
+              - generic "Sun — 24 min" [ref=f12e70]
+          - generic [ref=f12e71]:
+            - generic [ref=f12e72]: Mon
+            - generic [ref=f12e73]: Tue
+            - generic [ref=f12e74]: Wed
+            - generic [ref=f12e75]: Thu
+            - generic [ref=f12e76]: Fri
+            - generic [ref=f12e77]: Sat
+            - generic [ref=f12e78]: Sun
+        - generic [ref=f12e79]:
+          - generic [ref=f12e80]:
+            - generic [ref=f12e81]: "177"
+            - generic [ref=f12e82]: total minutes
+          - generic [ref=f12e84]:
+            - generic [ref=f12e85]: 9 sessions
+            - generic [ref=f12e86]:
+              - text: Best day Thu
+              - generic [ref=f12e87]: · 41 min
+        - paragraph [ref=f12e88]: Sample insights — your real history builds as you practise
+      - generic [ref=f12e91]:
+        - heading "Calm curve" [level=2] [ref=f12e92]
+        - paragraph [ref=f12e93]: Arousal against this session’s target
+        - generic [ref=f12e94]:
+          - img [ref=f12e96]
+          - paragraph [ref=f12e98]: Your calm curve appears after a session.
+  - navigation "Primary" [ref=f12e99]:
+    - generic [ref=f12e101]:
+      - link "Today" [ref=f12e102] [cursor=pointer]:
+        - /url: /app
+        - img [ref=f12e104]
+        - generic [ref=f12e107]: Today
+      - link "Explore" [ref=f12e108] [cursor=pointer]:
+        - /url: /app/explore
+        - img [ref=f12e110]
+        - generic [ref=f12e113]: Explore
+      - link "Player" [ref=f12e114] [cursor=pointer]:
+        - /url: /app/player
+        - img [ref=f12e116]
+        - generic [ref=f12e119]: Player
+      - link "Progress" [ref=f12e120] [cursor=pointer]:
+        - /url: /app/progress
+        - img [ref=f12e122]
+        - generic [ref=f12e126]: Progress
+      - link "Profile" [ref=f12e127] [cursor=pointer]:
+        - /url: /app/profile
+        - img [ref=f12e129]
+        - generic [ref=f12e133]: Profile

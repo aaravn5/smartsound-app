@@ -88,9 +88,10 @@ export function SessionCard({
             <p
               className={css({
                 m: '0',
-                fontSize: 'subhead',
-                fontWeight: '600',
-                letterSpacing: '-0.005em',
+                fontSize: 'headline',
+                fontWeight: '700',
+                letterSpacing: '-0.01em',
+                lineHeight: '1.2',
                 color: 'text',
                 overflow: 'hidden',
                 textOverflow: 'ellipsis',
@@ -102,14 +103,13 @@ export function SessionCard({
             <p
               className={`tabular ${css({
                 m: '0',
-                mt: '0.5',
-                fontSize: 'caption',
+                mt: '1',
+                fontSize: 'caption2',
                 fontWeight: '500',
                 letterSpacing: '0.02em',
-                color: 'muted',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                whiteSpace: 'nowrap',
+                lineHeight: '1.35',
+                color: 'faint',
+                lineClamp: '2',
               })}`}
             >
               {meta}

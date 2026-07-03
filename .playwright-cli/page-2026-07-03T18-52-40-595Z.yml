@@ -1,0 +1,89 @@
+- generic [ref=f14e3]:
+  - main [ref=f14e6]:
+    - generic [ref=f14e7]:
+      - generic [ref=f14e8]:
+        - paragraph [ref=f14e9]: You
+        - heading "Profile" [level=1] [ref=f14e10]
+      - generic [ref=f14e13]:
+        - generic [ref=f14e15]: G
+        - generic [ref=f14e16]:
+          - generic [ref=f14e17]: Guest
+          - generic [ref=f14e18]: "@exploring"
+          - generic [ref=f14e19]: Sign-in coming — exploring as guest
+      - generic [ref=f14e22]:
+        - generic [ref=f14e23]:
+          - generic [ref=f14e24]:
+            - paragraph [ref=f14e25]: Current plan
+            - heading "Free" [level=2] [ref=f14e26]
+          - generic [ref=f14e27]: 20 min / day
+        - paragraph [ref=f14e28]: 0 of 20 minutes used today
+        - heading "Go deeper with Pro" [level=3] [ref=f14e31]
+        - list [ref=f14e32]:
+          - listitem [ref=f14e33]:
+            - img [ref=f14e35]
+            - text: Unlimited sessions, every day
+          - listitem [ref=f14e37]:
+            - img [ref=f14e39]
+            - text: All soundscapes and scenarios
+          - listitem [ref=f14e41]:
+            - img [ref=f14e43]
+            - text: Full insights — your complete history
+        - button "Go deeper with Pro" [ref=f14e45] [cursor=pointer]:
+          - generic [ref=f14e47]: Go deeper with Pro
+      - generic [ref=f14e48]:
+        - heading "Privacy" [level=2] [ref=f14e49]
+        - generic [ref=f14e51]:
+          - button "Camera & Attunement On-device" [ref=f14e53] [cursor=pointer]:
+            - img [ref=f14e55]
+            - generic [ref=f14e58]: Camera & Attunement
+            - generic [ref=f14e59]: On-device
+            - img [ref=f14e60]
+          - button "Reduce Motion Off System" [ref=f14e63] [cursor=pointer]:
+            - img [ref=f14e65]
+            - generic [ref=f14e67]: Reduce Motion
+            - generic [ref=f14e68]: "Off"
+            - generic [ref=f14e69]: System
+          - button "Notifications Off" [ref=f14e71] [cursor=pointer]:
+            - img [ref=f14e73]
+            - generic [ref=f14e76]: Notifications
+            - generic [ref=f14e77]: "Off"
+            - img [ref=f14e78]
+      - generic [ref=f14e80]:
+        - heading "Data" [level=2] [ref=f14e81]
+        - generic [ref=f14e83]:
+          - button "Export data" [ref=f14e85] [cursor=pointer]:
+            - img [ref=f14e87]
+            - generic [ref=f14e89]: Export data
+            - img [ref=f14e90]
+          - button "Delete data" [ref=f14e93] [cursor=pointer]:
+            - img [ref=f14e95]
+            - generic [ref=f14e98]: Delete data
+            - img [ref=f14e99]
+      - generic [ref=f14e101]:
+        - heading "Account" [level=2] [ref=f14e102]
+        - button "Sign out" [ref=f14e106] [cursor=pointer]:
+          - img [ref=f14e108]
+          - generic [ref=f14e111]: Sign out
+          - img [ref=f14e112]
+  - navigation "Primary" [ref=f14e114]:
+    - generic [ref=f14e116]:
+      - link "Today" [ref=f14e117] [cursor=pointer]:
+        - /url: /app
+        - img [ref=f14e119]
+        - generic [ref=f14e122]: Today
+      - link "Explore" [ref=f14e123] [cursor=pointer]:
+        - /url: /app/explore
+        - img [ref=f14e125]
+        - generic [ref=f14e128]: Explore
+      - link "Player" [ref=f14e129] [cursor=pointer]:
+        - /url: /app/player
+        - img [ref=f14e131]
+        - generic [ref=f14e134]: Player
+      - link "Progress" [ref=f14e135] [cursor=pointer]:
+        - /url: /app/progress
+        - img [ref=f14e137]
+        - generic [ref=f14e141]: Progress
+      - link "Profile" [ref=f14e142] [cursor=pointer]:
+        - /url: /app/profile
+        - img [ref=f14e144]
+        - generic [ref=f14e148]: Profile

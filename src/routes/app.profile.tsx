@@ -224,6 +224,7 @@ function ProfileScreen() {
           label="Reduce Motion"
           value={reduceMotion ? 'On' : 'Off'}
           detail="SmartSound follows your system Reduce Motion setting automatically — change it in your device's Accessibility settings."
+          systemControlled
         />
         <SettingsRow
           icon={<BellIcon />}

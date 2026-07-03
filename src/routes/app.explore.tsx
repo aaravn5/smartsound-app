@@ -170,10 +170,15 @@ function ExploreScreen() {
                 bg: 'transparent',
                 border: 'none',
                 outline: 'none',
+                borderRadius: 'control',
                 font: 'inherit',
                 fontSize: 'subhead',
                 color: 'text',
                 '&::placeholder': { color: 'faint' },
+                _focusVisible: {
+                  outline: '2px solid token(colors.accent)',
+                  outlineOffset: '2px',
+                },
               })}
             />
           </div>
@@ -231,12 +236,12 @@ function ExploreScreen() {
             {category.layout === 'rail' ? (
               <Rail>
                 {category.items.map((item, i) => (
-                  <div key={item.id} className={css({ width: '168px', flexShrink: '0' })}>
+                  <div key={item.id} className={css({ width: '196px', flexShrink: '0' })}>
                     <SessionCard
                       state={item.state}
                       title={item.title}
                       meta={item.meta}
-                      height="168px"
+                      height="172px"
                       delayMs={delayBase + 60 + (startIndex + i) * 50}
                     />
                   </div>

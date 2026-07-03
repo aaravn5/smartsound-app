@@ -1,0 +1,64 @@
+- generic [ref=f9e3]:
+  - main [ref=f9e6]:
+    - generic [ref=f9e13]:
+      - button "Done — back to Today" [ref=f9e15] [cursor=pointer]:
+        - img [ref=f9e17]
+      - generic [ref=f9e19]:
+        - paragraph [ref=f9e20]: SmartSound Session · Calm
+        - heading "Still" [level=1] [ref=f9e21]
+        - paragraph [ref=f9e22]: Alpha · ~10 Hz
+      - img "Signal ring — the audio spectrum overlaid with your pulse" [ref=f9e26]
+      - paragraph [ref=f9e27]: Preview — begin to hear it live
+      - generic [ref=f9e28]:
+        - generic [ref=f9e29]: 0:00
+        - generic [ref=f9e30]:
+          - button "10" [ref=f9e31] [cursor=pointer]:
+            - generic [ref=f9e33]: 10 min
+          - button "20" [ref=f9e34] [cursor=pointer]:
+            - generic [ref=f9e36]: 20 min
+          - button "45" [ref=f9e37] [cursor=pointer]:
+            - generic [ref=f9e39]: 45 min
+          - button "∞" [pressed] [ref=f9e40] [cursor=pointer]:
+            - generic [ref=f9e41]: ∞
+      - generic [ref=f9e42]:
+        - button "Previous state" [ref=f9e43] [cursor=pointer]:
+          - img [ref=f9e45]
+        - button "Play" [ref=f9e48] [cursor=pointer]:
+          - img [ref=f9e50]
+        - button "Next state" [ref=f9e52] [cursor=pointer]:
+          - img [ref=f9e54]
+      - generic [ref=f9e59]:
+        - generic [ref=f9e60]:
+          - generic [ref=f9e61]: Neural depth
+          - generic [ref=f9e62]: 38%
+        - generic "Neural depth" [ref=f9e63]:
+          - slider [ref=f9e67] [cursor=pointer]
+      - generic [ref=f9e71]:
+        - img [ref=f9e73]
+        - generic [ref=f9e76]:
+          - paragraph [ref=f9e77]: Attune
+          - paragraph [ref=f9e78]: Off — uses your front camera, on-device only
+        - switch "Toggle Attune camera" [ref=f9e79] [cursor=pointer]:
+          - generic [ref=f9e80]: "Off"
+  - navigation "Primary" [ref=f9e81]:
+    - generic [ref=f9e83]:
+      - link "Today" [ref=f9e84] [cursor=pointer]:
+        - /url: /app
+        - img [ref=f9e86]
+        - generic [ref=f9e89]: Today
+      - link "Explore" [ref=f9e90] [cursor=pointer]:
+        - /url: /app/explore
+        - img [ref=f9e92]
+        - generic [ref=f9e95]: Explore
+      - link "Player" [ref=f9e96] [cursor=pointer]:
+        - /url: /app/player
+        - img [ref=f9e98]
+        - generic [ref=f9e101]: Player
+      - link "Progress" [ref=f9e102] [cursor=pointer]:
+        - /url: /app/progress
+        - img [ref=f9e104]
+        - generic [ref=f9e108]: Progress
+      - link "Profile" [ref=f9e109] [cursor=pointer]:
+        - /url: /app/profile
+        - img [ref=f9e111]
+        - generic [ref=f9e115]: Profile

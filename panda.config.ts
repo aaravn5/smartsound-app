@@ -28,9 +28,12 @@ export default defineConfig({
           baseDeep: { value: 'oklch(0.11 0.025 278)' },
           // HIG-style label hierarchy — soft off-white ink with warmth.
           label: { value: 'rgba(248, 247, 252, 0.96)' },
-          secondaryLabel: { value: 'rgba(235, 235, 248, 0.66)' },
-          tertiaryLabel: { value: 'rgba(230, 230, 246, 0.44)' },
-          quaternaryLabel: { value: 'rgba(228, 228, 246, 0.26)' },
+          // Alphas tuned so body/caption text clears ~4.5:1 against the lightest
+          // points of every scene gradient (verified via WCAG relative-luminance
+          // contrast against dusk/aurora/ocean/dawn tops, not just the darkest floor).
+          secondaryLabel: { value: 'rgba(235, 235, 248, 0.72)' },
+          tertiaryLabel: { value: 'rgba(230, 230, 246, 0.60)' },
+          quaternaryLabel: { value: 'rgba(228, 228, 246, 0.56)' },
           separator: { value: 'rgba(255, 255, 255, 0.10)' },
           // Scene accents — one calm accent per scene.
           scene: {
@@ -147,6 +150,13 @@ export default defineConfig({
         breathe: {
           '0%, 100%': { transform: 'scale(1)', opacity: '0.85' },
           '50%': { transform: 'scale(1.045)', opacity: '1' },
+        },
+        // A slow independent top-light drift — gives scenes a second light
+        // source so the canvas doesn't read as a flat gradient. transform +
+        // opacity only, GPU-cheap.
+        sceneBloom: {
+          '0%, 100%': { transform: 'translate3d(0, 0, 0) scale(1)', opacity: '0.55' },
+          '50%': { transform: 'translate3d(1.5%, -1.5%, 0) scale(1.1)', opacity: '0.9' },
         },
       },
       semanticTokens: {
