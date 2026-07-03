@@ -1,39 +1,270 @@
+import { useMemo, useState } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
-import { GlassEmptyState, ScreenTitle } from '~/components/SereneScreen'
+import { css } from 'styled-system/css'
+import { LiquidGlass } from '~/design/LiquidGlass'
+import { ScreenTitle } from '~/components/SereneScreen'
+import { Rail, SessionCard } from '~/components/SessionCard'
+import { suggestedBlockMinutes } from '~/engine/circadian/model'
+import { BAND_LABEL, SCENARIOS, SOUNDSCAPES } from '~/lib/catalog'
+import type { TargetState } from '~/engine/audio/types'
 
-/** Explore — the Calm library. Scene cards over engine states land in Milestone 2. */
+/** Explore — the Calm library. Category rails over real engine states + catalog. */
 export const Route = createFileRoute('/app/explore')({
   component: ExploreScreen,
 })
 
-const LibraryIcon = () => (
+interface LibraryItem {
+  id: string
+  title: string
+  state: TargetState
+  meta: string
+  keywords: string
+}
+
+/** Strip a catalog title's "· N" suffix — the minute count lives in `meta` instead. */
+const baseTitle = (title: string) => title.split(' · ')[0]
+
+function fromScenario(id: string): LibraryItem {
+  const scenario = SCENARIOS.find((s) => s.id === id)
+  if (!scenario) throw new Error(`Unknown scenario: ${id}`)
+  return {
+    id: scenario.id,
+    title: baseTitle(scenario.title),
+    state: scenario.state,
+    meta: `${scenario.band} · ${scenario.minutes} min`,
+    keywords: `${scenario.title} ${scenario.state} ${scenario.band}`.toLowerCase(),
+  }
+}
+
+function fromSoundscape(id: string): LibraryItem {
+  const soundscape = SOUNDSCAPES.find((s) => s.id === id)
+  if (!soundscape) throw new Error(`Unknown soundscape: ${id}`)
+  return {
+    id: soundscape.id,
+    title: soundscape.title,
+    state: soundscape.state,
+    meta: `${soundscape.band} · Open-ended`,
+    keywords: `${soundscape.title} ${soundscape.state} ${soundscape.band}`.toLowerCase(),
+  }
+}
+
+/** A short hand-authored settling session per state — the engine's real bands + minutes. */
+function meditation(title: string, state: TargetState): LibraryItem {
+  const minutes = suggestedBlockMinutes(state)
+  return {
+    id: `meditate-${state}`,
+    title,
+    state,
+    meta: `${BAND_LABEL[state]} · ${minutes} min`,
+    keywords: `${title} ${state} meditate meditation`.toLowerCase(),
+  }
+}
+
+interface Category {
+  id: string
+  title: string
+  subtitle: string
+  layout: 'rail' | 'grid'
+  items: LibraryItem[]
+}
+
+const CATEGORIES: Category[] = [
+  {
+    id: 'focus',
+    title: 'Focus',
+    subtitle: 'Beta and alpha-beta modulation for single-thread work',
+    layout: 'rail',
+    items: [
+      fromSoundscape('deep-focus'),
+      fromSoundscape('open-flow'),
+      fromScenario('pomodoro-25'),
+      fromScenario('deep-work-50'),
+    ],
+  },
+  {
+    id: 'relax',
+    title: 'Relax',
+    subtitle: 'Alpha-paced, unhurried — for a settled mind',
+    layout: 'grid',
+    items: [fromSoundscape('still')],
+  },
+  {
+    id: 'sleep',
+    title: 'Sleep',
+    subtitle: 'Descending toward delta-modulated noise',
+    layout: 'rail',
+    items: [fromSoundscape('wind-down'), fromScenario('sleep-30'), fromSoundscape('delta-sleep')],
+  },
+  {
+    id: 'meditate',
+    title: 'Meditate',
+    subtitle: 'A short breath, a short settle',
+    layout: 'grid',
+    items: [meditation('Breathe', 'calm'), meditation('Settle', 'winddown')],
+  },
+  {
+    id: 'soundscapes',
+    title: 'Soundscapes',
+    subtitle: 'The five states, endless and open',
+    layout: 'rail',
+    items: SOUNDSCAPES.map((s) => fromSoundscape(s.id)),
+  },
+]
+
+const SearchIcon = () => (
   <svg
-    width="26"
-    height="26"
+    width="18"
+    height="18"
     viewBox="0 0 24 24"
     fill="none"
     stroke="currentColor"
-    strokeWidth="1.8"
+    strokeWidth="2"
     strokeLinecap="round"
     strokeLinejoin="round"
     aria-hidden
   >
-    <rect x="3.4" y="3.4" width="7.4" height="7.4" rx="2.2" />
-    <rect x="13.2" y="3.4" width="7.4" height="7.4" rx="2.2" />
-    <rect x="3.4" y="13.2" width="7.4" height="7.4" rx="2.2" />
-    <rect x="13.2" y="13.2" width="7.4" height="7.4" rx="2.2" />
+    <circle cx="10.8" cy="10.8" r="6.8" />
+    <path d="M20 20l-4.6-4.6" />
   </svg>
 )
 
 function ExploreScreen() {
+  const [query, setQuery] = useState('')
+  const q = query.trim().toLowerCase()
+
+  const filtered = useMemo(() => {
+    if (!q) return CATEGORIES
+    return CATEGORIES.map((category) => ({
+      ...category,
+      items: category.items.filter((item) => item.keywords.includes(q)),
+    })).filter((category) => category.items.length > 0)
+  }, [q])
+
+  let cardIndex = 0
+
   return (
     <>
       <ScreenTitle caption="Library" title="Explore" />
-      <GlassEmptyState
-        icon={<LibraryIcon />}
-        title="Soundscapes for every state"
-        message="Focus, relax, sleep, meditate — a library of immersive scenes mapped to the engine is on its way."
-      />
+
+      <div
+        className={css({
+          mb: '7',
+          animation: 'fadeUp token(durations.calm) token(easings.enter) both',
+          '@media (prefers-reduced-motion: reduce)': { animation: 'none' },
+        })}
+      >
+        <LiquidGlass variant="control" as="label" className={css({ display: 'block', width: 'full' })}>
+          <div className={css({ display: 'flex', alignItems: 'center', gap: '2.5', px: '4', py: '2.5' })}>
+            <span aria-hidden className={css({ color: 'faint', lineHeight: '0' })}>
+              <SearchIcon />
+            </span>
+            <input
+              type="search"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search focus, sleep, meditate…"
+              aria-label="Search sessions"
+              className={css({
+                flex: '1',
+                minW: '0',
+                bg: 'transparent',
+                border: 'none',
+                outline: 'none',
+                font: 'inherit',
+                fontSize: 'subhead',
+                color: 'text',
+                '&::placeholder': { color: 'faint' },
+              })}
+            />
+          </div>
+        </LiquidGlass>
+      </div>
+
+      {filtered.length === 0 && (
+        <LiquidGlass
+          variant="card"
+          className={css({
+            animation: 'fadeUp token(durations.calm) token(easings.enter) both',
+            '@media (prefers-reduced-motion: reduce)': { animation: 'none' },
+          })}
+        >
+          <div className={css({ px: '7', py: '10', textAlign: 'center' })}>
+            <p className={css({ m: '0', fontSize: 'subhead', color: 'muted' })}>
+              Nothing matches &ldquo;{query}&rdquo; — try focus, relax, sleep, or meditate.
+            </p>
+          </div>
+        </LiquidGlass>
+      )}
+
+      {filtered.map((category, ci) => {
+        const startIndex = cardIndex
+        cardIndex += category.items.length
+        const delayBase = 80 + ci * 90
+
+        return (
+          <section key={category.id} className={css({ mb: '8' })}>
+            <header
+              className={css({
+                mb: '3',
+                animation: 'fadeUp token(durations.calm) token(easings.enter) both',
+                '@media (prefers-reduced-motion: reduce)': { animation: 'none' },
+              })}
+              style={{ animationDelay: `${delayBase}ms` }}
+            >
+              <h2
+                className={css({
+                  m: '0',
+                  fontFamily: 'display',
+                  fontSize: 'title3',
+                  fontWeight: '600',
+                  letterSpacing: '-0.01em',
+                  color: 'text',
+                })}
+              >
+                {category.title}
+              </h2>
+              <p className={css({ m: '0', mt: '0.5', fontSize: 'footnote', color: 'faint' })}>
+                {category.subtitle}
+              </p>
+            </header>
+
+            {category.layout === 'rail' ? (
+              <Rail>
+                {category.items.map((item, i) => (
+                  <div key={item.id} className={css({ width: '168px', flexShrink: '0' })}>
+                    <SessionCard
+                      state={item.state}
+                      title={item.title}
+                      meta={item.meta}
+                      height="168px"
+                      delayMs={delayBase + 60 + (startIndex + i) * 50}
+                    />
+                  </div>
+                ))}
+              </Rail>
+            ) : (
+              <div
+                className={css({
+                  display: 'grid',
+                  gridTemplateColumns: category.items.length > 1 ? '1fr 1fr' : '1fr',
+                  gap: '3',
+                })}
+              >
+                {category.items.map((item, i) => (
+                  <SessionCard
+                    key={item.id}
+                    state={item.state}
+                    title={item.title}
+                    meta={item.meta}
+                    height={category.items.length > 1 ? '160px' : '200px'}
+                    delayMs={delayBase + 60 + (startIndex + i) * 50}
+                  />
+                ))}
+              </div>
+            )}
+          </section>
+        )
+      })}
     </>
   )
 }

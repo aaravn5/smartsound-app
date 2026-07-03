@@ -1,8 +1,22 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { GlassEmptyState, ScreenTitle } from '~/components/SereneScreen'
+import type { TargetState } from '~/engine/audio/types'
+
+const VALID_STATES: readonly TargetState[] = ['focus', 'flow', 'calm', 'winddown', 'sleep']
+
+interface PlayerSearch {
+  state?: TargetState
+}
+
+function isTargetState(value: unknown): value is TargetState {
+  return typeof value === 'string' && (VALID_STATES as readonly string[]).includes(value)
+}
 
 /** Player — the immersive session screen, wired to the live loop in Milestone 3. */
 export const Route = createFileRoute('/app/player')({
+  validateSearch: (search: Record<string, unknown>): PlayerSearch => ({
+    state: isTargetState(search.state) ? search.state : undefined,
+  }),
   component: PlayerScreen,
 })
 
