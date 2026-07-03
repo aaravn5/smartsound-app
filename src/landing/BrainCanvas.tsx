@@ -39,7 +39,7 @@ export default function BrainCanvas() {
   const reduce = prefersReducedMotion()
   return (
     <Canvas
-      camera={{ position: [0, 0, 4], fov: 45 }}
+      camera={{ position: [0, 0, 6], fov: 45 }}
       dpr={[1, 2]}
       frameloop={reduce ? 'demand' : 'always'}
       gl={{ alpha: true, antialias: true }}
