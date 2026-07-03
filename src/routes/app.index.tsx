@@ -1,8 +1,9 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { css } from 'styled-system/css'
 import { LiquidGlass } from '~/design/LiquidGlass'
-import { Scene } from '~/design/Scene'
+import { LivingScene } from '~/design/LivingScene'
 import { SmartSoundRings } from '~/design/SmartSoundRings'
+import { useClickSound } from '~/lib/click-sound'
 import { ScreenTitle } from '~/components/SereneScreen'
 import { Rail, SessionCard, STATE_SCENE } from '~/components/SessionCard'
 import { suggestFor, suggestedBlockMinutes } from '~/engine/circadian/model'
@@ -85,6 +86,7 @@ const ChevronIcon = () => (
 
 function TodayScreen() {
   const navigate = useNavigate()
+  const playClick = useClickSound()
   const now = new Date()
   const suggestion = suggestFor(now)
   const daily = SOUNDSCAPES.find((s) => s.state === suggestion.state) ?? SOUNDSCAPES[0]
@@ -115,7 +117,7 @@ function TodayScreen() {
             mb: '7',
           })}
         >
-          <Scene variant={STATE_SCENE[suggestion.state]} />
+          <LivingScene variant={STATE_SCENE[suggestion.state]} />
           <div
             className={css({
               position: 'relative',
@@ -170,9 +172,10 @@ function TodayScreen() {
                 as="button"
                 variant="control"
                 staticSheen
-                onClick={() =>
+                onClick={() => {
+                  playClick('primary')
                   void navigate({ to: '/app/player', search: { state: suggestion.state } })
-                }
+                }}
                 className={css({ border: 'none', font: 'inherit', color: 'text' })}
               >
                 <span

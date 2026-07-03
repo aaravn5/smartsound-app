@@ -3,6 +3,7 @@ import { motion, useReducedMotion } from 'motion/react'
 import { css } from 'styled-system/css'
 import { LiquidGlass } from '~/design/LiquidGlass'
 import { Scene } from '~/design/Scene'
+import { useClickSound } from '~/lib/click-sound'
 import { hasOnboarded } from '~/lib/onboarding'
 
 /**
@@ -23,6 +24,7 @@ const enter = { duration: 1.1, ease: [0.16, 1, 0.3, 1] as const }
 function Welcome() {
   const reduce = useReducedMotion()
   const navigate = useNavigate()
+  const playClick = useClickSound()
 
   const reveal = (delay: number) =>
     reduce
@@ -112,7 +114,10 @@ function Welcome() {
             as="button"
             variant="control"
             tint="rgba(139, 108, 246, 0.6)"
-            onClick={() => void navigate({ to: '/onboarding/$step', params: { step: 'welcome' } })}
+            onClick={() => {
+              playClick('primary')
+              void navigate({ to: '/onboarding/$step', params: { step: 'welcome' } })
+            }}
             className={css({
               minW: '220px',
               minH: '54px',

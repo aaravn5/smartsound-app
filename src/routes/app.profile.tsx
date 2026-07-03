@@ -1,10 +1,12 @@
 import { useState } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
 import { useReducedMotion } from 'motion/react'
+import * as Switch from '@radix-ui/react-switch'
 import { css, cx } from 'styled-system/css'
 import { LiquidGlass } from '~/design/LiquidGlass'
 import { ScreenTitle } from '~/components/SereneScreen'
 import { SettingsGroup, SettingsRow } from '~/components/SettingsList'
+import { useClickSound, useSfxEnabled } from '~/lib/click-sound'
 import { useDailyUsage, FREE_DAILY_MIN } from '~/lib/entitlements'
 
 /**
@@ -71,6 +73,12 @@ const SignOutIcon = () => (
     <path d="M13.5 8.5 17.5 12l-4 3.5M17.5 12h-9" />
   </svg>
 )
+const SpeakerIcon = () => (
+  <svg {...iconAttrs}>
+    <path d="M4.5 9.5h2.4L11 6v12l-4.1-3.5H4.5a1 1 0 0 1-1-1v-3a1 1 0 0 1 1-1Z" />
+    <path d="M14.5 9.2a4 4 0 0 1 0 5.6M17 6.8a7.4 7.4 0 0 1 0 10.4" />
+  </svg>
+)
 const CheckIcon = () => (
   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
     <path d="M5 12.5 9.5 17 19 6.5" />
@@ -108,6 +116,79 @@ function Avatar() {
         G
       </span>
     </span>
+  )
+}
+
+/** Interface-sounds switch — a live control, so it's a real row, not a disclosure. */
+function SoundRow() {
+  const [sfxOn, setSfxOn] = useSfxEnabled()
+  const playClick = useClickSound()
+
+  return (
+    <div className={css({ display: 'flex', alignItems: 'center', gap: '3', px: '4', py: '3.5' })}>
+      <span
+        aria-hidden
+        className={css({
+          display: 'grid',
+          placeItems: 'center',
+          width: '30px',
+          height: '30px',
+          borderRadius: 'full',
+          color: 'accent',
+          background: 'accentSoft',
+          flexShrink: '0',
+          lineHeight: '0',
+        })}
+      >
+        <SpeakerIcon />
+      </span>
+      <div className={css({ flex: '1', minW: '0' })}>
+        <p className={css({ m: '0', fontSize: 'subhead', fontWeight: '500', color: 'text' })}>
+          Interface sounds
+        </p>
+        <p className={css({ m: '0', mt: '0.5', fontSize: 'caption', lineHeight: '1.4', color: 'faint' })}>
+          Soft tactile clicks on key controls
+        </p>
+      </div>
+      <Switch.Root
+        checked={sfxOn}
+        onCheckedChange={(on) => {
+          setSfxOn(on)
+          // A sample of what was just turned on — inside the tap gesture.
+          if (on) playClick('tap')
+        }}
+        aria-label="Interface sounds"
+        className={css({
+          position: 'relative',
+          w: '51px',
+          h: '31px',
+          p: '0',
+          borderRadius: 'capsule',
+          border: 'none',
+          cursor: 'pointer',
+          flexShrink: '0',
+          bg: 'rgba(255,255,255,0.16)',
+          transition: 'background token(durations.quick) ease',
+          WebkitTapHighlightColor: 'transparent',
+          '&[data-state=checked]': { bg: 'accent' },
+        })}
+      >
+        <Switch.Thumb
+          className={css({
+            display: 'block',
+            w: '27px',
+            h: '27px',
+            borderRadius: 'full',
+            bg: 'white',
+            boxShadow: '0 2px 6px rgba(3,6,18,0.4)',
+            transform: 'translateX(2px)',
+            transition: 'transform token(durations.quick) token(easings.calm)',
+            '&[data-state=checked]': { transform: 'translateX(22px)' },
+            '@media (prefers-reduced-motion: reduce)': { transition: 'none' },
+          })}
+        />
+      </Switch.Root>
+    </div>
   )
 }
 
@@ -212,6 +293,10 @@ function ProfileScreen() {
       </LiquidGlass>
 
       {/* Settings — grouped, honest disclosures in place of dead-end navigation. */}
+      <SettingsGroup title="Sound">
+        <SoundRow />
+      </SettingsGroup>
+
       <SettingsGroup title="Privacy">
         <SettingsRow
           icon={<CameraIcon />}

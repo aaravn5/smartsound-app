@@ -6,6 +6,7 @@ import { css, cx } from 'styled-system/css'
 import { LiquidGlass } from '~/design/LiquidGlass'
 import { Scene, type SceneVariant } from '~/design/Scene'
 import { STATE_SCENE } from '~/components/SessionCard'
+import { useClickSound } from '~/lib/click-sound'
 import type { TargetState } from '~/engine/audio/types'
 import {
   FEEL_SCALE,
@@ -168,12 +169,16 @@ function PrimaryButton({
   label: string
   onClick: () => void
 }) {
+  const playClick = useClickSound()
   return (
     <LiquidGlass
       as="button"
       variant="control"
       tint="rgba(139, 108, 246, 0.6)"
-      onClick={onClick}
+      onClick={() => {
+        playClick('primary')
+        onClick()
+      }}
       className={css({
         display: 'block',
         w: 'full',

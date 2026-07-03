@@ -3,6 +3,7 @@ import type { CSSProperties, ReactNode } from 'react'
 import { css } from 'styled-system/css'
 import { LiquidGlass } from '~/design/LiquidGlass'
 import { Scene, type SceneVariant } from '~/design/Scene'
+import { useClickSound } from '~/lib/click-sound'
 
 /**
  * AppShell — the Calm-native frame. An immersive Scene sky fills the frame,
@@ -145,6 +146,7 @@ function AppShell() {
 }
 
 function TabBar({ pathname }: { pathname: string }) {
+  const playClick = useClickSound()
   return (
     <div
       className={css({
@@ -173,6 +175,7 @@ function TabBar({ pathname }: { pathname: string }) {
                 key={tab.to}
                 to={tab.to}
                 aria-current={active ? 'page' : undefined}
+                onClick={() => playClick('tap')}
                 className={css({
                   flex: '1',
                   minH: '48px',

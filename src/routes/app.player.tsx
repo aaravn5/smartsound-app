@@ -4,9 +4,10 @@ import { useReducedMotion } from 'motion/react'
 import * as Slider from '@radix-ui/react-slider'
 import { css, cx } from 'styled-system/css'
 import { LiquidGlass } from '~/design/LiquidGlass'
-import { Scene } from '~/design/Scene'
+import { LivingScene } from '~/design/LivingScene'
 import { SignalRing } from '~/design/SignalRing'
 import { STATE_SCENE } from '~/components/SessionCard'
+import { useClickSound } from '~/lib/click-sound'
 import { useEngine } from '~/lib/engine-context'
 import { arousalToLch, lchToCss } from '~/design/signal'
 import { TARGET_STATES } from '~/engine/audio/profiles'
@@ -131,6 +132,7 @@ function PlayerScreen() {
   const search = Route.useSearch()
   const navigate = useNavigate()
   const reduceMotion = useReducedMotion()
+  const playClick = useClickSound()
   const {
     status, profile, params, arousal, reading, bioStatus,
     start, stop, selectState, setNeuralIntensity, startAttune, stopAttune,
@@ -179,11 +181,13 @@ function PlayerScreen() {
   }, [elapsedMs, length, running, stop])
 
   const handlePlayPause = () => {
+    playClick('primary')
     if (running) void stop()
     else void start(state)
   }
 
   const cycleState = (dir: 1 | -1) => {
+    playClick('tap')
     const idx = TARGET_STATES.findIndex((p) => p.key === state)
     const next = TARGET_STATES[(idx + dir + TARGET_STATES.length) % TARGET_STATES.length]
     selectState(next.key)
@@ -200,7 +204,7 @@ function PlayerScreen() {
 
   return (
     <div className={css({ position: 'fixed', inset: '0', zIndex: '0', overflow: 'hidden' })}>
-      <Scene variant={scene} />
+      <LivingScene variant={scene} />
 
       <div
         className={css({
