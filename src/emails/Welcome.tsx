@@ -6,7 +6,7 @@ export interface WelcomeProps {
   sessionUrl?: string
 }
 
-export default function Welcome({ baselineHr = 62, sessionUrl = 'https://smartsound.live/app/session' }: WelcomeProps) {
+export default function Welcome({ baselineHr = 62, sessionUrl = 'https://smartsound.live/app/now' }: WelcomeProps) {
   return (
     <EmailLayout preview="Your baseline is captured — here's your first session.">
       <Text style={styles.h1}>Your baseline is set.</Text>

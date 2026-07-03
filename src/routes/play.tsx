@@ -1,7 +1,12 @@
 import { createFileRoute } from '@tanstack/react-router'
+import { css } from 'styled-system/css'
 import { SmartSoundScreen } from '~/components/SmartSoundScreen'
 
-/** The app itself — a single full-bleed screen, outside the /app nav chrome (Part 5.A). */
+/** The original single full-bleed screen, kept outside the /app nav chrome for direct access (Part 5.A). */
 export const Route = createFileRoute('/play')({
-  component: SmartSoundScreen,
+  component: () => (
+    <div className={css({ height: '100dvh' })}>
+      <SmartSoundScreen />
+    </div>
+  ),
 })

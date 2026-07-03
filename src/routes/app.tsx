@@ -1,161 +1,188 @@
-import { createFileRoute, Link, Outlet } from '@tanstack/react-router'
+import { createFileRoute, Link, Outlet, useRouterState } from '@tanstack/react-router'
+import type { ReactNode } from 'react'
+import { motion, useReducedMotion } from 'motion/react'
 import { css } from 'styled-system/css'
-import { flex, hstack, stack } from 'styled-system/patterns'
-import { useEngine } from '~/lib/engine-context'
-import { SignalRing } from '~/design/SignalRing'
-import { Button } from '~/components/ui/Button'
-import { Slider } from '~/components/ui/Slider'
+import { flex } from 'styled-system/patterns'
 import { TlxCheckIn } from '~/components/TlxCheckIn'
-import { signalColor, arousalLabel, pct } from '~/lib/format'
 
+/**
+ * AppShell — the GOAT-format app frame (Milestone 2). Full-bleed pure-black
+ * canvas, an <Outlet/> for the five tabs, and a glass bottom tab bar that
+ * lives in normal document flow (never overlaps page content, including the
+ * Now tab's own transport bar). Safe-area aware for iOS home-indicator devices.
+ */
 export const Route = createFileRoute('/app')({
   component: AppShell,
 })
 
-const NAV = [
-  { to: '/app/session', label: 'Session' },
-  { to: '/app/library', label: 'Library' },
-  { to: '/app/insights', label: 'Insights' },
-  { to: '/app/settings', label: 'Settings' },
-] as const
-
-function NavLink({ to, label }: { to: string; label: string }) {
-  return (
-    <Link
-      to={to}
-      className={css({
-        fontFamily: 'display',
-        fontSize: 'sm',
-        fontWeight: '500',
-        color: 'muted',
-        px: '3',
-        py: '2',
-        rounded: 'lg',
-        textDecoration: 'none',
-        transition: 'color token(durations.instant), background token(durations.instant)',
-        _hover: { color: 'text' },
-        '&[data-status=active]': { color: 'text', bg: 'signalFaint' },
-      })}
-      activeProps={{ 'data-status': 'active' }}
-    >
-      {label}
-    </Link>
-  )
+interface Tab {
+  to: string
+  label: string
+  icon: ReactNode
+  exact?: boolean
 }
+
+const iconAttrs = {
+  width: 21,
+  height: 21,
+  viewBox: '0 0 24 24',
+  fill: 'none' as const,
+  stroke: 'currentColor',
+  strokeWidth: 1.7,
+  strokeLinecap: 'round' as const,
+  strokeLinejoin: 'round' as const,
+  'aria-hidden': true,
+}
+
+const DiscoverIcon = () => (
+  <svg {...iconAttrs} strokeLinejoin="round">
+    <path d="M12 3l1.9 5.7L19.8 10.5 13.9 12.4 12 21l-1.9-8.6L4.2 10.5l5.9-1.8L12 3z" />
+  </svg>
+)
+const BrowseIcon = () => (
+  <svg {...iconAttrs}>
+    <circle cx="10.5" cy="10.5" r="6.3" />
+    <path d="M19.5 19.5l-4.6-4.6" />
+  </svg>
+)
+const NowIcon = () => (
+  <svg {...iconAttrs}>
+    <circle cx="12" cy="12" r="8.6" />
+    <path d="M7.4 12h2l1.4-3.6L13.2 15l1.3-3h2.1" />
+  </svg>
+)
+const InsightsIcon = () => (
+  <svg {...iconAttrs}>
+    <path d="M5 19v-6.4M12 19V7.6M19 19v-9.8" />
+  </svg>
+)
+const MeIcon = () => (
+  <svg {...iconAttrs}>
+    <circle cx="12" cy="8.2" r="3.3" />
+    <path d="M5.1 20c1.2-3.9 3.9-5.8 6.9-5.8s5.7 1.9 6.9 5.8" />
+  </svg>
+)
+
+const TABS: Tab[] = [
+  { to: '/app', label: 'Discover', icon: <DiscoverIcon />, exact: true },
+  { to: '/app/browse', label: 'Browse', icon: <BrowseIcon /> },
+  { to: '/app/now', label: 'Now', icon: <NowIcon /> },
+  { to: '/app/insights', label: 'Insights', icon: <InsightsIcon /> },
+  { to: '/app/me', label: 'Me', icon: <MeIcon /> },
+]
 
 function AppShell() {
-  return (
-    <div className={css({ display: 'grid', gridTemplateRows: '1fr auto', height: '100dvh' })}>
-      <div className={css({ display: 'grid', gridTemplateColumns: { base: '1fr', md: '232px 1fr' }, minHeight: 0 })}>
-        {/* Left rail (desktop) */}
-        <aside
-          className={css({
-            display: { base: 'none', md: 'flex' },
-            flexDir: 'column',
-            gap: '1',
-            borderRight: '1px solid token(colors.hairline)',
-            p: '5',
-          })}
-        >
-          <Link to="/" className={hstack({ gap: '2.5', textDecoration: 'none', color: 'text', mb: '6' })}>
-            <span className={css({ w: '2.5', h: '2.5', rounded: 'full', bg: 'signal', boxShadow: '0 0 12px token(colors.signal)' })} />
-            <span className={css({ fontFamily: 'display', fontWeight: '600', fontSize: 'lg' })}>SmartSound</span>
-          </Link>
-          {NAV.map((n) => <NavLink key={n.to} {...n} />)}
-        </aside>
-
-        {/* Mobile top nav + scrollable content */}
-        <div className={css({ display: 'flex', flexDir: 'column', minHeight: 0 })}>
-          <nav
-            className={hstack({
-              gap: '1',
-              display: { base: 'flex', md: 'none' },
-              px: '4',
-              py: '3',
-              borderBottom: '1px solid token(colors.hairline)',
-              overflowX: 'auto',
-            })}
-          >
-            {NAV.map((n) => <NavLink key={n.to} {...n} />)}
-          </nav>
-          <main className={css({ overflowY: 'auto', flex: 1, px: { base: '5', md: '10' }, py: { base: '6', md: '8' } })}>
-            <Outlet />
-          </main>
-        </div>
-      </div>
-
-      <NowPlaying />
-      <TlxCheckIn />
-    </div>
-  )
-}
-
-function NowPlaying() {
-  const { status, profile, params, arousal, reading, activeScenario, getSpectrum, getPulse, stop, setNeuralIntensity } = useEngine()
-  const color = signalColor(arousal)
-
-  if (status === 'idle') {
-    return (
-      <div
-        className={flex({
-          justify: 'space-between',
-          align: 'center',
-          borderTop: '1px solid token(colors.hairline)',
-          px: { base: '5', md: '10' },
-          py: '3',
-          bg: 'panel',
-        })}
-      >
-        <span className={css({ color: 'muted', fontSize: 'sm' })}>Nothing playing.</span>
-        <Link to="/app/library">
-          <Button size="sm" variant="outline">Open library</Button>
-        </Link>
-      </div>
-    )
-  }
+  const pathname = useRouterState({ select: (s) => s.location.pathname })
+  const isNow = pathname.startsWith('/app/now')
 
   return (
     <div
       className={css({
         display: 'grid',
-        gridTemplateColumns: { base: 'auto 1fr auto', md: '260px 1fr 260px' },
-        alignItems: 'center',
-        gap: '4',
-        borderTop: '1px solid token(colors.hairline)',
-        px: { base: '4', md: '8' },
-        py: '3',
-        bg: 'panel',
-        backdropFilter: 'blur(16px)',
+        gridTemplateRows: '1fr auto',
+        height: '100dvh',
+        bg: 'bgBase',
+        color: 'text',
+        overflow: 'hidden',
       })}
     >
-      <div className={hstack({ gap: '3' })}>
-        <div style={{ width: 44, height: 44 }}>
-          <SignalRing arousal={arousal} color={color} getSpectrum={getSpectrum} getPulse={getPulse} size={44} />
-        </div>
-        <div className={stack({ gap: '0' })}>
-          <span className={css({ fontFamily: 'display', fontWeight: '600', fontSize: 'sm' })}>
-            {activeScenario ? activeScenario.name : profile.label}
-          </span>
-          <span className={css({ fontFamily: 'mono', fontSize: '2xs', color: 'muted' })}>
-            {activeScenario ? `${activeScenario.phase} · ${arousalLabel(arousal)}` : arousalLabel(arousal)}
-          </span>
-        </div>
-      </div>
+      <main className={css({ overflowY: isNow ? 'hidden' : 'auto', minHeight: 0, WebkitOverflowScrolling: 'touch' })}>
+        {isNow ? (
+          <div className={css({ height: '100%' })}>
+            <Outlet />
+          </div>
+        ) : (
+          <div className={css({ maxW: '1120px', mx: 'auto', px: { base: '5', md: '9' }, py: { base: '7', md: '10' } })}>
+            <Outlet />
+          </div>
+        )}
+      </main>
 
-      <div className={css({ display: { base: 'none', md: 'flex' }, flexDir: 'column', gap: '1.5', maxW: '360px', mx: 'auto', width: 'full' })}>
-        <div className={flex({ justify: 'space-between' })}>
-          <span className={css({ fontFamily: 'mono', fontSize: '2xs', color: 'muted' })}>NEURAL EFFECT</span>
-          <span className={`tabular ${css({ fontFamily: 'mono', fontSize: '2xs', color: 'signal' })}`}>{pct(params.neuralDepth)}%</span>
-        </div>
-        <Slider label="Neural effect intensity" value={params.neuralDepth} onValueChange={setNeuralIntensity} />
-      </div>
-
-      <div className={hstack({ gap: '4', justify: 'flex-end' })}>
-        <span className={`tabular ${css({ fontFamily: 'mono', fontSize: '2xs', color: 'muted', display: { base: 'none', sm: 'block' } })}`}>
-          {reading.active ? `${Math.round(reading.hr)} BPM` : `${Math.round(params.entrainmentHz)} Hz`}
-        </span>
-        <Button size="sm" variant="danger" onClick={() => void stop()}>Stop</Button>
-      </div>
+      <TabBar pathname={pathname} />
+      <TlxCheckIn />
     </div>
+  )
+}
+
+function TabBar({ pathname }: { pathname: string }) {
+  const reduce = useReducedMotion()
+
+  return (
+    <nav
+      aria-label="Primary"
+      className={flex({
+        justify: 'center',
+        position: 'relative',
+        zIndex: '20',
+        borderTop: '1px solid token(colors.glassBorder)',
+        bg: 'glassFill',
+        px: '3',
+        pt: '2',
+        pb: 'calc(8px + env(safe-area-inset-bottom))',
+      })}
+      style={{ backdropFilter: 'blur(var(--glass-blur)) saturate(1.6)', WebkitBackdropFilter: 'blur(var(--glass-blur)) saturate(1.6)' }}
+    >
+      <div className={flex({ w: 'full', maxW: '560px', justify: 'space-between', gap: '1' })}>
+        {TABS.map((tab) => {
+          const active = tab.exact ? pathname === tab.to : pathname.startsWith(tab.to)
+          return (
+            <Link
+              key={tab.to}
+              to={tab.to}
+              className={css({
+                position: 'relative',
+                display: 'flex',
+                flexDir: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '1',
+                flex: '1',
+                minH: '44px',
+                py: '1.5',
+                rounded: 'xl',
+                textDecoration: 'none',
+                WebkitTapHighlightColor: 'transparent',
+                touchAction: 'manipulation',
+                transition: 'background token(durations.instant)',
+                _hover: { bg: 'rgba(255,255,255,0.045)' },
+              })}
+            >
+              <span className={css({ color: active ? 'signal' : 'muted', transition: 'color token(durations.instant)', lineHeight: '0' })}>
+                {tab.icon}
+              </span>
+              <span
+                className={css({
+                  fontFamily: 'mono',
+                  fontSize: '2xs',
+                  letterSpacing: '0.06em',
+                  textTransform: 'uppercase',
+                  color: active ? 'signal' : 'faint',
+                  transition: 'color token(durations.instant)',
+                })}
+                style={{ fontSize: '9px' }}
+              >
+                {tab.label}
+              </span>
+              {active && (
+                <motion.span
+                  layoutId={reduce ? undefined : 'tab-dot'}
+                  aria-hidden
+                  className={css({
+                    position: 'absolute',
+                    bottom: '1px',
+                    width: '3.5',
+                    height: '3.5',
+                    rounded: 'full',
+                    bg: 'signal',
+                    boxShadow: '0 0 8px token(colors.signal)',
+                  })}
+                  transition={{ type: 'spring', stiffness: 500, damping: 32 }}
+                />
+              )}
+            </Link>
+          )
+        })}
+      </div>
+    </nav>
   )
 }

@@ -48,6 +48,13 @@ export function SmartSoundScreen() {
   const running = status === 'running'
   const attuned = bioStatus === 'active'
 
+  // Keep the pill selection in sync with the engine's active profile — e.g. a
+  // deep link (Discover/Browse → /app/now?state=…) starts a state before this
+  // component mounts, or a running scenario advances phases underneath it.
+  useEffect(() => {
+    setSelected(profile.key as TargetState)
+  }, [profile.key])
+
   useEffect(() => {
     if (!running) { setStartedAt(null); setElapsed(0); return }
     if (startedAt == null) setStartedAt(performance.now())
@@ -80,7 +87,8 @@ export function SmartSoundScreen() {
     <div
       className={css({
         position: 'relative',
-        minH: '100dvh',
+        minH: '100%',
+        height: '100%',
         bg: 'bgBase',
         display: 'grid',
         gridTemplateRows: '1fr auto',

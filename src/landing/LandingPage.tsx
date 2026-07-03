@@ -16,7 +16,7 @@ import { useEngine } from '~/lib/engine-context'
  * LandingPage — sells SmartSound and launches into it (Part 5.B). Pixel hero,
  * a brain-stem scroll carrying the story nodes, the real BiofeedbackRing as the
  * live demo, honest science copy, a Liquid Glass FAQ, and a final CTA. Every
- * CTA routes into /play — the running app. One design system, one GlassButton.
+ * CTA routes into /app — the GOAT-format app shell. One design system, one GlassButton.
  */
 const easeCalm = [0.22, 1, 0.36, 1] as const
 
@@ -69,7 +69,7 @@ function DemoRing() {
 
 export function LandingPage() {
   const navigate = useNavigate()
-  const launch = useCallback(() => void navigate({ to: '/play' }), [navigate])
+  const launch = useCallback(() => void navigate({ to: '/app' }), [navigate])
 
   return (
     <div className={css({ bg: 'bgBase', color: 'text', overflowX: 'hidden' })}>

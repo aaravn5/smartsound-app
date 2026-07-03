@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
 import { css } from 'styled-system/css'
 import { stack, hstack, flex } from 'styled-system/patterns'
@@ -7,23 +7,39 @@ import { arousalToLch, lchToCss, prefersReducedMotion } from '~/design/signal'
 import { getCheckIns } from '~/lib/calibration'
 import { pct } from '~/lib/format'
 
+/**
+ * Insights — real trends from real sessions (Milestone 2), GOAT editorial
+ * restyle. Only in-memory data persists in this build (no backend yet, §5 of
+ * the goal doc), so anything that would require cross-session history is a
+ * clearly-labelled empty state rather than fabricated numbers.
+ */
 export const Route = createFileRoute('/app/insights')({
   component: InsightsScreen,
 })
 
 function InsightsScreen() {
   const { baseline, profile, status, getArousalHistory } = useEngine()
+  const history = getArousalHistory()
+  const minutesThisSession = history.length > 1 ? (history[history.length - 1].t - history[0].t) / 60_000 : 0
 
   return (
-    <div className={stack({ gap: '6', maxW: '900px', mx: 'auto' })}>
-      <div className={stack({ gap: '1' })}>
-        <h1 className={css({ fontFamily: 'display', fontWeight: '600', fontSize: '3xl', letterSpacing: '-0.01em' })}>Insights</h1>
+    <div className={stack({ gap: '9' })}>
+      <header className={stack({ gap: '1' })}>
+        <h1 className={css({ fontFamily: 'display', fontWeight: '600', fontSize: { base: '3xl', md: '4xl' }, letterSpacing: '-0.02em' })}>
+          Insights
+        </h1>
         <p className={css({ color: 'muted' })}>Honest trends from your real sessions. No vanity metrics.</p>
+      </header>
+
+      <div className={css({ display: 'grid', gridTemplateColumns: { base: 'repeat(2, 1fr)', md: 'repeat(3, 1fr)' }, gap: '3' })}>
+        <Stat label="THIS SESSION" value={minutesThisSession > 0 ? minutesThisSession.toFixed(1) : '—'} unit="min" />
+        <Stat label="SAMPLES LOGGED" value={history.length > 0 ? `${history.length}` : '—'} unit="pts" />
+        <Stat label="CHECK-INS" value={`${getCheckIns().length}`} unit="total" />
       </div>
 
-      <section className={stack({ gap: '3', p: '6', bg: 'panel', border: '1px solid token(colors.hairline)', rounded: '2xl' })}>
-        <div className={flex({ justify: 'space-between', align: 'baseline' })}>
-          <h2 className={css({ fontFamily: 'display', fontWeight: '600', fontSize: 'lg' })}>Arousal vs target — this session</h2>
+      <section className={stack({ gap: '3', p: { base: '5', md: '7' }, bg: 'panel', border: '1px solid token(colors.hairline)', rounded: '3xl' })}>
+        <div className={flex({ justify: 'space-between', align: 'baseline', wrap: 'wrap', gap: '2' })}>
+          <h2 className={css({ fontFamily: 'display', fontWeight: '600', fontSize: 'lg' })}>Arousal vs. target — this session</h2>
           <span className={css({ fontFamily: 'mono', fontSize: '2xs', color: 'muted' })}>target: {profile.label}</span>
         </div>
         <ArousalTrace getHistory={getArousalHistory} target={profile.targetArousal} live={status === 'running'} />
@@ -56,13 +72,20 @@ function InsightsScreen() {
           </span>
         </section>
       </div>
+
+      <section className={stack({ gap: '2', p: '6', border: '1px dashed token(colors.hairline)', rounded: '2xl' })}>
+        <h2 className={css({ fontFamily: 'display', fontWeight: '600', fontSize: 'md' })}>Streaks &amp; weekly minutes</h2>
+        <p className={css({ color: 'muted', fontSize: 'sm', lineHeight: '1.5' })}>
+          Cross-session history needs an account (coming with Sign in) — this build keeps arousal samples in memory for the current session only. Streaks and a weekly total will appear here once sessions persist across days.
+        </p>
+      </section>
     </div>
   )
 }
 
 function Stat({ label, value, unit }: { label: string; value: string; unit: string }) {
   return (
-    <div className={stack({ gap: '0.5' })}>
+    <div className={stack({ gap: '0.5', p: '4', bg: 'panel', border: '1px solid token(colors.hairline)', rounded: 'xl' })}>
       <span className={css({ fontFamily: 'mono', fontSize: '2xs', color: 'muted' })}>{label}</span>
       <div className={flex({ gap: '1', align: 'baseline' })}>
         <span className={`tabular ${css({ fontFamily: 'display', fontWeight: '600', fontSize: '2xl' })}`}>{value}</span>
@@ -88,7 +111,6 @@ function ArousalTrace({ getHistory, target, live }: { getHistory: () => { t: num
     const draw = () => {
       const hist = getHistory()
       ctx.clearRect(0, 0, W, H)
-      // target band
       const ty = H - target * H
       ctx.fillStyle = 'color-mix(in oklab, ' + lchToCss(arousalToLch(target)) + ' 12%, transparent)'
       ctx.fillRect(0, ty - 14, W, 28)
@@ -126,11 +148,15 @@ function ArousalTrace({ getHistory, target, live }: { getHistory: () => { t: num
 
 function Adherence({ getHistory, target }: { getHistory: () => { t: number; a: number }[]; target: number }) {
   const hist = getHistory()
-  if (hist.length < 4) {
+  const adherence = useMemo(() => {
+    if (hist.length < 4) return null
+    const within = hist.filter((s) => Math.abs(s.a - target) <= 0.12).length
+    return within / hist.length
+  }, [hist, target])
+
+  if (adherence == null) {
     return <span className={css({ fontFamily: 'mono', fontSize: '2xs', color: 'muted' })}>Adherence appears once a session has run.</span>
   }
-  const within = hist.filter((s) => Math.abs(s.a - target) <= 0.12).length
-  const adherence = within / hist.length
   return (
     <span className={css({ fontFamily: 'mono', fontSize: '2xs', color: 'muted' })}>
       In-target adherence: <span className={css({ color: 'signal' })}>{pct(adherence)}%</span> of {hist.length} samples within ±0.12 of target.

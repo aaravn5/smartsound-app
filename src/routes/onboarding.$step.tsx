@@ -65,7 +65,7 @@ function Onboarding() {
   const finish = useCallback(async () => {
     stopAttune()
     await start(onboarding.intent)
-    navigate({ to: '/app/session' })
+    navigate({ to: '/app/now' })
   }, [start, stopAttune, navigate])
 
   if (step === 'intent') {

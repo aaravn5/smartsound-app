@@ -6,7 +6,7 @@ export interface CalibrationReminderProps {
   daysSince?: number
 }
 
-export default function CalibrationReminder({ sessionUrl = 'https://smartsound.live/app/session', daysSince = 5 }: CalibrationReminderProps) {
+export default function CalibrationReminder({ sessionUrl = 'https://smartsound.live/app/now', daysSince = 5 }: CalibrationReminderProps) {
   return (
     <EmailLayout preview="A quick check-in keeps the loop learning.">
       <Text style={styles.h1}>Keep the loop learning.</Text>
