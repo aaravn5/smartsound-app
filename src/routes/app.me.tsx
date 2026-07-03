@@ -124,7 +124,7 @@ function MeScreen() {
               </span>
               <h2 className={css({ fontFamily: 'display', fontWeight: '600', fontSize: '3xl', letterSpacing: '-0.02em' })}>Free</h2>
             </div>
-            <Link to="/app/paywall">
+            <Link to="/app/paywall" search={{ trigger: 'upsell' }}>
               <GlassButton variant="primary">Go Pro</GlassButton>
             </Link>
           </div>

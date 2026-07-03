@@ -32,7 +32,17 @@ const CameraIcon = () => (
   </svg>
 )
 
-export function SmartSoundScreen() {
+export interface SmartSoundScreenProps {
+  /**
+   * Optional gate checked right before a session begins (not on pause/resume
+   * mid-session). Return `false` to block the start — e.g. the free daily cap
+   * (Milestone 4). Callers own the redirect/UX; this only decides go/no-go.
+   * Omit for unchanged behavior (used by the legacy `/play` route).
+   */
+  onBeginAttempt?: () => boolean
+}
+
+export function SmartSoundScreen({ onBeginAttempt }: SmartSoundScreenProps = {}) {
   const {
     status, profile, params, arousal, reading, bioStatus,
     start, stop, selectState, setNeuralIntensity, startAttune, stopAttune,
@@ -73,10 +83,11 @@ export function SmartSoundScreen() {
   }, [running, selectState])
 
   const togglePlay = useCallback(() => {
+    if (!running && onBeginAttempt && !onBeginAttempt()) return
     setBootKey((k) => k + 1) // pixel assemble / dissolve on both start and stop
     if (running) void stop()
     else void start(selected)
-  }, [running, stop, start, selected])
+  }, [running, stop, start, selected, onBeginAttempt])
 
   const toggleAttune = useCallback(() => {
     if (attuned) stopAttune()
