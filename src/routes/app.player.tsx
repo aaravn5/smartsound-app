@@ -204,9 +204,14 @@ function PlayerScreen() {
 
       <div
         className={css({
-          position: 'relative',
+          position: 'absolute',
+          inset: '0',
           zIndex: '1',
-          height: '100%',
+          // Mirror app.tsx's tab-bar-safe `<main>` clipping: the Scene
+          // above stays full-bleed, but this scrollable content layer stops
+          // short of the floating tab bar's footprint so controls can never
+          // render behind it on first paint (not just after scrolling).
+          bottom: 'calc(env(safe-area-inset-bottom) + 96px)',
           overflowY: 'auto',
           WebkitOverflowScrolling: 'touch',
           display: 'flex',
