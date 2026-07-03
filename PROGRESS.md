@@ -1,47 +1,32 @@
-# SmartSound build — progress (Fable 5 /goal, Part 5 of COMPLETE.md)
+# SmartSound — build progress
 
-Branch: `landing-reskin-fable5` (kept off `main` for easy whole-diff review per Part 7).
+Branch: `landing-reskin-fable5`. Live (frontend): **http://2.25.76.220** (`/` landing, `/app` GOAT app, `/play` legacy).
 
-## Done & verified
-- **App reskin (Part 5.A)** — new single full-bleed screen at **`/play`**, no nav chrome,
-  reskinned over the existing rPPG + audio engine (consumed via `useEngine`, not rewritten):
-  - `GlassButton.tsx` — the one shared native button (spring press, cursor specular, sheen, 44px, focus ring).
-  - `BiofeedbackRing.tsx` — heartbeat-driven pulse from live rPPG, cyan→violet stroke that cools/warms
-    with HR, per-beat glow + expanding shells, **pixel-assemble boot** on the `--pixel-size` grid.
-  - `HeartRateReadout.tsx` — Oura-style HR + trend, no chrome.
-  - `SmartSoundScreen.tsx` — ring + readout + state pills + Neural slider + frosted glass transport bar
-    + faint pixel-grid texture; pixel-assemble replays on session start/stop.
-- **Landing (Part 5.B)** at **`/`**:
-  - `PixelHero.tsx` — WebGL points field (clip-space shader), cursor-repel with screen-space falloff,
-    cool→warm drift, adaptive density, pauses under reduced-motion.
-  - `BrainStemScroll.tsx` + `BrainCanvas.tsx` — sticky low-poly neural mesh, scroll-driven glowing
-    brain-stem, content nodes fade/slide in (`whileInView`) with synapse dots; collapses to a plain
-    fade sequence on mobile.
-  - `FaqAccordion.tsx` — Liquid Glass accordion.
-  - `LandingPage.tsx` — nav, pixel hero, How-it-works, live **real-`BiofeedbackRing`** demo, honest
-    science copy, FAQ, final CTA. Every CTA → `/play`.
-- **Tokens** — Part 4 added to `panda.config.ts` (pure-black `bgBase`, `ringCool/ringWarm`, glass tokens,
-  `--pixel-size`, `--ease-calm`) + raw CSS vars for shaders.
-- **Verification (Playwright, real Chrome):** landing (desktop + mobile), `/play`, and the brain-stem
-  section all render; **0 console errors, 0 warnings** on `/` and `/play`; `npm run typecheck` PASS;
-  `npm run build` PASS. 3D split into async chunks (react-three-fiber loads after first paint).
+## Done & verified (typecheck + build pass, 0 console errors, Playwright-checked, committed)
+- **v1 (COMPLETE.md Part 5):** app reskin (`/play`) over the rPPG+audio engine + landing — built, deployed.
+- **M1 Design System v2:** distinctive self-hosted-via-Fontshare faces (**Clash Display / General Sans / JetBrains Mono / Fraunces** — no basic fonts), richer OKLCH signal arc, pixel utilities (`pixel.ts`, `PixelDissolve`, `PixelSkeleton`), **touch + pointer** reactive pixel hook, pixel favicon.
+- **M2 GOAT-format app shell:** Discover / Browse / Now / Insights / Me + glass bottom nav, editorial curated rails, pixel avatar, Free membership card. Landing CTA → `/app`. Onboarding gate.
+- **M4 Paywall + free-cap UX:** GOAT-membership Free/Pro/Studio ($0 / $9.99mo·$79yr / $19.99mo·$179yr), monthly/annual with real savings, honest no-fake-purchase CTA, `/legal` stub, **20-min/1-session client-side daily cap** (17min warn → 20min stop → paywall) wired without touching the engine.
+- **M6 Landing v2:** the neural mesh whose **brain-stem branches** to labeled sections (How-it-works / Science / **Pricing** / FAQ / Legal / Launch) with connectors + synapse pulses; new pricing + legal nodes; fixed a real sticky-positioning bug.
+- **Onboarding v2:** goal → calibrate → consent → account (Apple/Google buttons, honest guest fallback) → ready; PixelDissolve transitions; one-time soft gate.
+- **In-app pixelation pass:** PixelDissolve on the session screen, shell-wide pixel-noise texture, PixelSkeleton empty states (no spinners).
+- **Backend scaffold (`server/`):** Hono + `node:sqlite` + `arctic` (Google/Apple OAuth) + `stripe` + usage metering; **server-authoritative Free cap**; every unset-secret endpoint returns 503 `not_configured`; `src/lib/api.ts` frontend client. Compiles + smoke-tested (`/api/me`→401, `/api/auth/google`→503, 6 tables migrated).
+- **Security pass (audit + hardening):** parameterized SQL, signed httpOnly session, OAuth state/PKCE, Stripe raw-body webhook verify, IDOR-safe authz confirmed DONE-RIGHT. Fixed: prod fail-safe for `SESSION_SECRET`, rate limiting (auth/billing/session), Apple state-cookie SameSite, CSRF origin-check (webhook + OAuth-callback exempt), `secureHeaders`, capped `arousalSamples`. Verified live (429/403/headers).
 
-## Blocked — needs your authorization
-- **Public deploy.** This session is the VPS (`2.25.76.220`), ufw inactive, port 80 free — but the
-  sandbox guardrail blocked me from binding the server to `0.0.0.0` (public exposure) without your
-  explicit OK. The build is deploy-ready and running locally on `127.0.0.1:4174`. To go live, either:
-  - **Serve on the VPS (recommended):** `cd /root/projects/smartsound && setsid npx vite preview --host 0.0.0.0 --port 80 --strictPort >/tmp/ss.log 2>&1 & disown` → then **http://2.25.76.220** (works on phones, clean port). Run it yourself (that's your authorization), or tell me to.
-  - **GitHub Pages:** merge this branch to `main` and push — the existing Action deploys (note: SPA fallback is in the workflow; historically flaky for this repo).
+## Blocked — needs the owner's account setup (drop into `server/.env`, then I wire + verify)
+- **Google OAuth:** `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_REDIRECT_URI`
+- **Apple Sign-in:** `APPLE_CLIENT_ID`, `APPLE_TEAM_ID`, `APPLE_KEY_ID`, `APPLE_PRIVATE_KEY`, `APPLE_REDIRECT_URI`
+- **Stripe:** `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PRICE_PRO_MONTH/PRO_YEAR/STUDIO_MONTH/STUDIO_YEAR`
+- Plus `SESSION_SECRET`, `PUBLIC_ORIGIN` (see `server/.env.example`).
 
-## Decisions (rationale)
-- **Kept Panda CSS, did not add Tailwind** (Part 5 lists Tailwind). Reason: the existing app is Panda,
-  and Part 5.C mandates ONE design system and the SAME `GlassButton` across app + landing. Bolting on
-  Tailwind would create a second styling system and risk a destructive rewrite of the working engine
-  integration. Panda delivers the identical Part 4 tokens + the shared button; `motion` (already present)
-  is Framer Motion; Three.js/R3F added for 3D. Net: the spec's *intent* (one system, Framer Motion, R3F,
-  shared button) is met faithfully; only the CSS-utility mechanism differs, and for a good reason.
-- **App at `/play`** (new route) rather than replacing `/app`'s multi-tab shell — keeps the existing
-  `/app/*` build intact (no regression) while giving the spec's single full-bleed, no-chrome screen.
-- **No postprocessing bloom** on the 3D yet — additive materials carry the glow; bloom reserved to avoid
-  a runtime-crash risk in an unattended build. Easy follow-up.
-- **Higgsfield** not used — per Part 5.C ("sparingly, if at all") everything is hand-built shaders/geometry/CSS.
+## Next (once accounts exist)
+1. Wire frontend `src/lib/api.ts` into onboarding (real sign-in), Now (server cap), Me (real plan), Insights (server data).
+2. Run the backend service + reverse-proxy `/api/*` (caddy/nginx) + systemd for persistence (needs a system-service authorization).
+3. End-to-end verify sign-in (both providers) + a Stripe test-mode purchase → Pro unlock.
+4. Then **shayr** (product 2: Kalshi-for-stocks, virtual "shayrs") — its own spec + build, same protocol.
+
+## Decisions
+- Kept **Panda CSS** (not Tailwind) so app + landing share ONE system and the SAME GlassButton (see prior note).
+- App = `/app` GOAT shell; `/play` kept as legacy standalone.
+- `node:sqlite` instead of better-sqlite3 (no native toolchain in the build env) — swap is one file.
+- All coding delegated to Sonnet subagents; orchestration + verification + commits by the lead. Higgsfield reserved (unused — hand-built everything, per the 10-credit budget).
