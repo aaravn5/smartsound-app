@@ -212,11 +212,11 @@ export function ArousalCurveChart({ samples, target }: { samples: ArousalSample[
         </defs>
 
         {/* recessive baseline */}
-        <line x1="0" y1={baseY} x2={plotW} y2={baseY} stroke="rgba(255,255,255,0.14)" strokeWidth="1" />
+        <line x1="0" y1={baseY} x2={plotW} y2={baseY} stroke="var(--ss-control-track)" strokeWidth="1" />
 
         {/* target reference — recessive, dashed */}
-        <line x1="0" y1={targetY} x2={plotW} y2={targetY} stroke="rgba(255,255,255,0.30)" strokeWidth="1" strokeDasharray="3 4" />
-        <text x="0" y={targetY - 5} fontSize="8.5" fill="rgba(235,235,248,0.5)" style={{ fontVariantNumeric: 'tabular-nums' }}>
+        <line x1="0" y1={targetY} x2={plotW} y2={targetY} stroke="var(--ss-line-strong)" strokeWidth="1" strokeDasharray="3 4" />
+        <text x="0" y={targetY - 5} fontSize="8.5" fill="var(--ss-ink-soft)" style={{ fontVariantNumeric: 'tabular-nums' }}>
           Target · {Math.round(target * 100)}%
         </text>
 

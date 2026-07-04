@@ -1,1 +1,123 @@
 @layer reset, base, tokens, recipes, utilities;
+
+/*
+ * SmartSound theming — authored UNLAYERED on purpose.
+ *
+ * Panda emits its token defaults in @layer tokens (order: reset, base, tokens,
+ * recipes, utilities — later wins). The dark palette IS those defaults, and a
+ * light override placed in globalCss would land in @layer base and LOSE to the
+ * tokens layer. Unlayered rules beat every layer regardless of specificity, so
+ * overriding the raw `--colors-*` vars here is what actually flips the palette.
+ * SmartSound's semantic tokens reference the raw ones (--colors-bg: var(--colors-base),
+ * --colors-text: var(--colors-label), …), so overriding the raw vars cascades
+ * through the whole app — raw- and semantic-token usages alike.
+ *
+ * Dark is native and left untouched (Panda's defaults). Only "Daylight" is
+ * authored below.
+ */
+
+/* ── Theme-flipping helper vars ───────────────────────────────────────────────
+ *
+ * A handful of surfaces use hardcoded, dark-assuming rgba values inline (light
+ * ink over the scene; white control tracks). These vars carry the exact dark
+ * originals by default so dark stays byte-identical, and flip to deep-slate /
+ * dark-on-light equivalents under Daylight. */
+:root {
+  --ss-ink-strong: rgba(235, 235, 248, 0.84);
+  --ss-ink-body: rgba(235, 235, 248, 0.72);
+  --ss-ink-soft: rgba(235, 235, 248, 0.62);
+  --ss-ink-dim: rgba(235, 235, 248, 0.52);
+  --ss-control-track: rgba(255, 255, 255, 0.14);
+  --ss-control-track-soft: rgba(255, 255, 255, 0.06);
+  --ss-line-strong: rgba(255, 255, 255, 0.3);
+}
+
+/* ── Daylight — a calm, airy morning palette ──────────────────────────────────
+ *
+ * Soft cool off-white canvas (never pure white), deep-slate ink, muted slates
+ * for the secondary hierarchy. Body text clears AA+ (≥4.5:1) against the
+ * canvas. Glass becomes light frosted white; strokes become faint slate. */
+:root[data-theme='light'] {
+  color-scheme: light;
+
+  /* Canvas — soft warm-cool off-white, with a touch more depth beneath. */
+  --colors-base: #f4f6fb;
+  --colors-base-deep: #eef1f8;
+
+  /* Ink hierarchy — deep slate, softening down the scale. */
+  --colors-label: rgba(24, 31, 48, 0.94);
+  --colors-secondary-label: rgba(30, 38, 58, 0.68);
+  --colors-tertiary-label: rgba(35, 43, 64, 0.55);
+  --colors-quaternary-label: rgba(40, 48, 70, 0.48);
+  --colors-separator: rgba(15, 23, 42, 0.1);
+
+  /* Liquid Glass — light frosted white over the daylight wash. */
+  --colors-glass-fill: rgba(255, 255, 255, 0.55);
+  --colors-glass-fill-strong: rgba(255, 255, 255, 0.68);
+  --colors-glass-fill-soft: rgba(255, 255, 255, 0.5);
+  --colors-glass-stroke: rgba(15, 23, 42, 0.08);
+  --colors-glass-stroke-strong: rgba(15, 23, 42, 0.14);
+  --colors-glass-specular: rgba(255, 255, 255, 0.7);
+  --colors-glass-fallback: rgba(255, 255, 255, 0.92);
+
+  /* Plain-name mirror vars (inline styles / canvas that can't read tokens). */
+  --glass-fill: rgba(255, 255, 255, 0.55);
+  --glass-stroke: rgba(15, 23, 42, 0.08);
+
+  /* Helper vars — deep-slate ink + dark-on-light control tracks. */
+  --ss-ink-strong: rgba(24, 31, 48, 0.86);
+  --ss-ink-body: rgba(30, 38, 58, 0.7);
+  --ss-ink-soft: rgba(35, 43, 64, 0.58);
+  --ss-ink-dim: rgba(40, 48, 70, 0.52);
+  --ss-control-track: rgba(15, 23, 42, 0.14);
+  --ss-control-track-soft: rgba(15, 23, 42, 0.08);
+  --ss-line-strong: rgba(15, 23, 42, 0.28);
+}
+
+/* ── Always-dark immersive surfaces ───────────────────────────────────────────
+ *
+ * The full-screen Player and the Today hero card are cinematic, scene-backed
+ * surfaces — like Calm's / Endel's session players, they stay DARK in both
+ * themes (their text and glass sit over an inherently dark landscape). Daylight
+ * applies to the browsable chrome, not these. `.ss-scene-dark` re-asserts the
+ * dark token originals for its subtree so, under Daylight, everything inside
+ * resolves dark-correct again — no per-element color churn. Higher specificity
+ * than the :root[data-theme='light'] block above, so it wins for the subtree. */
+:root[data-theme='light'] .ss-scene-dark {
+  color-scheme: dark;
+  /* Raw vars — for anything used directly (glass, canvas). */
+  --colors-base: oklch(0.145 0.03 275);
+  --colors-base-deep: oklch(0.11 0.025 278);
+  --colors-label: rgba(248, 247, 252, 0.96);
+  --colors-secondary-label: rgba(235, 235, 248, 0.72);
+  --colors-tertiary-label: rgba(230, 230, 246, 0.6);
+  --colors-quaternary-label: rgba(228, 228, 246, 0.56);
+  --colors-separator: rgba(255, 255, 255, 0.1);
+  /* Semantic vars — MUST be set directly. `--colors-text: var(--colors-label)`
+     is computed at :root, so overriding the raw --colors-label on a descendant
+     does NOT re-resolve it; the semantic alias inherits its already-computed
+     (light) value. Set each semantic var to the dark original explicitly. */
+  --colors-text: rgba(248, 247, 252, 0.96);
+  --colors-muted: rgba(235, 235, 248, 0.72);
+  --colors-faint: rgba(230, 230, 246, 0.6);
+  --colors-ghost: rgba(228, 228, 246, 0.56);
+  --colors-hairline: rgba(255, 255, 255, 0.1);
+  --colors-bg: oklch(0.145 0.03 275);
+  --colors-bg-deep: oklch(0.11 0.025 278);
+  --colors-glass-fill: rgba(22, 26, 44, 0.4);
+  --colors-glass-fill-strong: rgba(20, 24, 40, 0.58);
+  --colors-glass-fill-soft: rgba(255, 255, 255, 0.07);
+  --colors-glass-stroke: rgba(255, 255, 255, 0.13);
+  --colors-glass-stroke-strong: rgba(255, 255, 255, 0.2);
+  --colors-glass-specular: rgba(255, 255, 255, 0.18);
+  --colors-glass-fallback: rgba(24, 28, 46, 0.94);
+  --glass-fill: rgba(22, 26, 44, 0.4);
+  --glass-stroke: rgba(255, 255, 255, 0.13);
+  --ss-ink-strong: rgba(235, 235, 248, 0.84);
+  --ss-ink-body: rgba(235, 235, 248, 0.72);
+  --ss-ink-soft: rgba(235, 235, 248, 0.62);
+  --ss-ink-dim: rgba(235, 235, 248, 0.52);
+  --ss-control-track: rgba(255, 255, 255, 0.14);
+  --ss-control-track-soft: rgba(255, 255, 255, 0.06);
+  --ss-line-strong: rgba(255, 255, 255, 0.3);
+}

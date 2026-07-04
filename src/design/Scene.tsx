@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { css, cx } from 'styled-system/css'
+import { useTheme } from '~/lib/theme'
 
 /**
  * Scene — the immersive Calm ambient canvas.
@@ -25,7 +26,7 @@ import { css, cx } from 'styled-system/css'
  * every layer in place (a still, richly-textured frame, not a bare gradient).
  */
 
-export type SceneVariant = 'dusk' | 'aurora' | 'ocean' | 'dawn'
+export type SceneVariant = 'dusk' | 'aurora' | 'ocean' | 'dawn' | 'forest'
 
 /**
  * One Higgsfield nature photograph per scene variant — the luxurious depth
@@ -36,9 +37,12 @@ export type SceneVariant = 'dusk' | 'aurora' | 'ocean' | 'dawn'
  */
 export const VARIANT_IMAGE: Record<SceneVariant, string> = {
   dusk: '/scenes/dusk.webp',
-  aurora: '/scenes/dusk.webp',
+  // aurora now has its own Higgsfield night-aurora lake shot (was borrowing dusk).
+  aurora: '/scenes/aurora.webp',
   ocean: '/scenes/ocean.webp',
   dawn: '/scenes/dawn.webp',
+  // Misty god-ray pine forest — the grounding scene for calm.
+  forest: '/scenes/forest.webp',
 }
 
 interface SceneColors {
@@ -93,6 +97,18 @@ const SCENES: Record<SceneVariant, SceneColors> = {
     cloudA: 'radial-gradient(circle, rgba(253, 186, 116, 0.15) 0%, transparent 72%)',
     cloudB: 'radial-gradient(circle, rgba(255, 255, 255, 0.05) 0%, transparent 68%)',
     bloom: 'radial-gradient(ellipse 42% 30% at 50% 4%, rgba(255, 214, 179, 0.26) 0%, transparent 72%)',
+  },
+  // Misty pine forest with warm god-rays — sage/teal greens, a soft sunlit
+  // bloom from the top matching the photograph's light shafts.
+  forest: {
+    base: 'linear-gradient(172deg, #22332B 0%, #1B2E28 34%, #16282A 62%, #0C1A1C 100%)',
+    meshA:
+      'radial-gradient(ellipse 60% 48% at 44% 8%, rgba(196, 214, 168, 0.30) 0%, transparent 66%), radial-gradient(ellipse 50% 40% at 80% 14%, rgba(120, 180, 150, 0.22) 0%, transparent 64%)',
+    meshB:
+      'radial-gradient(ellipse 58% 46% at 66% 64%, rgba(52, 120, 96, 0.34) 0%, transparent 70%), radial-gradient(ellipse 44% 36% at 16% 84%, rgba(170, 205, 165, 0.12) 0%, transparent 62%)',
+    cloudA: 'radial-gradient(circle, rgba(196, 224, 190, 0.14) 0%, transparent 72%)',
+    cloudB: 'radial-gradient(circle, rgba(255, 255, 255, 0.05) 0%, transparent 68%)',
+    bloom: 'radial-gradient(ellipse 40% 32% at 52% 2%, rgba(238, 240, 210, 0.30) 0%, transparent 72%)',
   },
 }
 
@@ -311,6 +327,29 @@ function Sky({ variant, entering }: { variant: SceneVariant; entering: boolean }
   )
 }
 
+/**
+ * SceneLightWash — the Daylight overlay. The immersive scenes are painted for
+ * the dark canvas (deep indigo/ocean gradients); under Daylight this full-bleed
+ * wash floats above them and blooms the airy off-white canvas, keeping only a
+ * faint ghost of the living motion plus a soft accent glow at the top. Renders
+ * nothing in dark mode. Shared by both `Scene` (CSS sky) and `LivingScene` (3D).
+ */
+export function SceneLightWash() {
+  const light = useTheme() === 'light'
+  if (!light) return null
+  return (
+    <div
+      aria-hidden
+      className={css({ position: 'absolute', inset: '0', pointerEvents: 'none', zIndex: '1' })}
+      style={{
+        opacity: 0.9,
+        background:
+          'radial-gradient(ellipse 130% 74% at 50% -10%, color-mix(in oklab, var(--scene-accent) 22%, var(--colors-base)) 0%, var(--colors-base) 54%), var(--colors-base)',
+      }}
+    />
+  )
+}
+
 export interface SceneProps {
   variant?: SceneVariant
   className?: string
@@ -379,6 +418,9 @@ export function Scene({ variant = 'dusk', className }: SceneProps) {
             'linear-gradient(to bottom, rgba(5, 7, 18, 0.10) 0%, transparent 24%, transparent 58%, rgba(5, 7, 18, 0.42) 100%)',
         })}
       />
+
+      {/* Daylight — washes the dark sky to the airy morning canvas. */}
+      <SceneLightWash />
     </div>
   )
 }

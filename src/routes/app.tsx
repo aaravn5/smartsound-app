@@ -207,7 +207,7 @@ function TabBar({ pathname }: { pathname: string }) {
                     lineHeight: '0',
                     transition: 'color token(durations.gentle) ease',
                   })}
-                  style={{ color: active ? 'var(--scene-accent)' : 'rgba(235,235,248,0.52)' }}
+                  style={{ color: active ? 'var(--scene-accent)' : 'var(--ss-ink-dim)' }}
                 >
                   {tab.icon}
                 </span>
@@ -218,7 +218,7 @@ function TabBar({ pathname }: { pathname: string }) {
                     letterSpacing: '0.01em',
                     transition: 'color token(durations.gentle) ease',
                   })}
-                  style={{ color: active ? 'var(--scene-accent)' : 'rgba(235,235,248,0.52)' }}
+                  style={{ color: active ? 'var(--scene-accent)' : 'var(--ss-ink-dim)' }}
                 >
                   {tab.label}
                 </span>

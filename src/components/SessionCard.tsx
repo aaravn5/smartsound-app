@@ -16,9 +16,9 @@ import type { TargetState } from '~/engine/audio/types'
 export const STATE_SCENE: Record<TargetState, SceneVariant> = {
   focus: 'ocean',
   flow: 'aurora',
-  calm: 'dusk',
+  calm: 'forest',
   winddown: 'dawn',
-  sleep: 'dusk',
+  sleep: 'aurora',
 }
 
 export interface SessionCardProps {

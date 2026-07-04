@@ -238,7 +238,7 @@ function PaywallScreen() {
                 fontWeight: '600',
                 letterSpacing: '0.05em',
                 textTransform: 'uppercase',
-                color: 'rgba(235,235,248,0.8)',
+                color: 'var(--ss-ink-strong)',
               })}
             >
               Today’s free session is used
@@ -247,7 +247,7 @@ function PaywallScreen() {
           <h1 className={css({ m: '0', fontFamily: 'display', fontSize: 'title1', fontWeight: '700', color: 'text' })}>
             SmartSound Pro
           </h1>
-          <p className={css({ m: '0', mt: '1.5', maxW: '34ch', fontSize: 'subhead', lineHeight: '1.4', color: 'rgba(235,235,248,0.84)' })}>
+          <p className={css({ m: '0', mt: '1.5', maxW: '34ch', fontSize: 'subhead', lineHeight: '1.4', color: 'var(--ss-ink-strong)' })}>
             Unlimited sessions and the full library, whenever you need them.
           </p>
         </div>

@@ -1,4 +1,0 @@
-[    1165ms] [WARNING] [.WebGL-0xafc000f5000]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels @ http://127.0.0.1/app/player?state=calm:0
-[    1543ms] [WARNING] [.WebGL-0xafc000f5000]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels @ http://127.0.0.1/app/player?state=calm:0
-[    1707ms] [WARNING] [.WebGL-0xafc000f5000]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels @ http://127.0.0.1/app/player?state=calm:0
-[    1893ms] [WARNING] [.WebGL-0xafc000f5000]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels (this message will no longer repeat) @ http://127.0.0.1/app/player?state=calm:0

@@ -5,6 +5,7 @@ import { css, cx } from 'styled-system/css'
 import { LiquidGlass } from '~/design/LiquidGlass'
 import { ScreenTitle } from '~/components/SereneScreen'
 import { SettingsGroup, SettingsRow } from '~/components/SettingsList'
+import { ThemeToggle } from '~/components/ThemeToggle'
 import { useClickSound, useSfxEnabled } from '~/lib/click-sound'
 import { useDailyUsage, FREE_DAILY_MIN } from '~/lib/entitlements'
 
@@ -166,7 +167,7 @@ function SoundRow() {
           border: 'none',
           cursor: 'pointer',
           flexShrink: '0',
-          bg: 'rgba(255,255,255,0.16)',
+          bg: 'var(--ss-control-track)',
           transition: 'background token(durations.quick) ease',
           WebkitTapHighlightColor: 'transparent',
           '&[data-state=checked]': { bg: 'accent' },
@@ -294,6 +295,10 @@ function ProfileScreen() {
       </LiquidGlass>
 
       {/* Settings — grouped, honest disclosures in place of dead-end navigation. */}
+      <SettingsGroup title="Appearance">
+        <ThemeToggle />
+      </SettingsGroup>
+
       <SettingsGroup title="Sound">
         <SoundRow />
       </SettingsGroup>

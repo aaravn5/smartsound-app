@@ -229,7 +229,9 @@ function PlayerScreen() {
   const breathDuration = bioActive && reading.respiration > 0 ? 60 / reading.respiration : 6
 
   return (
-    <div className={css({ position: 'fixed', inset: '0', zIndex: '0', overflow: 'hidden' })}>
+    // ss-scene-dark: the immersive player stays dark in both themes (Calm/Endel
+    // style) — its text + glass sit over an inherently dark landscape.
+    <div className={cx('ss-scene-dark', css({ position: 'fixed', inset: '0', zIndex: '0', overflow: 'hidden' }))}>
       <LivingScene variant={scene} />
 
       <div
@@ -301,7 +303,7 @@ function PlayerScreen() {
                 fontWeight: '600',
                 letterSpacing: '0.08em',
                 textTransform: 'uppercase',
-                color: 'rgba(235,235,248,0.68)',
+                color: 'var(--ss-ink-body)',
               })}
             >
               SmartSound Session · {profile.label}
@@ -326,7 +328,7 @@ function PlayerScreen() {
                 fontSize: 'subhead',
                 fontWeight: '500',
                 letterSpacing: '0.01em',
-                color: 'rgba(235,235,248,0.72)',
+                color: 'var(--ss-ink-body)',
               })}`}
             >
               {band}
@@ -541,7 +543,7 @@ function PlayerScreen() {
                 fontWeight: '600',
                 letterSpacing: '0.14em',
                 textTransform: 'uppercase',
-                color: 'rgba(235,235,248,0.72)',
+                color: 'var(--ss-ink-body)',
               })}
             >
               {profile.label}
@@ -601,7 +603,7 @@ function PlayerScreen() {
                     flex: '1',
                     h: '5px',
                     borderRadius: 'capsule',
-                    bg: 'rgba(255,255,255,0.14)',
+                    bg: 'var(--ss-control-track)',
                   })}
                 >
                   <Slider.Range
@@ -644,7 +646,7 @@ function PlayerScreen() {
                     borderRadius: 'full',
                     flexShrink: '0',
                     color: attuneOn ? 'signal' : 'faint',
-                    background: attuneOn ? 'signalFaint' : 'rgba(255,255,255,0.06)',
+                    background: attuneOn ? 'signalFaint' : 'var(--ss-control-track-soft)',
                     transition: 'color token(durations.gentle) ease, background token(durations.gentle) ease',
                   })}
                 >

@@ -1,6 +1,6 @@
 import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react'
 import { css, cx } from 'styled-system/css'
-import { FADE_MS, GRAIN_URL, NaturePhoto, Scene, useCrossfade, type SceneVariant } from './Scene'
+import { FADE_MS, GRAIN_URL, NaturePhoto, Scene, SceneLightWash, useCrossfade, type SceneVariant } from './Scene'
 
 /**
  * LivingScene — the interactive 3D ambient canvas (Today hero + Player sky).
@@ -75,6 +75,7 @@ const ACCENT: Record<SceneVariant, string> = {
   aurora: '#5EEAD4',
   ocean: '#7DD3FC',
   dawn: '#FDBA74',
+  forest: '#9AD1A8',
 }
 
 function hexToRgb(hex: string): [number, number, number] {
@@ -253,6 +254,9 @@ export function LivingScene({ variant = 'dusk', className }: LivingSceneProps) {
             'linear-gradient(to bottom, rgba(5, 7, 18, 0.10) 0%, transparent 24%, transparent 58%, rgba(5, 7, 18, 0.42) 100%)',
         })}
       />
+
+      {/* Daylight — washes the dark 3D sky to the airy morning canvas. */}
+      <SceneLightWash />
     </div>
   )
 }

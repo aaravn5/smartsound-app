@@ -1,7 +1,7 @@
 import { useRef } from 'react'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { motion, useReducedMotion, useScroll, useTransform } from 'motion/react'
-import { css } from 'styled-system/css'
+import { css, cx } from 'styled-system/css'
 import { LiquidGlass } from '~/design/LiquidGlass'
 import { LivingScene } from '~/design/LivingScene'
 import { SmartSoundRings } from '~/design/SmartSoundRings'
@@ -148,10 +148,13 @@ function TodayScreen() {
         style={reduceMotion ? undefined : { height: 'calc(60vh + 220px)', minHeight: '600px' }}
       >
         <div
-          className={css({
-            borderRadius: 'card',
-            overflow: 'hidden',
-          })}
+          className={cx(
+            'ss-scene-dark',
+            css({
+              borderRadius: 'card',
+              overflow: 'hidden',
+            }),
+          )}
           style={
             reduceMotion
               ? { height: '392px' }
@@ -192,7 +195,7 @@ function TodayScreen() {
                 fontWeight: '600',
                 letterSpacing: '0.08em',
                 textTransform: 'uppercase',
-                color: 'rgba(235,235,248,0.72)',
+                color: 'var(--ss-ink-body)',
               })}
             >
               {dayPart(now.getHours())} · Daily session
@@ -217,7 +220,7 @@ function TodayScreen() {
                 maxW: '32ch',
                 fontSize: 'subhead',
                 lineHeight: '1.5',
-                color: 'rgba(235,235,248,0.84)',
+                color: 'var(--ss-ink-strong)',
               })}
             >
               {daily.blurb}
@@ -253,7 +256,7 @@ function TodayScreen() {
                   fontSize: 'caption',
                   fontWeight: '500',
                   letterSpacing: '0.02em',
-                  color: 'rgba(235,235,248,0.62)',
+                  color: 'var(--ss-ink-soft)',
                 })}`}
               >
                 {daily.band} · {dailyMinutes} min

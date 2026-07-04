@@ -83,6 +83,16 @@ const PALETTES: Record<SceneVariant, PaletteSpec> = {
     orbB: '#FB9274',
     dust: '#FDBA74',
   },
+  forest: {
+    top: '#22332B',
+    mid: '#1B2E28',
+    low: '#0C1A1C',
+    cloud: '#C4D9B0',
+    haze: '#E4EAD2',
+    orbA: '#2E5B44',
+    orbB: '#9AD1A8',
+    dust: '#C4D9B0',
+  },
 }
 
 /** Hex → THREE.Color with raw sRGB components (no color-management rewrite). */

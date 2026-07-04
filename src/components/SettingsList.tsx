@@ -69,7 +69,7 @@ const systemBadge = css({
   fontWeight: '600',
   letterSpacing: '0.02em',
   color: 'faint',
-  bg: 'rgba(255,255,255,0.06)',
+  bg: 'var(--ss-control-track-soft)',
   border: '1px solid',
   borderColor: 'hairline',
   borderRadius: 'capsule',
