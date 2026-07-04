@@ -5,7 +5,9 @@ import * as Slider from '@radix-ui/react-slider'
 import { css, cx } from 'styled-system/css'
 import { LiquidGlass } from '~/design/LiquidGlass'
 import { LivingScene } from '~/design/LivingScene'
+import { PulseWave } from '~/design/PulseWave'
 import { SignalRing } from '~/design/SignalRing'
+import { VARIANT_IMAGE, type SceneVariant } from '~/design/Scene'
 import { STATE_SCENE } from '~/components/SessionCard'
 import { SciencePanel } from '~/components/SciencePanel'
 import { useClickSound } from '~/lib/click-sound'
@@ -56,6 +58,43 @@ function formatElapsed(ms: number): string {
   const m = Math.floor(total / 60)
   const s = total % 60
   return `${m}:${s.toString().padStart(2, '0')}`
+}
+
+// ── Calm-style scene switcher — pick the player's backdrop ─────────────────
+//
+// `auto` follows the state's own scene (STATE_SCENE); a manual pick persists
+// on this device. A real, wired preference — visual only, the audio engine
+// never changes because of it.
+
+type SceneChoice = SceneVariant | 'auto'
+
+const SCENE_PREF_KEY = 'ss_scene_override_v1'
+const SCENE_ORDER: SceneVariant[] = ['ocean', 'dusk', 'forest', 'dawn', 'aurora']
+const SCENE_NAME: Record<SceneVariant, string> = {
+  ocean: 'Ocean',
+  dusk: 'Dusk hills',
+  forest: 'Forest',
+  dawn: 'Dawn',
+  aurora: 'Aurora',
+}
+
+function readSceneChoice(): SceneChoice {
+  try {
+    const raw = window.localStorage.getItem(SCENE_PREF_KEY)
+    if (raw && (SCENE_ORDER as string[]).includes(raw)) return raw as SceneVariant
+  } catch {
+    // storage unavailable — fall through to auto
+  }
+  return 'auto'
+}
+
+function writeSceneChoice(choice: SceneChoice): void {
+  try {
+    if (choice === 'auto') window.localStorage.removeItem(SCENE_PREF_KEY)
+    else window.localStorage.setItem(SCENE_PREF_KEY, choice)
+  } catch {
+    // storage unavailable — the pick just won't persist
+  }
 }
 
 // ── icons — SF-symbol-flavored strokes, matching the shell's icon language ──
@@ -148,7 +187,14 @@ function PlayerScreen() {
   } = useEngine()
 
   const state = profile.key
-  const scene = STATE_SCENE[state]
+  // Calm-style scene choice: auto follows the state; a manual pick persists.
+  const [sceneChoice, setSceneChoice] = useState<SceneChoice>(() => readSceneChoice())
+  const scene = sceneChoice === 'auto' ? STATE_SCENE[state] : sceneChoice
+  const pickScene = (choice: SceneChoice) => {
+    playClick('tap')
+    setSceneChoice(choice)
+    writeSceneChoice(choice)
+  }
   const title = SOUNDSCAPES.find((s) => s.state === state)?.title ?? profile.label
   const band = BAND_LABEL[state]
   const running = status === 'running'
@@ -235,6 +281,10 @@ function PlayerScreen() {
     // style) — its text + glass sit over an inherently dark landscape.
     <div className={cx('ss-scene-dark', css({ position: 'fixed', inset: '0', zIndex: '0', overflow: 'hidden' }))}>
       <LivingScene variant={scene} />
+
+      {/* Beat-pulsed light-wave loop — slightly blurred, screen-blended,
+          intensity driven by the REAL low-band spectrum while running. */}
+      <PulseWave getSpectrum={getSpectrum} />
 
       <div
         className={css({
@@ -576,6 +626,82 @@ function PlayerScreen() {
               <SkipForwardIcon />
             </LiquidGlass>
           </div>
+
+          {/* Scenes — Calm's scene switcher: pick the backdrop, or Auto to
+              follow the state. Visual preference only; audio is untouched. */}
+          <LiquidGlass variant="card" className={css({ mb: '4' })}>
+            <div className={css({ px: '5', py: '4' })}>
+              <div className={css({ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: '3' })}>
+                <span className={css({ fontSize: 'subhead', fontWeight: '600', color: 'text' })}>
+                  Scene
+                </span>
+                <span className={css({ fontSize: 'footnote', fontWeight: '500', color: 'muted' })}>
+                  {sceneChoice === 'auto' ? `Auto · ${SCENE_NAME[STATE_SCENE[state]]}` : SCENE_NAME[sceneChoice]}
+                </span>
+              </div>
+              <div className={css({ display: 'flex', alignItems: 'center', gap: '2.5', overflowX: 'auto', pb: '1', scrollbarWidth: 'none', '&::-webkit-scrollbar': { display: 'none' } })}>
+                <button
+                  type="button"
+                  onClick={() => pickScene('auto')}
+                  aria-pressed={sceneChoice === 'auto'}
+                  aria-label="Scene: automatic — follows the session state"
+                  className={css({
+                    flexShrink: '0',
+                    h: '52px',
+                    px: '3.5',
+                    borderRadius: 'capsule',
+                    border: '1.5px solid',
+                    font: 'inherit',
+                    fontSize: 'footnote',
+                    fontWeight: '600',
+                    cursor: 'pointer',
+                    color: 'text',
+                    background: 'var(--ss-control-track-soft)',
+                    WebkitTapHighlightColor: 'transparent',
+                  })}
+                  style={{
+                    borderColor: sceneChoice === 'auto' ? 'var(--signal)' : 'transparent',
+                  }}
+                >
+                  Auto
+                </button>
+                {SCENE_ORDER.map((v) => (
+                  <button
+                    key={v}
+                    type="button"
+                    onClick={() => pickScene(v)}
+                    aria-pressed={sceneChoice === v}
+                    aria-label={`Scene: ${SCENE_NAME[v]}`}
+                    className={css({
+                      position: 'relative',
+                      flexShrink: '0',
+                      w: '76px',
+                      h: '52px',
+                      p: '0',
+                      borderRadius: 'control',
+                      border: '1.5px solid',
+                      overflow: 'hidden',
+                      cursor: 'pointer',
+                      background: 'rgba(10, 18, 38, 1)',
+                      WebkitTapHighlightColor: 'transparent',
+                    })}
+                    style={{
+                      borderColor: sceneChoice === v ? 'var(--signal)' : 'rgba(255,255,255,0.14)',
+                    }}
+                  >
+                    <img
+                      aria-hidden
+                      alt=""
+                      loading="lazy"
+                      decoding="async"
+                      src={VARIANT_IMAGE[v]}
+                      className={css({ position: 'absolute', inset: '0', w: '100%', h: '100%', objectFit: 'cover', pointerEvents: 'none' })}
+                    />
+                  </button>
+                ))}
+              </div>
+            </div>
+          </LiquidGlass>
 
           {/* Neural depth. */}
           <LiquidGlass variant="card" className={css({ mb: '4' })}>

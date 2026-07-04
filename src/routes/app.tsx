@@ -1,10 +1,11 @@
 import { createFileRoute, Link, Outlet, useRouterState } from '@tanstack/react-router'
-import { useRef } from 'react'
+import { useEffect, useRef } from 'react'
 import type { CSSProperties, ReactNode } from 'react'
 import { css } from 'styled-system/css'
 import { LiquidGlass } from '~/design/LiquidGlass'
 import { Scene, type SceneVariant } from '~/design/Scene'
 import { useClickSound } from '~/lib/click-sound'
+import { ensureDevPlan } from '~/lib/dev-access'
 import { MainScrollContext } from '~/lib/scroll-context'
 
 /**
@@ -94,6 +95,14 @@ function AppShell() {
   const pathname = useRouterState({ select: (s) => s.location.pathname })
   const tab = activeTab(pathname)
   const mainRef = useRef<HTMLElement>(null)
+
+  // Developer access: keep the elevated plan alive across the local-midnight
+  // rollover (the entitlements stub's fresh record resets plan to 'free').
+  useEffect(() => {
+    ensureDevPlan()
+    const id = window.setInterval(ensureDevPlan, 60_000)
+    return () => window.clearInterval(id)
+  }, [])
 
   return (
     <div

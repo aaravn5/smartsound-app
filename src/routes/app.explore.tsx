@@ -255,7 +255,9 @@ function ExploreScreen() {
   let cardIndex = 0
 
   return (
-    <>
+    // ss-scene-dark: Explore sits directly over the always-dark ambient scene
+    // in both themes (same reasoning as Today) — page ink must stay light.
+    <div className="ss-scene-dark">
       <ScreenTitle caption="Library" title="Explore" />
 
       <div
@@ -417,6 +419,6 @@ function ExploreScreen() {
           </section>
         )
       })}
-    </>
+    </div>
   )
 }

@@ -252,7 +252,10 @@ function TodayScreen() {
       }
 
   return (
-    <>
+    // ss-scene-dark on the WHOLE page: Today's content sits directly over the
+    // always-dark ambient photo in BOTH themes, so its ink must stay light —
+    // without this, Daylight flips the greeting/shelf titles to slate-on-dark.
+    <div className="ss-scene-dark">
       {/* Centered, time-based greeting over the scene — Calm's home opening. */}
       <header
         className={css({
@@ -529,6 +532,6 @@ function TodayScreen() {
       {recents && (
         <ShelfRow shelf={recents} reveal={reveal} reduceMotion={reduceMotion} delay={120} />
       )}
-    </>
+    </div>
   )
 }

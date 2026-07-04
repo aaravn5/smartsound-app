@@ -13,10 +13,12 @@ import type { TargetState } from '~/engine/audio/types'
  * (`ss-scene-dark`) in both themes — the photo is the surface.
  */
 
-/** One nature scene per engine state — the visual vocabulary Today + Explore share. */
+/** One nature scene per engine state — every state gets its OWN Higgsfield
+ * photograph (no sharing): focus→ocean, flow→dusk hills, calm→forest,
+ * winddown→dawn, sleep→aurora lake. */
 export const STATE_SCENE: Record<TargetState, SceneVariant> = {
   focus: 'ocean',
-  flow: 'aurora',
+  flow: 'dusk',
   calm: 'forest',
   winddown: 'dawn',
   sleep: 'aurora',

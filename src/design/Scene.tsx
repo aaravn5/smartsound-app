@@ -44,6 +44,25 @@ export const VARIANT_IMAGE: Record<SceneVariant, string> = {
   forest: '/scenes/forest.webp',
 }
 
+/**
+ * Live-video scene loops — an ambient Higgsfield video per variant (trees
+ * swaying, water rippling, aurora shimmering). Any variant with an entry
+ * renders a muted looping video (poster = its photo); variants without one
+ * fall back to the crisp photo + Ken-Burns + the LivingScene shader motion.
+ * Generating the five nature loops needs Higgsfield credits (the account is
+ * at 0 on the free plan) — drop files into /public/scenes and register them
+ * here as they land. Reduced motion always gets the still photo.
+ */
+export const VARIANT_VIDEO: Partial<Record<SceneVariant, string>> = {}
+
+/** True when the OS asks for reduced motion — video loops degrade to stills. */
+export function prefersStillScene(): boolean {
+  return (
+    typeof window !== 'undefined' &&
+    window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  )
+}
+
 interface SceneColors {
   base: string
   meshA: string
@@ -239,9 +258,25 @@ export interface NaturePhotoProps {
   className?: string
 }
 
-/** The crisp nature-photo layer, shared by `Scene`'s sky and `LivingScene`'s
- * 3D world so both surfaces carry the same clearly-visible landscape. */
+// A registered live-video loop — same deterministic box as the photo, no
+// Ken-Burns (the footage carries its own motion).
+const videoLayer = css({
+  position: 'absolute',
+  left: '0',
+  top: '0',
+  width: '100%',
+  height: '100%',
+  maxWidth: 'none',
+  pointerEvents: 'none',
+  objectFit: 'cover',
+})
+
+/** The crisp nature layer — a live Higgsfield video loop when the variant has
+ * one (still photo under reduced motion), otherwise the photo with its slow
+ * Ken-Burns drift. Shared by `Scene`'s sky and `LivingScene`'s 3D world. */
 export function NaturePhoto({ variant, className }: NaturePhotoProps) {
+  const video = VARIANT_VIDEO[variant]
+  const [still] = useState(prefersStillScene)
   return (
     <div
       aria-hidden
@@ -250,7 +285,21 @@ export function NaturePhoto({ variant, className }: NaturePhotoProps) {
         className,
       )}
     >
-      <img aria-hidden alt="" loading="lazy" decoding="async" src={VARIANT_IMAGE[variant]} className={photoLayer} />
+      {video && !still ? (
+        <video
+          aria-hidden
+          src={video}
+          poster={VARIANT_IMAGE[variant]}
+          autoPlay
+          muted
+          loop
+          playsInline
+          disablePictureInPicture
+          className={videoLayer}
+        />
+      ) : (
+        <img aria-hidden alt="" loading="lazy" decoding="async" src={VARIANT_IMAGE[variant]} className={photoLayer} />
+      )}
     </div>
   )
 }
