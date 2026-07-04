@@ -1,0 +1,80 @@
+- generic [ref=f11e3]:
+  - generic [ref=f11e5]:
+    - generic:
+      - img
+  - main [ref=f11e6]:
+    - generic [ref=f11e8]:
+      - generic:
+        - generic:
+          - generic:
+            - img
+        - generic:
+          - generic:
+            - img
+      - generic [ref=f11e13]:
+        - button "Done — back to Today" [ref=f11e15] [cursor=pointer]:
+          - img [ref=f11e17]
+        - generic [ref=f11e19]:
+          - paragraph [ref=f11e20]: SmartSound Session · Calm
+          - heading "Still" [level=1] [ref=f11e21]
+          - paragraph [ref=f11e22]: Alpha · ~10 Hz
+        - img "Signal ring — Alpha · ~10 Hz, Preview — begin to hear it live" [ref=f11e26]
+        - paragraph [ref=f11e27]: Preview — begin to hear it live
+        - generic [ref=f11e28]:
+          - generic [ref=f11e29]: 0:00
+          - generic [ref=f11e30]:
+            - button "10" [ref=f11e31] [cursor=pointer]:
+              - generic [ref=f11e33]: 10 min
+            - button "20" [ref=f11e34] [cursor=pointer]:
+              - generic [ref=f11e36]: 20 min
+            - button "45" [ref=f11e37] [cursor=pointer]:
+              - generic [ref=f11e39]: 45 min
+            - button "∞" [pressed] [ref=f11e40] [cursor=pointer]:
+              - generic [ref=f11e41]: ∞
+        - generic [ref=f11e42]:
+          - button "Previous state" [ref=f11e43] [cursor=pointer]:
+            - img [ref=f11e45]
+          - button "Play" [ref=f11e48] [cursor=pointer]:
+            - img [ref=f11e50]
+          - button "Next state" [ref=f11e52] [cursor=pointer]:
+            - img [ref=f11e54]
+        - generic [ref=f11e59]:
+          - generic [ref=f11e60]:
+            - generic [ref=f11e61]: Neural depth
+            - generic [ref=f11e62]: 38%
+          - slider "Neural depth" [ref=f11e67] [cursor=pointer]
+        - generic [ref=f11e71]:
+          - img [ref=f11e73]
+          - generic [ref=f11e76]:
+            - paragraph [ref=f11e77]: Attune
+            - paragraph [ref=f11e78]: Off — uses your front camera, on-device only
+          - switch "Toggle Attune camera" [ref=f11e79] [cursor=pointer]:
+            - generic [ref=f11e80]: "Off"
+        - button "The science How SmartSound works, honestly" [ref=f11e85] [cursor=pointer]:
+          - img [ref=f11e87]
+          - generic [ref=f11e89]:
+            - generic [ref=f11e90]: The science
+            - generic [ref=f11e91]: How SmartSound works, honestly
+          - img [ref=f11e92]
+  - navigation "Primary" [ref=f11e94]:
+    - generic [ref=f11e96]:
+      - link "Today" [ref=f11e97] [cursor=pointer]:
+        - /url: /app
+        - img [ref=f11e99]
+        - generic [ref=f11e102]: Today
+      - link "Explore" [ref=f11e103] [cursor=pointer]:
+        - /url: /app/explore
+        - img [ref=f11e105]
+        - generic [ref=f11e108]: Explore
+      - link "Player" [ref=f11e109] [cursor=pointer]:
+        - /url: /app/player
+        - img [ref=f11e111]
+        - generic [ref=f11e114]: Player
+      - link "Progress" [ref=f11e115] [cursor=pointer]:
+        - /url: /app/progress
+        - img [ref=f11e117]
+        - generic [ref=f11e121]: Progress
+      - link "Profile" [ref=f11e122] [cursor=pointer]:
+        - /url: /app/profile
+        - img [ref=f11e124]
+        - generic [ref=f11e128]: Profile

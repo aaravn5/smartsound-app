@@ -27,6 +27,20 @@ import { css, cx } from 'styled-system/css'
 
 export type SceneVariant = 'dusk' | 'aurora' | 'ocean' | 'dawn'
 
+/**
+ * One Higgsfield nature photograph per scene variant — the luxurious depth
+ * layer behind the gradient sky / 3D world. `aurora` borrows the twilight
+ * sky shot (both read as cool dusk light); `dusk` shares it too, `ocean` and
+ * `dawn` get their own. Always shown blurred + color-graded (see
+ * `NaturePhoto`) — never a flat literal photo.
+ */
+export const VARIANT_IMAGE: Record<SceneVariant, string> = {
+  dusk: '/scenes/dusk.webp',
+  aurora: '/scenes/dusk.webp',
+  ocean: '/scenes/ocean.webp',
+  dawn: '/scenes/dawn.webp',
+}
+
 interface SceneColors {
   base: string
   meshA: string
@@ -82,7 +96,42 @@ const SCENES: Record<SceneVariant, SceneColors> = {
   },
 }
 
-const FADE_MS = 1400
+export const FADE_MS = 1400
+
+/**
+ * useCrossfade — keeps the previous value mounted beneath the incoming one
+ * for `fadeMs`, so a value change (scene variant, nature photo) reads as a
+ * calm cross-fade rather than a hard cut. Shared by `Scene`'s gradient sky
+ * and `LivingScene`'s nature-photo layer.
+ */
+export function useCrossfade<T>(value: T, fadeMs = FADE_MS) {
+  const [items, setItems] = useState<{ value: T; id: number }[]>([{ value, id: 0 }])
+  const [fading, setFading] = useState<number | null>(null)
+  const nextId = useRef(1)
+
+  useEffect(() => {
+    setItems((prev) => {
+      if (prev[prev.length - 1]?.value === value) return prev
+      const id = nextId.current++
+      setFading(id)
+      return [...prev.slice(-1), { value, id }]
+    })
+  }, [value])
+
+  useEffect(() => {
+    if (fading === null) return
+    const raf = requestAnimationFrame(() => requestAnimationFrame(() => setFading(null)))
+    const timer = window.setTimeout(() => {
+      setItems((prev) => prev.slice(-1))
+    }, fadeMs + 100)
+    return () => {
+      cancelAnimationFrame(raf)
+      window.clearTimeout(timer)
+    }
+  }, [fading, fadeMs])
+
+  return { items, fading }
+}
 
 // A single tileable film-grain texture — an SVG-turbulence noise square,
 // generated once and reused everywhere. No network request, no per-frame
@@ -118,6 +167,71 @@ const cloudBase = css({
   },
 })
 
+// ── nature-photo mood layer ─────────────────────────────────────────────────
+//
+// A Higgsfield nature photograph, always shown as atmosphere rather than a
+// literal image: heavily blurred + darkened + desaturated-then-regraded to
+// the variant palette, drifting in a slow Ken-Burns pan (transform only, GPU
+// cheap, static `filter`). It sits at the very bottom of the stack — the
+// gradient mesh/cloud/bloom layers (Scene) or the shader sky/orb (LivingScene)
+// render on top and stay fully legible.
+const photoLayer = css({
+  position: 'absolute',
+  inset: '-14%',
+  pointerEvents: 'none',
+  objectFit: 'cover',
+  willChange: 'transform',
+  filter: 'blur(26px) saturate(1.15) brightness(0.58)',
+  animation: 'sceneKenBurns 74s ease-in-out infinite alternate',
+  '@media (prefers-reduced-motion: reduce)': { animation: 'none !important' },
+})
+
+// The variant's own sky gradient, blended back over its photo — this is what
+// keeps the photo reading as "this scene's atmosphere" rather than a stock
+// image: same hues as the mesh/orb above it, just photographic instead of
+// flat. `overlay` preserves the photo's texture/contrast while imposing hue;
+// a light `multiply` pass on top deepens it to the same darkness as the rest
+// of the frame so text and Liquid Glass keep their contrast.
+const photoGrade = css({
+  position: 'absolute',
+  inset: '0',
+  pointerEvents: 'none',
+  mixBlendMode: 'overlay',
+})
+
+const photoShade = css({
+  position: 'absolute',
+  inset: '0',
+  pointerEvents: 'none',
+  mixBlendMode: 'multiply',
+  opacity: '0.5',
+})
+
+export interface NaturePhotoProps {
+  variant: SceneVariant
+  className?: string
+}
+
+/** The nature-photo depth layer, shared by `Scene`'s CSS sky and
+ * `LivingScene`'s 3D world so both surfaces carry the same photographic
+ * mood. */
+export function NaturePhoto({ variant, className }: NaturePhotoProps) {
+  const colors = SCENES[variant]
+  return (
+    <div
+      aria-hidden
+      className={cx(
+        css({ position: 'absolute', inset: '0', overflow: 'hidden', pointerEvents: 'none' }),
+        className,
+      )}
+    >
+      <img aria-hidden alt="" loading="lazy" decoding="async" src={VARIANT_IMAGE[variant]} className={photoLayer} />
+      <div aria-hidden className={photoGrade} style={{ backgroundImage: colors.base }} />
+      <div aria-hidden className={photoShade} style={{ backgroundImage: colors.base }} />
+    </div>
+  )
+}
+
 function Sky({ variant, entering }: { variant: SceneVariant; entering: boolean }) {
   const colors = SCENES[variant]
   return (
@@ -129,11 +243,14 @@ function Sky({ variant, entering }: { variant: SceneVariant; entering: boolean }
         overflow: 'hidden',
       })}
       style={{
-        backgroundImage: colors.base,
         opacity: entering ? 0 : 1,
         transition: `opacity ${FADE_MS}ms ease`,
       }}
     >
+      {/* Nature-photo mood layer — bottom of the stack; the mesh/cloud/bloom
+          gradients below render on top and stay fully legible. */}
+      <NaturePhoto variant={variant} />
+
       <div
         className={cx(
           layerBase,
@@ -201,38 +318,12 @@ export interface SceneProps {
 
 export function Scene({ variant = 'dusk', className }: SceneProps) {
   // Cross-fade: keep the previous sky mounted beneath the incoming one.
-  const [skies, setSkies] = useState<{ variant: SceneVariant; id: number }[]>([
-    { variant, id: 0 },
-  ])
-  const [fading, setFading] = useState<number | null>(null)
-  const nextId = useRef(1)
+  const { items: skies, fading } = useCrossfade(variant)
   // Grain is scene-agnostic — computed once, reused across every variant.
   const grainStyle = useMemo(
     () => ({ backgroundImage: GRAIN_URL }),
     [],
   )
-
-  useEffect(() => {
-    setSkies((prev) => {
-      if (prev[prev.length - 1]?.variant === variant) return prev
-      const id = nextId.current++
-      setFading(id)
-      return [...prev.slice(-1), { variant, id }]
-    })
-  }, [variant])
-
-  useEffect(() => {
-    if (fading === null) return
-    // Two rafs arm the opacity transition, then retire the old sky.
-    const raf = requestAnimationFrame(() => requestAnimationFrame(() => setFading(null)))
-    const timer = window.setTimeout(() => {
-      setSkies((prev) => prev.slice(-1))
-    }, FADE_MS + 100)
-    return () => {
-      cancelAnimationFrame(raf)
-      window.clearTimeout(timer)
-    }
-  }, [fading])
 
   return (
     <div
@@ -243,7 +334,7 @@ export function Scene({ variant = 'dusk', className }: SceneProps) {
       )}
     >
       {skies.map((sky) => (
-        <Sky key={sky.id} variant={sky.variant} entering={fading === sky.id} />
+        <Sky key={sky.id} variant={sky.value} entering={fading === sky.id} />
       ))}
 
       {/* Film grain — a static noise tile, stepped (not tweened) so it never

@@ -172,6 +172,12 @@ export default defineConfig({
           '50%': { transform: 'translate3d(-4%, 3%, 0) rotate(-5deg) scale(0.98)' },
           '100%': { transform: 'translate3d(2%, -4%, 0) rotate(4deg) scale(1.06)' },
         },
+        // A slow, luxurious Ken-Burns drift for the nature-photo mood layer —
+        // transform only (scale + translate), GPU-cheap, never repaints.
+        sceneKenBurns: {
+          '0%': { transform: 'scale(1.04) translate3d(-1%, -0.5%, 0)' },
+          '100%': { transform: 'scale(1.14) translate3d(1%, 0.5%, 0)' },
+        },
         // A coarse, stepped micro-jitter for the film-grain overlay — reads
         // as flicker without ever tweening (steps() = a handful of paints
         // over many seconds, not a per-frame cost).

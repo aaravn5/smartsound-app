@@ -1,6 +1,6 @@
 import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react'
 import { css, cx } from 'styled-system/css'
-import { GRAIN_URL, Scene, type SceneVariant } from './Scene'
+import { FADE_MS, GRAIN_URL, NaturePhoto, Scene, useCrossfade, type SceneVariant } from './Scene'
 
 /**
  * LivingScene — the interactive 3D ambient canvas (Today hero + Player sky).
@@ -115,6 +115,11 @@ function signalRgb(variant: SceneVariant): [number, number, number] {
   return hexToRgb(ACCENT[variant])
 }
 
+// The WebGL sky/orb/dust canvas — dropped a shade under fully opaque so the
+// nature-photo mood layer behind it stays faintly visible, adding luxurious
+// depth without ever compromising the orb/cloud legibility above.
+const livingCanvas = css({ opacity: '0.92' })
+
 // ── component ───────────────────────────────────────────────────────────────
 
 export interface LivingSceneProps {
@@ -129,6 +134,9 @@ export function LivingScene({ variant = 'dusk', className }: LivingSceneProps) {
   const rootRef = useRef<HTMLDivElement>(null)
   const queueRef = useRef<PulseQueue>({ pending: [] })
   const grainStyle = useMemo(() => ({ backgroundImage: GRAIN_URL }), [])
+  // Cross-fade: the nature photo swaps per variant same as Scene's gradient
+  // sky, even though the 3D canvas itself never remounts.
+  const { items: photos, fading } = useCrossfade(variant)
 
   // Touch pulse — pointer/touch down only. Under reduced motion the frame is
   // static, so pulses are skipped rather than half-animated.
@@ -189,12 +197,30 @@ export function LivingScene({ variant = 'dusk', className }: LivingSceneProps) {
         className,
       )}
     >
+      {/* Nature-photo mood layer — sits behind the WebGL sky. The canvas
+          above is drawn a shade under fully opaque (see `livingCanvas`
+          below) so this depth layer bleeds through while the shader sky,
+          clouds and orb remain the dominant, fully legible surface. */}
+      {photos.map((photo) => (
+        <div
+          key={photo.id}
+          className={css({ position: 'absolute', inset: '0' })}
+          style={{
+            opacity: fading === photo.id ? 0 : 1,
+            transition: `opacity ${FADE_MS}ms ease`,
+          }}
+        >
+          <NaturePhoto variant={photo.value} />
+        </div>
+      ))}
+
       <Suspense fallback={<Scene variant={variant} />}>
         <LivingSceneCanvas
           variant={variant}
           reducedMotion={reduced}
           pulses={queueRef.current}
           onContextLost={() => setLost(true)}
+          className={livingCanvas}
         />
       </Suspense>
 

@@ -1,0 +1,87 @@
+- generic [ref=f5e3]:
+  - generic [ref=f5e5]:
+    - generic:
+      - img
+  - main [ref=f5e6]:
+    - generic [ref=f5e8]:
+      - generic:
+        - generic:
+          - generic:
+            - img
+        - generic:
+          - generic:
+            - img
+        - generic:
+          - generic:
+            - generic:
+              - img
+          - generic:
+            - generic:
+              - img
+      - generic [ref=f5e10]:
+        - button "Done — back to Today" [ref=f5e12] [cursor=pointer]:
+          - img [ref=f5e14]
+        - generic [ref=f5e16]:
+          - paragraph [ref=f5e17]: SmartSound Session · Wind-down
+          - heading "Wind-down" [level=1] [ref=f5e18]
+          - paragraph [ref=f5e19]: Theta · ~6 Hz
+        - img "Signal ring — Theta · ~6 Hz, Preview — begin to hear it live" [ref=f5e23]
+        - paragraph [ref=f5e24]: Preview — begin to hear it live
+        - generic [ref=f5e25]:
+          - generic [ref=f5e26]: 0:00
+          - generic [ref=f5e27]:
+            - button "10" [ref=f5e28] [cursor=pointer]:
+              - generic [ref=f5e30]: 10 min
+            - button "20" [ref=f5e31] [cursor=pointer]:
+              - generic [ref=f5e33]: 20 min
+            - button "45" [ref=f5e34] [cursor=pointer]:
+              - generic [ref=f5e36]: 45 min
+            - button "∞" [pressed] [ref=f5e37] [cursor=pointer]:
+              - generic [ref=f5e38]: ∞
+        - generic [ref=f5e39]:
+          - button "Previous state" [ref=f5e40] [cursor=pointer]:
+            - img [ref=f5e42]
+          - button "Play" [ref=f5e45] [cursor=pointer]:
+            - img [ref=f5e47]
+          - button "Next state" [ref=f5e49] [cursor=pointer]:
+            - img [ref=f5e51]
+        - generic [ref=f5e56]:
+          - generic [ref=f5e57]:
+            - generic [ref=f5e58]: Neural depth
+            - generic [ref=f5e59]: 32%
+          - slider "Neural depth" [ref=f5e64] [cursor=pointer]
+        - generic [ref=f5e68]:
+          - img [ref=f5e70]
+          - generic [ref=f5e73]:
+            - paragraph [ref=f5e74]: Attune
+            - paragraph [ref=f5e75]: Off — uses your front camera, on-device only
+          - switch "Toggle Attune camera" [ref=f5e76] [cursor=pointer]:
+            - generic [ref=f5e77]: "Off"
+        - button "The science How SmartSound works, honestly" [ref=f5e82] [cursor=pointer]:
+          - img [ref=f5e84]
+          - generic [ref=f5e86]:
+            - generic [ref=f5e87]: The science
+            - generic [ref=f5e88]: How SmartSound works, honestly
+          - img [ref=f5e89]
+  - navigation "Primary" [ref=f5e91]:
+    - generic [ref=f5e93]:
+      - link "Today" [ref=f5e94] [cursor=pointer]:
+        - /url: /app
+        - img [ref=f5e96]
+        - generic [ref=f5e99]: Today
+      - link "Explore" [ref=f5e100] [cursor=pointer]:
+        - /url: /app/explore
+        - img [ref=f5e102]
+        - generic [ref=f5e105]: Explore
+      - link "Player" [ref=f5e106] [cursor=pointer]:
+        - /url: /app/player
+        - img [ref=f5e108]
+        - generic [ref=f5e111]: Player
+      - link "Progress" [ref=f5e112] [cursor=pointer]:
+        - /url: /app/progress
+        - img [ref=f5e114]
+        - generic [ref=f5e118]: Progress
+      - link "Profile" [ref=f5e119] [cursor=pointer]:
+        - /url: /app/profile
+        - img [ref=f5e121]
+        - generic [ref=f5e125]: Profile

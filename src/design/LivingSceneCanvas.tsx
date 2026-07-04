@@ -540,6 +540,9 @@ export interface LivingSceneCanvasProps {
   reducedMotion: boolean
   pulses: PulseQueue
   onContextLost: () => void
+  /** Applied to the canvas element itself — used to drop it a shade under
+   * fully opaque so the nature-photo layer behind it can bleed through. */
+  className?: string
 }
 
 export function LivingSceneCanvas({
@@ -547,6 +550,7 @@ export function LivingSceneCanvas({
   reducedMotion,
   pulses,
   onContextLost,
+  className,
 }: LivingSceneCanvasProps) {
   return (
     <Canvas
@@ -560,6 +564,7 @@ export function LivingSceneCanvas({
         stencil: false,
         powerPreference: 'high-performance',
       }}
+      className={className}
       style={{ position: 'absolute', inset: 0 }}
       onCreated={({ gl }) => {
         gl.domElement.addEventListener('webglcontextlost', (event) => {
