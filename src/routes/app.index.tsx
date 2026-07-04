@@ -1,9 +1,12 @@
+import { useRef } from 'react'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
+import { motion, useReducedMotion, useScroll, useTransform } from 'motion/react'
 import { css } from 'styled-system/css'
 import { LiquidGlass } from '~/design/LiquidGlass'
 import { LivingScene } from '~/design/LivingScene'
 import { SmartSoundRings } from '~/design/SmartSoundRings'
 import { useClickSound } from '~/lib/click-sound'
+import { useMainScrollRef } from '~/lib/scroll-context'
 import { ScreenTitle } from '~/components/SereneScreen'
 import { Rail, SessionCard, STATE_SCENE } from '~/components/SessionCard'
 import { suggestFor, suggestedBlockMinutes } from '~/engine/circadian/model'
@@ -17,7 +20,19 @@ import {
   todaySessions,
 } from '~/lib/sample-stats'
 
-/** Today — the Calm "Daily" home: a featured session, today's rings, a rail. */
+/**
+ * Today — the Calm "Daily" home. A sticky-scroll surface (Calm/Endel-style):
+ * the immersive LivingScene hero pins in place while the day's content —
+ * rhythm rings, the recommended rail — glides up over it on a Liquid Glass
+ * shelf. The pinned scene answers scroll with a gentle parallax (drift, fade,
+ * scale) so it reads as a real depth layer, not a background image; the
+ * shelf's own sections reveal as they enter view, calm and unhurried.
+ *
+ * `useScroll` needs the actual scrolling ancestor — the shell's single
+ * `<main>` (see `lib/scroll-context.tsx`), never the window, which never
+ * scrolls in this shell. Under `prefers-reduced-motion` the hero is a plain,
+ * static block in normal flow: no pin, no parallax, no scroll-linked reveal.
+ */
 export const Route = createFileRoute('/app/')({
   component: TodayScreen,
 })
@@ -44,13 +59,6 @@ function dayPart(hour: number): string {
   if (hour < 18) return 'Afternoon'
   return 'Evening'
 }
-
-// Shared entrance: a class carrying the fade-up animation; each caller sets its
-// own `animationDelay` inline so the stagger reads left-to-right / top-to-bottom.
-const fadeUp = css({
-  animation: 'fadeUp token(durations.calm) token(easings.enter) both',
-  '@media (prefers-reduced-motion: reduce)': { animation: 'none' },
-})
 
 const ArrowIcon = () => (
   <svg
@@ -84,9 +92,29 @@ const ChevronIcon = () => (
   </svg>
 )
 
+// Scroll-linked reveal — a short, calm rise-and-fade as a section enters
+// view. Disabled entirely under reduced motion (sections just render still).
+const CALM_EASE = [0.16, 1, 0.3, 1] as const
+
 function TodayScreen() {
   const navigate = useNavigate()
   const playClick = useClickSound()
+  const reduceMotion = useReducedMotion()
+  const mainRef = useMainScrollRef()
+
+  const stageRef = useRef<HTMLDivElement>(null)
+  const { scrollYProgress } = useScroll({
+    target: stageRef,
+    container: mainRef ?? undefined,
+    offset: ['start start', 'end start'],
+  })
+  // Gentle parallax: the pinned scene drifts a little slower than the
+  // content sliding over it, dims, and breathes outward — never a hard cut.
+  const sceneY = useTransform(scrollYProgress, [0, 1], [0, 28])
+  const sceneScale = useTransform(scrollYProgress, [0, 1], [1, 1.06])
+  const sceneOpacity = useTransform(scrollYProgress, [0, 0.7, 1], [1, 0.6, 0.32])
+  const overlayOpacity = useTransform(scrollYProgress, [0, 0.6], [1, 0])
+
   const now = new Date()
   const suggestion = suggestFor(now)
   const daily = SOUNDSCAPES.find((s) => s.state === suggestion.state) ?? SOUNDSCAPES[0]
@@ -99,26 +127,52 @@ function TodayScreen() {
     return aMatch - bMatch
   })
 
+  const reveal = reduceMotion
+    ? undefined
+    : {
+        initial: { opacity: 0, y: 26 },
+        whileInView: { opacity: 1, y: 0 },
+        viewport: { once: true, margin: '0px 0px -80px 0px' },
+        transition: { duration: 0.7, ease: CALM_EASE },
+      }
+
   return (
     <>
       <ScreenTitle caption={todayCaption()} title={greeting()} />
 
-      {/* Featured "Daily" session hero */}
-      <section
-        className={fadeUp}
-        style={{ animationDelay: '40ms' }}
+      {/* Sticky stage — the hero pins while the shelf below glides over it.
+          Reduced motion collapses this back to a plain, non-sticky block. */}
+      <div
+        ref={stageRef}
+        className={css({ position: 'relative', mb: '8' })}
+        style={reduceMotion ? undefined : { height: 'calc(60vh + 220px)', minHeight: '600px' }}
       >
         <div
           className={css({
-            position: 'relative',
             borderRadius: 'card',
             overflow: 'hidden',
-            height: '392px',
-            mb: '7',
           })}
+          style={
+            reduceMotion
+              ? { height: '392px' }
+              : {
+                  position: 'sticky',
+                  top: 'calc(env(safe-area-inset-top) + 8px)',
+                  height: '60vh',
+                  minHeight: '380px',
+                  maxHeight: '620px',
+                }
+          }
         >
-          <LivingScene variant={STATE_SCENE[suggestion.state]} />
-          <div
+          <motion.div
+            aria-hidden
+            className={css({ position: 'absolute', inset: '0' })}
+            style={reduceMotion ? undefined : { y: sceneY, scale: sceneScale, opacity: sceneOpacity }}
+          >
+            <LivingScene variant={STATE_SCENE[suggestion.state]} />
+          </motion.div>
+
+          <motion.div
             className={css({
               position: 'relative',
               zIndex: '1',
@@ -128,6 +182,7 @@ function TodayScreen() {
               justifyContent: 'flex-end',
               p: '5',
             })}
+            style={reduceMotion ? undefined : { opacity: overlayOpacity }}
           >
             <p
               className={css({
@@ -204,12 +259,12 @@ function TodayScreen() {
                 {daily.band} · {dailyMinutes} min
               </span>
             </div>
-          </div>
+          </motion.div>
         </div>
-      </section>
+      </div>
 
-      {/* Today's rings summary */}
-      <section className={fadeUp} style={{ animationDelay: '160ms' }}>
+      {/* The shelf — rings + rail glide up over the pinned scene as you scroll. */}
+      <motion.section {...reveal}>
         <LiquidGlass
           as="button"
           variant="card"
@@ -266,10 +321,9 @@ function TodayScreen() {
             </span>
           </div>
         </LiquidGlass>
-      </section>
+      </motion.section>
 
-      {/* Recommended rail */}
-      <section className={fadeUp} style={{ animationDelay: '260ms' }}>
+      <motion.section {...reveal} transition={reduceMotion ? undefined : { duration: 0.7, ease: CALM_EASE, delay: 0.08 }}>
         <h2
           className={css({
             m: '0',
@@ -291,12 +345,12 @@ function TodayScreen() {
                 title={scenario.title.split(' · ')[0]}
                 meta={`${scenario.band} · ${scenario.minutes} min`}
                 height="172px"
-                delayMs={320 + i * 70}
+                delayMs={reduceMotion ? 0 : 320 + i * 70}
               />
             </div>
           ))}
         </Rail>
-      </section>
+      </motion.section>
     </>
   )
 }

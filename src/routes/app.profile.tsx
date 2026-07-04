@@ -1,5 +1,4 @@
-import { useState } from 'react'
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useReducedMotion } from 'motion/react'
 import * as Switch from '@radix-ui/react-switch'
 import { css, cx } from 'styled-system/css'
@@ -195,7 +194,8 @@ function SoundRow() {
 function ProfileScreen() {
   const reduceMotion = useReducedMotion()
   const usage = useDailyUsage()
-  const [proOpen, setProOpen] = useState(false)
+  const navigate = useNavigate()
+  const playClick = useClickSound()
 
   const usedPct = Math.min(100, Math.round((usage.minutesToday / FREE_DAILY_MIN) * 100))
 
@@ -276,19 +276,20 @@ function ProfileScreen() {
           <LiquidGlass
             as="button"
             variant="control"
-            aria-expanded={proOpen}
-            onClick={() => setProOpen((v) => !v)}
-            className={css({ display: 'block', width: 'full', textAlign: 'center' })}
+            tint="var(--signal)"
+            onClick={() => {
+              playClick('primary')
+              void navigate({ to: '/app/paywall' })
+            }}
+            className={css({ display: 'block', width: 'full', textAlign: 'center', border: 'none', font: 'inherit' })}
           >
-            <span className={css({ display: 'block', px: '5', py: '3', fontSize: 'subhead', fontWeight: '600', color: 'text' })}>
-              {proOpen ? 'Noted — thank you' : 'Go deeper with Pro'}
+            <span
+              className={css({ display: 'block', px: '5', py: '3', fontSize: 'subhead', fontWeight: '600' })}
+              style={{ color: 'var(--signal)' }}
+            >
+              See plans
             </span>
           </LiquidGlass>
-          {proOpen && (
-            <p className={css({ m: '0', mt: '3', fontSize: 'footnote', color: 'faint', textAlign: 'center' })}>
-              Pro is coming soon — checkout isn&rsquo;t live on this build yet.
-            </p>
-          )}
         </div>
       </LiquidGlass>
 

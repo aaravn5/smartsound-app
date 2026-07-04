@@ -1,9 +1,11 @@
 import { createFileRoute, Link, Outlet, useRouterState } from '@tanstack/react-router'
+import { useRef } from 'react'
 import type { CSSProperties, ReactNode } from 'react'
 import { css } from 'styled-system/css'
 import { LiquidGlass } from '~/design/LiquidGlass'
 import { Scene, type SceneVariant } from '~/design/Scene'
 import { useClickSound } from '~/lib/click-sound'
+import { MainScrollContext } from '~/lib/scroll-context'
 
 /**
  * AppShell — the Calm-native frame. An immersive Scene sky fills the frame,
@@ -91,6 +93,7 @@ function activeTab(pathname: string): Tab {
 function AppShell() {
   const pathname = useRouterState({ select: (s) => s.location.pathname })
   const tab = activeTab(pathname)
+  const mainRef = useRef<HTMLElement>(null)
 
   return (
     <div
@@ -114,6 +117,7 @@ function AppShell() {
       <Scene variant={tab.scene} />
 
       <main
+        ref={mainRef}
         className={css({
           position: 'absolute',
           inset: '0',
@@ -136,7 +140,9 @@ function AppShell() {
             pb: '8',
           })}
         >
-          <Outlet />
+          <MainScrollContext.Provider value={mainRef}>
+            <Outlet />
+          </MainScrollContext.Provider>
         </div>
       </main>
 

@@ -7,11 +7,13 @@ import { LiquidGlass } from '~/design/LiquidGlass'
 import { LivingScene } from '~/design/LivingScene'
 import { SignalRing } from '~/design/SignalRing'
 import { STATE_SCENE } from '~/components/SessionCard'
+import { SciencePanel } from '~/components/SciencePanel'
 import { useClickSound } from '~/lib/click-sound'
 import { useEngine } from '~/lib/engine-context'
 import { arousalToLch, lchToCss } from '~/design/signal'
 import { TARGET_STATES } from '~/engine/audio/profiles'
 import { BAND_LABEL, SOUNDSCAPES } from '~/lib/catalog'
+import { useDailyUsage } from '~/lib/entitlements'
 import type { TargetState } from '~/engine/audio/types'
 
 /**
@@ -106,8 +108,10 @@ const CameraIcon = () => (
   </svg>
 )
 
-function ringStatusLabel(status: 'idle' | 'running', bioActive: boolean): string {
-  if (status !== 'running') return 'Preview — begin to hear it live'
+function ringStatusLabel(status: 'idle' | 'running', bioActive: boolean, capped: boolean): string {
+  if (status !== 'running') {
+    return capped ? 'Today’s free session is used — play to see Pro' : 'Preview — begin to hear it live'
+  }
   return bioActive ? 'Live audio + pulse' : 'Live audio'
 }
 
@@ -133,6 +137,7 @@ function PlayerScreen() {
   const navigate = useNavigate()
   const reduceMotion = useReducedMotion()
   const playClick = useClickSound()
+  const { plan, capReached, addMinutes, recordSessionStart } = useDailyUsage()
   const {
     status, profile, params, arousal, reading, bioStatus,
     start, stop, selectState, setNeuralIntensity, startAttune, stopAttune,
@@ -145,6 +150,7 @@ function PlayerScreen() {
   const band = BAND_LABEL[state]
   const running = status === 'running'
   const bioActive = reading.active
+  const capped = plan === 'free' && capReached
 
   // Preselect ?state= once on mount — an honest preview, never a forced auto-play.
   const appliedInitial = useRef(false)
@@ -177,13 +183,31 @@ function PlayerScreen() {
   // Honor the chosen session length — a gentle, self-timed close.
   useEffect(() => {
     if (!running || length == null) return
-    if (elapsedMs >= length * 60_000) void stop()
-  }, [elapsedMs, length, running, stop])
+    if (elapsedMs >= length * 60_000) {
+      addMinutes(elapsedMs / 60_000)
+      void stop()
+    }
+  }, [elapsedMs, length, running, stop, addMinutes])
 
+  // Entitlements are a client-side UX stub (see `lib/entitlements.ts`) — this
+  // is the single point a session actually starts, so it's the single point
+  // the Free daily cap is honored. A capped Free listener is routed to the
+  // paywall with context rather than silently blocked or let through.
   const handlePlayPause = () => {
+    if (running) {
+      playClick('primary')
+      if (elapsedMs > 0) addMinutes(elapsedMs / 60_000)
+      void stop()
+      return
+    }
+    if (capped) {
+      playClick('tap')
+      void navigate({ to: '/app/paywall', search: { reason: 'cap' } })
+      return
+    }
     playClick('primary')
-    if (running) void stop()
-    else void start(state)
+    recordSessionStart()
+    void start(state)
   }
 
   const cycleState = (dir: 1 | -1) => {
@@ -344,7 +368,7 @@ function PlayerScreen() {
                 respirationBpm={reading.respiration}
                 heartBpm={reading.hr}
                 size={RING_SIZE}
-                label={`Signal ring — ${band}, ${ringStatusLabel(status, bioActive)}`}
+                label={`Signal ring — ${band}, ${ringStatusLabel(status, bioActive, capped)}`}
               />
             </div>
           </div>
@@ -362,7 +386,7 @@ function PlayerScreen() {
               transition: 'opacity token(durations.gentle) ease',
             })}
           >
-            {ringStatusLabel(status, bioActive)}
+            {ringStatusLabel(status, bioActive, capped)}
           </p>
 
           {/* Timer + session length. */}
@@ -627,6 +651,11 @@ function PlayerScreen() {
               )}
             </div>
           </LiquidGlass>
+
+          {/* The science — honest, cited disclosure of the actual mechanisms. */}
+          <div className={css({ mt: '4' })}>
+            <SciencePanel />
+          </div>
         </div>
       </div>
     </div>
