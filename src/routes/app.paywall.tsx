@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
-import { css } from 'styled-system/css'
+import { css, cx } from 'styled-system/css'
 import { LiquidGlass } from '~/design/LiquidGlass'
 import { LivingScene } from '~/design/LivingScene'
 import { SettingsGroup, SettingsRow } from '~/components/SettingsList'
@@ -205,17 +205,20 @@ function PaywallScreen() {
         </button>
       </div>
 
-      {/* Hero */}
+      {/* Hero — an always-dark scene surface (crisp photo + scrim) in both themes. */}
       <div
-        className={css({
-          position: 'relative',
-          borderRadius: 'card',
-          overflow: 'hidden',
-          height: '224px',
-          mb: '6',
-          animation: 'fadeUp token(durations.calm) token(easings.enter) both',
-          '@media (prefers-reduced-motion: reduce)': { animation: 'none' },
-        })}
+        className={cx(
+          'ss-scene-dark',
+          css({
+            position: 'relative',
+            borderRadius: 'card',
+            overflow: 'hidden',
+            height: '224px',
+            mb: '6',
+            animation: 'fadeUp token(durations.calm) token(easings.enter) both',
+            '@media (prefers-reduced-motion: reduce)': { animation: 'none' },
+          }),
+        )}
       >
         <LivingScene variant="dusk" />
         <div

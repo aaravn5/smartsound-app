@@ -27,6 +27,7 @@ export function ScreenTitle({ title, caption }: { title: string; caption?: strin
             letterSpacing: '0.06em',
             textTransform: 'uppercase',
             color: 'faint',
+            textShadow: 'var(--ss-text-glow)',
           })}
         >
           {caption}
@@ -41,6 +42,7 @@ export function ScreenTitle({ title, caption }: { title: string; caption?: strin
           letterSpacing: '-0.015em',
           lineHeight: '1.12',
           color: 'text',
+          textShadow: 'var(--ss-text-glow)',
         })}
       >
         {title}

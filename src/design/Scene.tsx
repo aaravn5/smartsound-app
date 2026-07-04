@@ -29,11 +29,10 @@ import { useTheme } from '~/lib/theme'
 export type SceneVariant = 'dusk' | 'aurora' | 'ocean' | 'dawn' | 'forest'
 
 /**
- * One Higgsfield nature photograph per scene variant — the luxurious depth
- * layer behind the gradient sky / 3D world. `aurora` borrows the twilight
- * sky shot (both read as cool dusk light); `dusk` shares it too, `ocean` and
- * `dawn` get their own. Always shown blurred + color-graded (see
- * `NaturePhoto`) — never a flat literal photo.
+ * One Higgsfield nature photograph per scene variant — the interface itself,
+ * Calm-style. Shown CRISP and full-bleed everywhere (home sky, content
+ * cards, player); text legibility comes from scrims layered over the photo,
+ * never from blurring it.
  */
 export const VARIANT_IMAGE: Record<SceneVariant, string> = {
   dusk: '/scenes/dusk.webp',
@@ -183,56 +182,66 @@ const cloudBase = css({
   },
 })
 
-// ── nature-photo mood layer ─────────────────────────────────────────────────
+// ── the nature photograph — crisp, full-bleed, Calm-style ──────────────────
 //
-// A Higgsfield nature photograph, always shown as atmosphere rather than a
-// literal image: heavily blurred + darkened + desaturated-then-regraded to
-// the variant palette, drifting in a slow Ken-Burns pan (transform only, GPU
-// cheap, static `filter`). It sits at the very bottom of the stack — the
-// gradient mesh/cloud/bloom layers (Scene) or the shader sky/orb (LivingScene)
-// render on top and stay fully legible.
+// The photo IS the interface now: zero blur, object-fit cover, a slow
+// Ken-Burns drift (transform only, GPU cheap; static under reduced motion).
+// Legibility is the scrims' job (below), never the photo's.
 const photoLayer = css({
   position: 'absolute',
-  inset: '-14%',
+  // Explicit box, NOT `inset` shorthands: an absolutely-positioned replaced
+  // element with only left+right set is over-constrained and keeps its
+  // intrinsic width — the photo then fails to cover the frame. left/top +
+  // width/height pins it deterministically, with 12% overscan as Ken-Burns
+  // headroom so the drift never exposes an edge.
+  left: '-6%',
+  top: '-6%',
+  width: '112%',
+  height: '112%',
+  // Panda's reset caps img at max-inline-size 100% — lift it or the 112%
+  // overscan silently clamps and the photo stops short of the right edge.
+  maxWidth: 'none',
   pointerEvents: 'none',
   objectFit: 'cover',
   willChange: 'transform',
-  filter: 'blur(26px) saturate(1.15) brightness(0.58)',
+  filter: 'saturate(1.06)',
   animation: 'sceneKenBurns 74s ease-in-out infinite alternate',
   '@media (prefers-reduced-motion: reduce)': { animation: 'none !important' },
 })
 
-// The variant's own sky gradient, blended back over its photo — this is what
-// keeps the photo reading as "this scene's atmosphere" rather than a stock
-// image: same hues as the mesh/orb above it, just photographic instead of
-// flat. `overlay` preserves the photo's texture/contrast while imposing hue;
-// a light `multiply` pass on top deepens it to the same darkness as the rest
-// of the frame so text and Liquid Glass keep their contrast.
-const photoGrade = css({
-  position: 'absolute',
-  inset: '0',
-  pointerEvents: 'none',
-  mixBlendMode: 'overlay',
-})
+// ── Calm's signature scrims ─────────────────────────────────────────────────
+//
+// A vertical gradient from (near-)transparent into deep navy: white text sits
+// on the dark end while the photo stays clearly visible everywhere else.
+// `canvas` — immersive surfaces (player, hero): lightest mid-band, deep
+//            bottom third. `page` — browsable tabs where arbitrary text
+//            scrolls over the photo: a steadier base dim. `card` — tiles:
+//            bottom-only.
+export const CALM_SCRIM_CANVAS =
+  'linear-gradient(to bottom, rgba(6, 16, 38, 0.55) 0%, rgba(6, 16, 38, 0.28) 18%, rgba(6, 16, 38, 0.18) 40%, rgba(6, 16, 38, 0.28) 58%, rgba(6, 16, 38, 0.62) 78%, rgba(6, 16, 38, 0.88) 100%)'
 
-const photoShade = css({
-  position: 'absolute',
-  inset: '0',
-  pointerEvents: 'none',
-  mixBlendMode: 'multiply',
-  opacity: '0.5',
-})
+export const CALM_SCRIM_PAGE =
+  'linear-gradient(to bottom, rgba(6, 16, 38, 0.60) 0%, rgba(6, 16, 38, 0.44) 20%, rgba(6, 16, 38, 0.42) 55%, rgba(6, 16, 38, 0.66) 78%, rgba(6, 16, 38, 0.90) 100%)'
+
+export const CALM_SCRIM_CARD =
+  'linear-gradient(to bottom, rgba(6, 16, 38, 0.14) 0%, rgba(6, 16, 38, 0) 26%, rgba(6, 16, 38, 0) 44%, rgba(6, 16, 38, 0.54) 72%, rgba(6, 16, 38, 0.88) 100%)'
+
+export type SceneScrim = 'canvas' | 'page' | 'card' | 'none'
+
+const SCRIM_GRADIENT: Record<Exclude<SceneScrim, 'none'>, string> = {
+  canvas: CALM_SCRIM_CANVAS,
+  page: CALM_SCRIM_PAGE,
+  card: CALM_SCRIM_CARD,
+}
 
 export interface NaturePhotoProps {
   variant: SceneVariant
   className?: string
 }
 
-/** The nature-photo depth layer, shared by `Scene`'s CSS sky and
- * `LivingScene`'s 3D world so both surfaces carry the same photographic
- * mood. */
+/** The crisp nature-photo layer, shared by `Scene`'s sky and `LivingScene`'s
+ * 3D world so both surfaces carry the same clearly-visible landscape. */
 export function NaturePhoto({ variant, className }: NaturePhotoProps) {
-  const colors = SCENES[variant]
   return (
     <div
       aria-hidden
@@ -242,8 +251,6 @@ export function NaturePhoto({ variant, className }: NaturePhotoProps) {
       )}
     >
       <img aria-hidden alt="" loading="lazy" decoding="async" src={VARIANT_IMAGE[variant]} className={photoLayer} />
-      <div aria-hidden className={photoGrade} style={{ backgroundImage: colors.base }} />
-      <div aria-hidden className={photoShade} style={{ backgroundImage: colors.base }} />
     </div>
   )
 }
@@ -263,66 +270,52 @@ function Sky({ variant, entering }: { variant: SceneVariant; entering: boolean }
         transition: `opacity ${FADE_MS}ms ease`,
       }}
     >
-      {/* Nature-photo mood layer — bottom of the stack; the mesh/cloud/bloom
-          gradients below render on top and stay fully legible. */}
+      {/* The landscape itself — crisp, full-bleed, clearly visible. */}
       <NaturePhoto variant={variant} />
 
-      <div
-        className={cx(
-          layerBase,
-          css({ animation: 'sceneDriftA 70s ease-in-out infinite alternate' }),
-        )}
-        style={{ backgroundImage: colors.meshA }}
-      />
-      <div
-        className={cx(
-          layerBase,
-          css({ animation: 'sceneDriftB 90s ease-in-out infinite alternate-reverse' }),
-        )}
-        style={{ backgroundImage: colors.meshB }}
-      />
-      {/* Textured depth — two independently-drifting organic blobs. */}
-      <div
-        aria-hidden
-        className={cx(
-          cloudBase,
-          css({
-            width: '78%',
-            height: '58%',
-            top: '-14%',
-            left: '-18%',
-            borderRadius: '42% 58% 63% 37% / 41% 46% 54% 59%',
-            filter: 'blur(64px)',
-            animation: 'cloudDriftA 130s ease-in-out infinite alternate',
-          }),
-        )}
-        style={{ backgroundImage: colors.cloudA }}
-      />
-      <div
-        aria-hidden
-        className={cx(
-          cloudBase,
-          css({
-            width: '68%',
-            height: '62%',
-            bottom: '-18%',
-            right: '-14%',
-            borderRadius: '58% 42% 39% 61% / 55% 48% 52% 45%',
-            filter: 'blur(70px)',
-            animation: 'cloudDriftB 160s ease-in-out infinite alternate-reverse',
-          }),
-        )}
-        style={{ backgroundImage: colors.cloudB }}
-      />
-      {/* Second light source — a soft top bloom so the sky reads as lit, not flat. */}
-      <div
-        aria-hidden
-        className={cx(
-          layerBase,
-          css({ animation: 'sceneBloom 26s ease-in-out infinite alternate' }),
-        )}
-        style={{ backgroundImage: colors.bloom, mixBlendMode: 'screen' }}
-      />
+      {/* A whisper of living atmosphere over the photo — the old gradient
+          sky at very low opacity so the frame still breathes, without ever
+          obscuring the landscape. */}
+      <div aria-hidden className={css({ position: 'absolute', inset: '0', opacity: '0.22', pointerEvents: 'none' })}>
+        <div
+          className={cx(
+            layerBase,
+            css({ animation: 'sceneDriftA 70s ease-in-out infinite alternate' }),
+          )}
+          style={{ backgroundImage: colors.meshA }}
+        />
+        <div
+          className={cx(
+            layerBase,
+            css({ animation: 'sceneDriftB 90s ease-in-out infinite alternate-reverse' }),
+          )}
+          style={{ backgroundImage: colors.meshB }}
+        />
+        <div
+          aria-hidden
+          className={cx(
+            cloudBase,
+            css({
+              width: '78%',
+              height: '58%',
+              top: '-14%',
+              left: '-18%',
+              borderRadius: '42% 58% 63% 37% / 41% 46% 54% 59%',
+              filter: 'blur(64px)',
+              animation: 'cloudDriftA 130s ease-in-out infinite alternate',
+            }),
+          )}
+          style={{ backgroundImage: colors.cloudA }}
+        />
+        <div
+          aria-hidden
+          className={cx(
+            layerBase,
+            css({ animation: 'sceneBloom 26s ease-in-out infinite alternate' }),
+          )}
+          style={{ backgroundImage: colors.bloom, mixBlendMode: 'screen' }}
+        />
+      </div>
     </div>
   )
 }
@@ -353,9 +346,15 @@ export function SceneLightWash() {
 export interface SceneProps {
   variant?: SceneVariant
   className?: string
+  /** Scrim shape: `canvas` for full-page surfaces (soft top wash + deep
+   * bottom third), `card` for tiles (bottom-only), `none` to opt out. */
+  scrim?: SceneScrim
+  /** Whether the Daylight (light-theme) wash may render. Immersive,
+   * always-dark surfaces (player, hero card, tiles) pass false. */
+  daylight?: boolean
 }
 
-export function Scene({ variant = 'dusk', className }: SceneProps) {
+export function Scene({ variant = 'dusk', className, scrim = 'canvas', daylight = true }: SceneProps) {
   // Cross-fade: keep the previous sky mounted beneath the incoming one.
   const { items: skies, fading } = useCrossfade(variant)
   // Grain is scene-agnostic — computed once, reused across every variant.
@@ -396,31 +395,30 @@ export function Scene({ variant = 'dusk', className }: SceneProps) {
         style={grainStyle}
       />
 
-      {/* Full radial vignette — darkens all four edges so the frame reads as
-          lit from within rather than a flat rectangle of gradient. */}
+      {/* Soft edge vignette — a light photographic frame, never a blackout. */}
       <div
         className={css({
           position: 'absolute',
           inset: '0',
           pointerEvents: 'none',
           background:
-            'radial-gradient(ellipse 128% 88% at 50% 40%, transparent 52%, rgba(4, 6, 16, 0.34) 100%)',
+            'radial-gradient(ellipse 128% 88% at 50% 40%, transparent 60%, rgba(4, 6, 16, 0.22) 100%)',
         })}
       />
 
-      {/* Legibility vignette — content and glass float above a gently dimmed floor. */}
-      <div
-        className={css({
-          position: 'absolute',
-          inset: '0',
-          pointerEvents: 'none',
-          background:
-            'linear-gradient(to bottom, rgba(5, 7, 18, 0.10) 0%, transparent 24%, transparent 58%, rgba(5, 7, 18, 0.42) 100%)',
-        })}
-      />
+      {/* Calm's signature scrim — transparent over the landscape, deep navy
+          where the text lives. This is what protects contrast, not blur. */}
+      {scrim !== 'none' && (
+        <div
+          aria-hidden
+          className={css({ position: 'absolute', inset: '0', pointerEvents: 'none' })}
+          style={{ background: SCRIM_GRADIENT[scrim] }}
+        />
+      )}
 
-      {/* Daylight — washes the dark sky to the airy morning canvas. */}
-      <SceneLightWash />
+      {/* Daylight — washes the dark sky to the airy morning canvas (browsable
+          chrome only; immersive scene surfaces opt out and stay dark). */}
+      {daylight && <SceneLightWash />}
     </div>
   )
 }

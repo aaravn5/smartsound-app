@@ -1,6 +1,6 @@
 import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react'
 import { css, cx } from 'styled-system/css'
-import { FADE_MS, GRAIN_URL, NaturePhoto, Scene, SceneLightWash, useCrossfade, type SceneVariant } from './Scene'
+import { CALM_SCRIM_CANVAS, FADE_MS, GRAIN_URL, NaturePhoto, Scene, useCrossfade, type SceneVariant } from './Scene'
 
 /**
  * LivingScene — the interactive 3D ambient canvas (Today hero + Player sky).
@@ -116,10 +116,10 @@ function signalRgb(variant: SceneVariant): [number, number, number] {
   return hexToRgb(ACCENT[variant])
 }
 
-// The WebGL sky/orb/dust canvas — dropped a shade under fully opaque so the
-// nature-photo mood layer behind it stays faintly visible, adding luxurious
-// depth without ever compromising the orb/cloud legibility above.
-const livingCanvas = css({ opacity: '0.92' })
+// The WebGL sky/orb/dust canvas — an overlay layer at roughly half opacity,
+// Calm-style: the CRISP nature photograph behind it is the dominant surface,
+// and the shader sky/orb reads as living light drifting over the landscape.
+const livingCanvas = css({ opacity: '0.5' })
 
 // ── component ───────────────────────────────────────────────────────────────
 
@@ -179,7 +179,7 @@ export function LivingScene({ variant = 'dusk', className }: LivingSceneProps) {
     return () => window.removeEventListener('touchstart', onTouch)
   }, [supported, lost, reduced, variant])
 
-  if (!supported || lost) return <Scene variant={variant} className={className} />
+  if (!supported || lost) return <Scene variant={variant} className={className} daylight={false} />
 
   return (
     <div
@@ -198,10 +198,8 @@ export function LivingScene({ variant = 'dusk', className }: LivingSceneProps) {
         className,
       )}
     >
-      {/* Nature-photo mood layer — sits behind the WebGL sky. The canvas
-          above is drawn a shade under fully opaque (see `livingCanvas`
-          below) so this depth layer bleeds through while the shader sky,
-          clouds and orb remain the dominant, fully legible surface. */}
+      {/* The landscape itself — crisp and clearly visible; the half-opacity
+          shader canvas above only adds living light, never hides it. */}
       {photos.map((photo) => (
         <div
           key={photo.id}
@@ -215,7 +213,7 @@ export function LivingScene({ variant = 'dusk', className }: LivingSceneProps) {
         </div>
       ))}
 
-      <Suspense fallback={<Scene variant={variant} />}>
+      <Suspense fallback={<Scene variant={variant} daylight={false} />}>
         <LivingSceneCanvas
           variant={variant}
           reducedMotion={reduced}
@@ -244,19 +242,17 @@ export function LivingScene({ variant = 'dusk', className }: LivingSceneProps) {
         style={grainStyle}
       />
 
-      {/* Legibility wash — content and glass float above a gently dimmed floor. */}
+      {/* Calm's signature scrim — transparent over the landscape, deep navy
+          at the bottom third where text and controls live. No Daylight wash
+          here: LivingScene surfaces are always-dark immersive scenes. */}
       <div
         className={css({
           position: 'absolute',
           inset: '0',
           pointerEvents: 'none',
-          background:
-            'linear-gradient(to bottom, rgba(5, 7, 18, 0.10) 0%, transparent 24%, transparent 58%, rgba(5, 7, 18, 0.42) 100%)',
         })}
+        style={{ background: CALM_SCRIM_CANVAS }}
       />
-
-      {/* Daylight — washes the dark 3D sky to the airy morning canvas. */}
-      <SceneLightWash />
     </div>
   )
 }

@@ -10,6 +10,7 @@ import { STATE_SCENE } from '~/components/SessionCard'
 import { SciencePanel } from '~/components/SciencePanel'
 import { useClickSound } from '~/lib/click-sound'
 import { useEngine } from '~/lib/engine-context'
+import { recordRecent } from '~/lib/recents'
 import { arousalToLch, lchToCss } from '~/design/signal'
 import { TARGET_STATES } from '~/engine/audio/profiles'
 import { BAND_LABEL, SOUNDSCAPES } from '~/lib/catalog'
@@ -209,6 +210,7 @@ function PlayerScreen() {
     }
     playClick('primary')
     recordSessionStart()
+    recordRecent(state)
     void start(state)
   }
 
@@ -303,7 +305,8 @@ function PlayerScreen() {
                 fontWeight: '600',
                 letterSpacing: '0.08em',
                 textTransform: 'uppercase',
-                color: 'var(--ss-ink-body)',
+                color: 'var(--ss-ink-strong)',
+                textShadow: 'var(--ss-text-glow)',
               })}
             >
               SmartSound Session · {profile.label}
@@ -316,6 +319,7 @@ function PlayerScreen() {
                 fontWeight: '700',
                 letterSpacing: '-0.01em',
                 color: 'text',
+                textShadow: 'var(--ss-text-glow)',
                 transition: 'opacity token(durations.gentle) ease',
               })}
             >
@@ -328,7 +332,8 @@ function PlayerScreen() {
                 fontSize: 'subhead',
                 fontWeight: '500',
                 letterSpacing: '0.01em',
-                color: 'var(--ss-ink-body)',
+                color: 'var(--ss-ink-strong)',
+                textShadow: 'var(--ss-text-glow)',
               })}`}
             >
               {band}
@@ -446,7 +451,8 @@ function PlayerScreen() {
               fontSize: 'caption',
               fontWeight: '500',
               letterSpacing: '0.02em',
-              color: 'faint',
+              color: 'var(--ss-ink-body)',
+              textShadow: 'var(--ss-text-glow)',
               transition: 'opacity token(durations.gentle) ease',
             })}
           >
@@ -462,6 +468,7 @@ function PlayerScreen() {
                 fontWeight: '700',
                 letterSpacing: '-0.02em',
                 color: 'text',
+                textShadow: 'var(--ss-text-glow)',
               })}`}
             >
               {formatElapsed(elapsedMs)}
@@ -543,7 +550,8 @@ function PlayerScreen() {
                 fontWeight: '600',
                 letterSpacing: '0.14em',
                 textTransform: 'uppercase',
-                color: 'var(--ss-ink-body)',
+                color: 'var(--ss-ink-strong)',
+                textShadow: 'var(--ss-text-glow)',
               })}
             >
               {profile.label}

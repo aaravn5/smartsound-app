@@ -1,14 +1,19 @@
 import { useMemo, useState } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
-import { css } from 'styled-system/css'
+import { css, cx } from 'styled-system/css'
 import { LiquidGlass } from '~/design/LiquidGlass'
+import { CALM_SCRIM_CARD, VARIANT_IMAGE, type SceneVariant } from '~/design/Scene'
 import { ScreenTitle } from '~/components/SereneScreen'
 import { Rail, SessionCard } from '~/components/SessionCard'
 import { suggestedBlockMinutes } from '~/engine/circadian/model'
 import { BAND_LABEL, SCENARIOS, SOUNDSCAPES } from '~/lib/catalog'
 import type { TargetState } from '~/engine/audio/types'
 
-/** Explore — the Calm library. Category rails over real engine states + catalog. */
+/**
+ * Explore — the Calm-style browse. Large category tiles with visible nature
+ * imagery up top (each scrolls to its section), then the library sections:
+ * rails and grids of crisp-photo session cards over real engine states.
+ */
 export const Route = createFileRoute('/app/explore')({
   component: ExploreScreen,
 })
@@ -64,6 +69,7 @@ interface Category {
   id: string
   title: string
   subtitle: string
+  scene: SceneVariant
   layout: 'rail' | 'grid'
   items: LibraryItem[]
 }
@@ -73,6 +79,7 @@ const CATEGORIES: Category[] = [
     id: 'focus',
     title: 'Focus',
     subtitle: 'Beta and alpha-beta modulation for single-thread work',
+    scene: 'ocean',
     layout: 'rail',
     items: [
       fromSoundscape('deep-focus'),
@@ -85,6 +92,7 @@ const CATEGORIES: Category[] = [
     id: 'relax',
     title: 'Relax',
     subtitle: 'Alpha-paced, unhurried — for a settled mind',
+    scene: 'forest',
     layout: 'grid',
     items: [fromSoundscape('still')],
   },
@@ -92,6 +100,7 @@ const CATEGORIES: Category[] = [
     id: 'sleep',
     title: 'Sleep',
     subtitle: 'Descending toward delta-modulated noise',
+    scene: 'aurora',
     layout: 'rail',
     items: [fromSoundscape('wind-down'), fromScenario('sleep-30'), fromSoundscape('delta-sleep')],
   },
@@ -99,6 +108,7 @@ const CATEGORIES: Category[] = [
     id: 'meditate',
     title: 'Meditate',
     subtitle: 'A short breath, a short settle',
+    scene: 'dawn',
     layout: 'grid',
     items: [meditation('Breathe', 'calm'), meditation('Settle', 'winddown')],
   },
@@ -106,6 +116,7 @@ const CATEGORIES: Category[] = [
     id: 'soundscapes',
     title: 'Soundscapes',
     subtitle: 'The five states, endless and open',
+    scene: 'dusk',
     layout: 'rail',
     items: SOUNDSCAPES.map((s) => fromSoundscape(s.id)),
   },
@@ -128,6 +139,100 @@ const SearchIcon = () => (
   </svg>
 )
 
+// ── Category tile — a large visible-imagery browse tile (Calm's browse). ────
+
+const tileShell = css({
+  position: 'relative',
+  display: 'block',
+  width: '100%',
+  height: '104px',
+  borderRadius: 'card',
+  overflow: 'hidden',
+  border: 'none',
+  p: '0',
+  m: '0',
+  font: 'inherit',
+  textAlign: 'left',
+  cursor: 'pointer',
+  WebkitTapHighlightColor: 'transparent',
+  background: 'rgba(10, 18, 38, 1)',
+  boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.09), 0 10px 30px rgba(3, 6, 18, 0.3)',
+  animation: 'fadeUp token(durations.calm) token(easings.enter) both',
+  transition: 'transform token(durations.quick) token(easings.calm)',
+  _active: { transform: 'scale(0.975)' },
+  '@media (prefers-reduced-motion: reduce)': {
+    animation: 'none',
+    transition: 'none',
+    _active: { transform: 'none' },
+  },
+})
+
+function CategoryTile({
+  category,
+  delayMs,
+  onSelect,
+}: {
+  category: Category
+  delayMs: number
+  onSelect: (id: string) => void
+}) {
+  return (
+    <button
+      type="button"
+      onClick={() => onSelect(category.id)}
+      aria-label={`Browse ${category.title}`}
+      className={cx('ss-scene-dark', tileShell)}
+      style={{ animationDelay: `${delayMs}ms` }}
+    >
+      <img
+        aria-hidden
+        alt=""
+        loading="lazy"
+        decoding="async"
+        src={VARIANT_IMAGE[category.scene]}
+        className={css({
+          position: 'absolute',
+          inset: '0',
+          width: '100%',
+          height: '100%',
+          objectFit: 'cover',
+          pointerEvents: 'none',
+        })}
+      />
+      <div
+        aria-hidden
+        className={css({ position: 'absolute', inset: '0', pointerEvents: 'none' })}
+        style={{ background: CALM_SCRIM_CARD }}
+      />
+      <div className={css({ position: 'absolute', insetX: '0', bottom: '0', px: '3.5', pb: '2.5', pt: '6' })}>
+        <p
+          className={css({
+            m: '0',
+            fontSize: 'headline',
+            fontWeight: '700',
+            letterSpacing: '-0.01em',
+            color: 'rgba(255, 255, 255, 0.98)',
+          })}
+        >
+          {category.title}
+        </p>
+        <p
+          className={`tabular ${css({
+            m: '0',
+            mt: '0.5',
+            fontSize: 'caption2',
+            fontWeight: '500',
+            letterSpacing: '0.02em',
+            color: 'rgba(235, 240, 252, 0.78)',
+          })}`}
+        >
+          {category.items.length} {category.items.length === 1 ? 'session' : 'sessions'}
+        </p>
+      </div>
+    </button>
+  )
+}
+
 function ExploreScreen() {
   const [query, setQuery] = useState('')
   const q = query.trim().toLowerCase()
@@ -140,6 +245,13 @@ function ExploreScreen() {
     })).filter((category) => category.items.length > 0)
   }, [q])
 
+  const scrollToCategory = (id: string) => {
+    const el = document.getElementById(`category-${id}`)
+    if (!el) return
+    const smooth = !window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    el.scrollIntoView({ behavior: smooth ? 'smooth' : 'auto', block: 'start' })
+  }
+
   let cardIndex = 0
 
   return (
@@ -148,7 +260,7 @@ function ExploreScreen() {
 
       <div
         className={css({
-          mb: '7',
+          mb: '6',
           animation: 'fadeUp token(durations.calm) token(easings.enter) both',
           '@media (prefers-reduced-motion: reduce)': { animation: 'none' },
         })}
@@ -185,6 +297,28 @@ function ExploreScreen() {
         </LiquidGlass>
       </div>
 
+      {/* Browse — large visible-imagery category tiles, Calm-style. Hidden
+          while searching (the filtered sections below are the results). */}
+      {!q && (
+        <div
+          className={css({
+            display: 'grid',
+            gridTemplateColumns: '1fr 1fr',
+            gap: '3',
+            mb: '8',
+          })}
+        >
+          {CATEGORIES.map((category, i) => (
+            <CategoryTile
+              key={category.id}
+              category={category}
+              delayMs={60 + i * 50}
+              onSelect={scrollToCategory}
+            />
+          ))}
+        </div>
+      )}
+
       {filtered.length === 0 && (
         <LiquidGlass
           variant="card"
@@ -207,7 +341,11 @@ function ExploreScreen() {
         const delayBase = 80 + ci * 90
 
         return (
-          <section key={category.id} className={css({ mb: '8' })}>
+          <section
+            key={category.id}
+            id={`category-${category.id}`}
+            className={css({ mb: '8', scrollMarginTop: '16px' })}
+          >
             <header
               className={css({
                 mb: '3',
@@ -224,11 +362,20 @@ function ExploreScreen() {
                   fontWeight: '600',
                   letterSpacing: '-0.01em',
                   color: 'text',
+                  textShadow: 'var(--ss-text-glow)',
                 })}
               >
                 {category.title}
               </h2>
-              <p className={css({ m: '0', mt: '0.5', fontSize: 'footnote', color: 'faint' })}>
+              <p
+                className={css({
+                  m: '0',
+                  mt: '0.5',
+                  fontSize: 'footnote',
+                  color: 'var(--ss-ink-body)',
+                  textShadow: 'var(--ss-text-glow)',
+                })}
+              >
                 {category.subtitle}
               </p>
             </header>
@@ -236,12 +383,12 @@ function ExploreScreen() {
             {category.layout === 'rail' ? (
               <Rail>
                 {category.items.map((item, i) => (
-                  <div key={item.id} className={css({ width: '196px', flexShrink: '0' })}>
+                  <div key={item.id} className={css({ width: '176px', flexShrink: '0' })}>
                     <SessionCard
                       state={item.state}
                       title={item.title}
                       meta={item.meta}
-                      height="172px"
+                      height="220px"
                       delayMs={delayBase + 60 + (startIndex + i) * 50}
                     />
                   </div>
@@ -261,7 +408,7 @@ function ExploreScreen() {
                     state={item.state}
                     title={item.title}
                     meta={item.meta}
-                    height={category.items.length > 1 ? '160px' : '200px'}
+                    height={category.items.length > 1 ? '170px' : '210px'}
                     delayMs={delayBase + 60 + (startIndex + i) * 50}
                   />
                 ))}

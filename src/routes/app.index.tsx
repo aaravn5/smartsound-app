@@ -1,4 +1,4 @@
-import { useRef } from 'react'
+import { useRef, useState } from 'react'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { motion, useReducedMotion, useScroll, useTransform } from 'motion/react'
 import { css, cx } from 'styled-system/css'
@@ -7,10 +7,10 @@ import { LivingScene } from '~/design/LivingScene'
 import { SmartSoundRings } from '~/design/SmartSoundRings'
 import { useClickSound } from '~/lib/click-sound'
 import { useMainScrollRef } from '~/lib/scroll-context'
-import { ScreenTitle } from '~/components/SereneScreen'
 import { Rail, SessionCard, STATE_SCENE } from '~/components/SessionCard'
 import { suggestFor, suggestedBlockMinutes } from '~/engine/circadian/model'
-import { SOUNDSCAPES, SCENARIOS } from '~/lib/catalog'
+import { BAND_LABEL, SOUNDSCAPES, SCENARIOS } from '~/lib/catalog'
+import { readRecents } from '~/lib/recents'
 import {
   ATTUNE_GOAL,
   MINUTES_GOAL,
@@ -19,19 +19,14 @@ import {
   todayMinutes,
   todaySessions,
 } from '~/lib/sample-stats'
+import type { TargetState } from '~/engine/audio/types'
 
 /**
- * Today — the Calm "Daily" home. A sticky-scroll surface (Calm/Endel-style):
- * the immersive LivingScene hero pins in place while the day's content —
- * rhythm rings, the recommended rail — glides up over it on a Liquid Glass
- * shelf. The pinned scene answers scroll with a gentle parallax (drift, fade,
- * scale) so it reads as a real depth layer, not a background image; the
- * shelf's own sections reveal as they enter view, calm and unhurried.
- *
- * `useScroll` needs the actual scrolling ancestor — the shell's single
- * `<main>` (see `lib/scroll-context.tsx`), never the window, which never
- * scrolls in this shell. Under `prefers-reduced-motion` the hero is a plain,
- * static block in normal flow: no pin, no parallax, no scroll-linked reveal.
+ * Today — the Calm-style home. A small, centered, time-based greeting floats
+ * over the crisp nature scene; below it the daily hero card (the circadian
+ * recommendation), the rhythm rings, and horizontal shelves of visible-photo
+ * content cards: Focus · Calm · Sleep · Recently played. The hero keeps its
+ * gentle sticky parallax (plain static block under reduced motion).
  */
 export const Route = createFileRoute('/app/')({
   component: TodayScreen,
@@ -43,6 +38,14 @@ function greeting(): string {
   if (hour < 12) return 'Good morning'
   if (hour < 18) return 'Good afternoon'
   return 'Good evening'
+}
+
+function greetingLine(): string {
+  const hour = new Date().getHours()
+  if (hour < 5) return 'Let the day go.'
+  if (hour < 12) return 'Take a deep breath.'
+  if (hour < 18) return 'A moment to settle.'
+  return 'Take a deep breath.'
 }
 
 function todayCaption(): string {
@@ -96,6 +99,122 @@ const ChevronIcon = () => (
 // view. Disabled entirely under reduced motion (sections just render still).
 const CALM_EASE = [0.16, 1, 0.3, 1] as const
 
+// ── shelf content — real catalog entries, grouped Calm-style ────────────────
+
+interface ShelfItem {
+  id: string
+  state: TargetState
+  title: string
+  meta: string
+}
+
+const soundscapeItem = (id: string): ShelfItem => {
+  const s = SOUNDSCAPES.find((x) => x.id === id)!
+  return { id: s.id, state: s.state, title: s.title, meta: `${s.band} · Open-ended` }
+}
+
+const scenarioItem = (id: string): ShelfItem => {
+  const s = SCENARIOS.find((x) => x.id === id)!
+  return { id: s.id, state: s.state, title: s.title.split(' · ')[0], meta: `${s.band} · ${s.minutes} min` }
+}
+
+interface Shelf {
+  id: string
+  title: string
+  items: ShelfItem[]
+}
+
+const SHELVES: Shelf[] = [
+  {
+    id: 'focus',
+    title: 'Focus',
+    items: [
+      soundscapeItem('deep-focus'),
+      scenarioItem('pomodoro-25'),
+      scenarioItem('deep-work-50'),
+      soundscapeItem('open-flow'),
+    ],
+  },
+  {
+    id: 'calm',
+    title: 'Calm',
+    items: [
+      soundscapeItem('still'),
+      scenarioItem('unwind-15'),
+      soundscapeItem('wind-down'),
+    ],
+  },
+  {
+    id: 'sleep',
+    title: 'Sleep',
+    items: [
+      soundscapeItem('delta-sleep'),
+      scenarioItem('sleep-30'),
+      soundscapeItem('wind-down'),
+    ],
+  },
+]
+
+/** Recently played — real history only (recorded when a session actually starts). */
+function recentShelf(): Shelf | null {
+  const states = readRecents()
+  if (states.length === 0) return null
+  const items = states.map((state) => {
+    const s = SOUNDSCAPES.find((x) => x.state === state) ?? SOUNDSCAPES[0]
+    return { id: `recent-${state}`, state, title: s.title, meta: `${BAND_LABEL[state]} · Open-ended` }
+  })
+  return { id: 'recent', title: 'Recently played', items }
+}
+
+const shelfTitleCss = css({
+  m: '0',
+  mb: '3',
+  fontFamily: 'display',
+  fontSize: 'title3',
+  fontWeight: '600',
+  letterSpacing: '-0.01em',
+  color: 'text',
+  textShadow: 'var(--ss-text-glow)',
+})
+
+const CARD_W = '176px'
+const CARD_H = '220px'
+
+function ShelfRow({
+  shelf,
+  reveal,
+  reduceMotion,
+  delay,
+}: {
+  shelf: Shelf
+  reveal: object | undefined
+  reduceMotion: boolean | null
+  delay: number
+}) {
+  return (
+    <motion.section
+      {...(reveal ?? {})}
+      transition={reduceMotion ? undefined : { duration: 0.7, ease: CALM_EASE, delay: 0.05 }}
+      className={css({ mb: '7' })}
+    >
+      <h2 className={shelfTitleCss}>{shelf.title}</h2>
+      <Rail>
+        {shelf.items.map((item, i) => (
+          <div key={item.id} className={css({ flexShrink: '0' })} style={{ width: CARD_W }}>
+            <SessionCard
+              state={item.state}
+              title={item.title}
+              meta={item.meta}
+              height={CARD_H}
+              delayMs={reduceMotion ? 0 : delay + i * 60}
+            />
+          </div>
+        ))}
+      </Rail>
+    </motion.section>
+  )
+}
+
 function TodayScreen() {
   const navigate = useNavigate()
   const playClick = useClickSound()
@@ -120,12 +239,8 @@ function TodayScreen() {
   const daily = SOUNDSCAPES.find((s) => s.state === suggestion.state) ?? SOUNDSCAPES[0]
   const dailyMinutes = suggestedBlockMinutes(suggestion.state)
 
-  // Recommended rail — the four timed scenarios, today's suggested state surfaced first.
-  const recommended = [...SCENARIOS].sort((a, b) => {
-    const aMatch = a.state === suggestion.state ? 0 : 1
-    const bMatch = b.state === suggestion.state ? 0 : 1
-    return aMatch - bMatch
-  })
+  // Recently played — read once per mount (localStorage, real history only).
+  const [recents] = useState(recentShelf)
 
   const reveal = reduceMotion
     ? undefined
@@ -138,14 +253,64 @@ function TodayScreen() {
 
   return (
     <>
-      <ScreenTitle caption={todayCaption()} title={greeting()} />
+      {/* Centered, time-based greeting over the scene — Calm's home opening. */}
+      <header
+        className={css({
+          mb: '6',
+          pt: '2',
+          textAlign: 'center',
+          animation: 'fadeUp token(durations.calm) token(easings.enter) both',
+          '@media (prefers-reduced-motion: reduce)': { animation: 'none' },
+        })}
+      >
+        <p
+          className={css({
+            m: '0',
+            mb: '1.5',
+            fontSize: 'footnote',
+            fontWeight: '600',
+            letterSpacing: '0.08em',
+            textTransform: 'uppercase',
+            color: 'var(--ss-ink-soft)',
+            textShadow: 'var(--ss-text-glow)',
+          })}
+        >
+          {todayCaption()}
+        </p>
+        <h1
+          className={css({
+            m: '0',
+            fontFamily: 'display',
+            fontSize: 'title1',
+            fontWeight: '700',
+            letterSpacing: '-0.015em',
+            lineHeight: '1.12',
+            color: 'text',
+            textShadow: 'var(--ss-text-glow)',
+          })}
+        >
+          {greeting()}
+        </h1>
+        <p
+          className={css({
+            m: '0',
+            mt: '1.5',
+            fontSize: 'subhead',
+            lineHeight: '1.4',
+            color: 'var(--ss-ink-body)',
+            textShadow: 'var(--ss-text-glow)',
+          })}
+        >
+          {greetingLine()}
+        </p>
+      </header>
 
-      {/* Sticky stage — the hero pins while the shelf below glides over it.
+      {/* Sticky stage — the daily hero pins while the shelves glide over it.
           Reduced motion collapses this back to a plain, non-sticky block. */}
       <div
         ref={stageRef}
         className={css({ position: 'relative', mb: '8' })}
-        style={reduceMotion ? undefined : { height: 'calc(60vh + 220px)', minHeight: '600px' }}
+        style={reduceMotion ? undefined : { height: 'calc(52vh + 200px)', minHeight: '540px' }}
       >
         <div
           className={cx(
@@ -153,6 +318,7 @@ function TodayScreen() {
             css({
               borderRadius: 'card',
               overflow: 'hidden',
+              boxShadow: '0 18px 48px rgba(3, 6, 18, 0.4)',
             }),
           )}
           style={
@@ -161,9 +327,9 @@ function TodayScreen() {
               : {
                   position: 'sticky',
                   top: 'calc(env(safe-area-inset-top) + 8px)',
-                  height: '60vh',
-                  minHeight: '380px',
-                  maxHeight: '620px',
+                  height: '52vh',
+                  minHeight: '360px',
+                  maxHeight: '560px',
                 }
           }
         >
@@ -266,8 +432,8 @@ function TodayScreen() {
         </div>
       </div>
 
-      {/* The shelf — rings + rail glide up over the pinned scene as you scroll. */}
-      <motion.section {...reveal}>
+      {/* The shelf — rings + content rows glide up over the pinned scene. */}
+      <motion.section {...(reveal ?? {})}>
         <LiquidGlass
           as="button"
           variant="card"
@@ -326,34 +492,43 @@ function TodayScreen() {
         </LiquidGlass>
       </motion.section>
 
-      <motion.section {...reveal} transition={reduceMotion ? undefined : { duration: 0.7, ease: CALM_EASE, delay: 0.08 }}>
-        <h2
-          className={css({
-            m: '0',
-            mb: '3',
-            fontFamily: 'display',
-            fontSize: 'title3',
-            fontWeight: '600',
-            letterSpacing: '-0.01em',
-            color: 'text',
-          })}
-        >
-          Recommended for now
-        </h2>
+      {/* Recommended — the timed scenarios, today's suggested state first. */}
+      <motion.section
+        {...(reveal ?? {})}
+        transition={reduceMotion ? undefined : { duration: 0.7, ease: CALM_EASE, delay: 0.08 }}
+        className={css({ mb: '7' })}
+      >
+        <h2 className={shelfTitleCss}>Recommended for now</h2>
         <Rail>
-          {recommended.map((scenario, i) => (
-            <div key={scenario.id} className={css({ width: '196px', flexShrink: '0' })}>
-              <SessionCard
-                state={scenario.state}
-                title={scenario.title.split(' · ')[0]}
-                meta={`${scenario.band} · ${scenario.minutes} min`}
-                height="172px"
-                delayMs={reduceMotion ? 0 : 320 + i * 70}
-              />
-            </div>
-          ))}
+          {[...SCENARIOS]
+            .sort((a, b) => (a.state === suggestion.state ? 0 : 1) - (b.state === suggestion.state ? 0 : 1))
+            .map((scenario, i) => (
+              <div key={scenario.id} className={css({ flexShrink: '0' })} style={{ width: CARD_W }}>
+                <SessionCard
+                  state={scenario.state}
+                  title={scenario.title.split(' · ')[0]}
+                  meta={`${scenario.band} · ${scenario.minutes} min`}
+                  height={CARD_H}
+                  delayMs={reduceMotion ? 0 : 320 + i * 70}
+                />
+              </div>
+            ))}
         </Rail>
       </motion.section>
+
+      {/* Calm-style shelves — Focus · Calm · Sleep (+ real Recently played). */}
+      {SHELVES.map((shelf, si) => (
+        <ShelfRow
+          key={shelf.id}
+          shelf={shelf}
+          reveal={reveal}
+          reduceMotion={reduceMotion}
+          delay={120 + si * 60}
+        />
+      ))}
+      {recents && (
+        <ShelfRow shelf={recents} reveal={reveal} reduceMotion={reduceMotion} delay={120} />
+      )}
     </>
   )
 }

@@ -114,7 +114,9 @@ function AppShell() {
         } as CSSProperties
       }
     >
-      <Scene variant={tab.scene} />
+      {/* `page` scrim — a steadier base dim so browsable text stays legible
+          while the landscape remains clearly visible behind it. */}
+      <Scene variant={tab.scene} scrim="page" />
 
       <main
         ref={mainRef}
