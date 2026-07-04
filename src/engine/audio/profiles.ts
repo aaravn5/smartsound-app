@@ -5,6 +5,11 @@ import type { StateProfile, TargetState } from './types'
  * focus, alpha for calm/flow, theta for wind-down, delta for sleep — used here
  * as *amplitude modulation* rates (Brain.fm-style), not binaural beats (§7.3).
  * Roots are derived from A=440 (§7.2).
+ *
+ * `chordRatios` gives each scape its own warm voicing (just-intonation ratios
+ * over rootHz) for the pad layer — always 5 tones so the persistent pad
+ * voices can be retuned in place on scape switch. `scale` gives the
+ * generative bell layer a pentatonic-ish palette to quantize to.
  */
 export const PROFILES: Record<TargetState, StateProfile> = {
   focus: {
@@ -17,6 +22,10 @@ export const PROFILES: Record<TargetState, StateProfile> = {
     density: 0.6,
     targetArousal: 0.62,
     rootHz: 220, // A3
+    // 1 – maj3 – 5 – maj7 – 9: bright, alert, clean (lydian-leaning)
+    chordRatios: [1, 1.25, 1.5, 1.875, 2.25],
+    // major pentatonic
+    scale: [1, 1.125, 1.25, 1.5, 1.667, 2],
   },
   flow: {
     key: 'flow',
@@ -28,6 +37,9 @@ export const PROFILES: Record<TargetState, StateProfile> = {
     density: 0.7,
     targetArousal: 0.55,
     rootHz: 196, // G3
+    // 1 – 9 – 5 – 8 – 10: sus/add9, floaty and open
+    chordRatios: [1, 1.125, 1.5, 2, 2.5],
+    scale: [1, 1.125, 1.333, 1.5, 1.875, 2],
   },
   calm: {
     key: 'calm',
@@ -39,6 +51,9 @@ export const PROFILES: Record<TargetState, StateProfile> = {
     density: 0.45,
     targetArousal: 0.4,
     rootHz: 174.6, // F3
+    // 1 – maj3 – 5 – maj7 – 9(oct): warm maj7add9, "expensive" pad chord
+    chordRatios: [1, 1.25, 1.5, 1.875, 2.5],
+    scale: [1, 1.125, 1.25, 1.5, 1.875, 2],
   },
   winddown: {
     key: 'winddown',
@@ -50,6 +65,9 @@ export const PROFILES: Record<TargetState, StateProfile> = {
     density: 0.32,
     targetArousal: 0.25,
     rootHz: 146.8, // D3
+    // 1 – min3 – 5 – min7 – min3(oct): soft minor7, gently melancholic
+    chordRatios: [1, 1.2, 1.5, 1.8, 2.4],
+    scale: [1, 1.2, 1.333, 1.5, 1.8, 2],
   },
   sleep: {
     key: 'sleep',
@@ -61,10 +79,10 @@ export const PROFILES: Record<TargetState, StateProfile> = {
     density: 0.22,
     targetArousal: 0.12,
     rootHz: 110, // A2
+    // 1 – 5 – 8 – 12 – 15: open fifths/octaves only, minimal partials
+    chordRatios: [1, 1.5, 2, 3, 4],
+    scale: [1, 1.5, 2],
   },
 }
 
 export const TARGET_STATES = Object.values(PROFILES)
-
-/** A small pentatonic-ish set of ratios over the root — always consonant. */
-export const CHORD_RATIOS = [1, 1.2, 1.5, 2, 2.4] as const
