@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
-import { useReducedMotion } from 'motion/react'
+import { motion, useReducedMotion } from 'motion/react'
 import * as Slider from '@radix-ui/react-slider'
 import { css, cx } from 'styled-system/css'
 import { LiquidGlass } from '~/design/LiquidGlass'
@@ -74,14 +74,16 @@ const ChevronDownIcon = () => (
   </svg>
 )
 
-const PlayIcon = () => (
-  <svg width="26" height="26" viewBox="0 0 24 24" aria-hidden>
+// Larger, optically-centered glyphs for the orb's center. The play triangle is
+// nudged slightly right so its visual mass sits on the true center.
+const CenterPlayIcon = () => (
+  <svg width="38" height="38" viewBox="0 0 24 24" aria-hidden style={{ transform: 'translateX(2px)' }}>
     <path d="M8.2 5.6a1 1 0 0 1 1.53-.85l9.4 6.4a1 1 0 0 1 0 1.66l-9.4 6.4A1 1 0 0 1 8.2 18.3V5.6z" fill="currentColor" />
   </svg>
 )
 
-const PauseIcon = () => (
-  <svg width="24" height="24" viewBox="0 0 24 24" aria-hidden>
+const CenterPauseIcon = () => (
+  <svg width="34" height="34" viewBox="0 0 24 24" aria-hidden>
     <rect x="6.3" y="5" width="4" height="14" rx="1.4" fill="currentColor" />
     <rect x="13.7" y="5" width="4" height="14" rx="1.4" fill="currentColor" />
   </svg>
@@ -331,7 +333,11 @@ function PlayerScreen() {
             </p>
           </div>
 
-          {/* Central biofeedback visual — a breathing bubble around the signal ring. */}
+          {/* Central orb — the signal ring IS the play/pause control. Tapping
+              the living orb starts or stops the session; a soft center glyph
+              invites the touch (bright when paused, receding while it plays so
+              the ring's motion reads as "alive"). The breathing halo doubles as
+              the press feedback. This is the merged orb⇄transport surface. */}
           <div
             className={css({
               position: 'relative',
@@ -354,12 +360,45 @@ function PlayerScreen() {
               style={{
                 width: RING_SIZE * 1.32,
                 height: RING_SIZE * 1.32,
-                background: `radial-gradient(circle, ${ringColor}26 0%, transparent 68%)`,
+                background: `radial-gradient(circle, ${ringColor}${running ? '38' : '22'} 0%, transparent 68%)`,
                 animation: reduceMotion ? 'none' : `breathe ${breathDuration}s ease-in-out infinite`,
                 transition: 'background token(durations.slow) ease',
               }}
             />
-            <div style={{ width: RING_SIZE, height: RING_SIZE, position: 'relative' }}>
+            <motion.button
+              type="button"
+              onClick={handlePlayPause}
+              aria-label={running ? 'Pause session' : 'Play session'}
+              aria-pressed={running}
+              whileTap={reduceMotion ? undefined : { scale: 0.955 }}
+              animate={reduceMotion ? undefined : running ? { scale: [1, 1.015, 1] } : { scale: 1 }}
+              transition={
+                reduceMotion
+                  ? undefined
+                  : running
+                    ? { duration: breathDuration, repeat: Infinity, ease: 'easeInOut' }
+                    : { type: 'spring', stiffness: 320, damping: 20 }
+              }
+              className={css({
+                position: 'relative',
+                border: 'none',
+                background: 'transparent',
+                p: '0',
+                borderRadius: 'full',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                WebkitTapHighlightColor: 'transparent',
+                touchAction: 'manipulation',
+                _focusVisible: {
+                  outline: '2px solid token(colors.accent)',
+                  outlineOffset: '8px',
+                  borderRadius: 'full',
+                },
+              })}
+              style={{ width: RING_SIZE, height: RING_SIZE }}
+            >
               <SignalRing
                 arousal={arousal}
                 color={ringColor}
@@ -370,7 +409,30 @@ function PlayerScreen() {
                 size={RING_SIZE}
                 label={`Signal ring — ${band}, ${ringStatusLabel(status, bioActive, capped)}`}
               />
-            </div>
+              {/* Center glyph on a frosted disc — the play affordance living
+                  inside the orb. Recedes (not vanishes) while running. */}
+              <span
+                aria-hidden
+                className={css({
+                  position: 'absolute',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  w: '84px',
+                  h: '84px',
+                  borderRadius: 'full',
+                  color: 'text',
+                  background: 'rgba(255,255,255,0.10)',
+                  backdropFilter: 'blur(6px)',
+                  boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.16)',
+                  pointerEvents: 'none',
+                  transition: 'opacity token(durations.gentle) ease, transform token(durations.gentle) ease',
+                })}
+                style={{ opacity: running ? 0.28 : 0.96 }}
+              >
+                {running ? <CenterPauseIcon /> : <CenterPlayIcon />}
+              </span>
+            </motion.button>
           </div>
 
           <p
@@ -440,13 +502,15 @@ function PlayerScreen() {
             </div>
           </div>
 
-          {/* Transport — big play/pause, previous/next state. */}
+          {/* Transport — the orb above owns play/pause; this row only shifts
+              between states. A centered pill keeps prev/next visually paired
+              with the current state's name, so the row reads as one control. */}
           <div
             className={css({
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              gap: '6',
+              gap: '3',
               mb: '6',
             })}
           >
@@ -469,25 +533,19 @@ function PlayerScreen() {
               <SkipBackIcon />
             </LiquidGlass>
 
-            <LiquidGlass
-              as="button"
-              variant="control"
-              tint="var(--signal)"
-              onClick={handlePlayPause}
-              aria-label={running ? 'Pause' : 'Play'}
+            <div
               className={css({
-                border: 'none',
-                color: 'text',
-                w: '80px',
-                h: '80px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                boxShadow: '0 0 0 1px rgba(255,255,255,0.08), var(--signal-glow)',
+                minW: '128px',
+                textAlign: 'center',
+                fontSize: 'footnote',
+                fontWeight: '600',
+                letterSpacing: '0.14em',
+                textTransform: 'uppercase',
+                color: 'rgba(235,235,248,0.72)',
               })}
             >
-              {running ? <PauseIcon /> : <PlayIcon />}
-            </LiquidGlass>
+              {profile.label}
+            </div>
 
             <LiquidGlass
               as="button"

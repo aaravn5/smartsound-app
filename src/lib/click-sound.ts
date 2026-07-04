@@ -75,7 +75,9 @@ function ensureContext(): AudioContext | null {
   if (!ctx) {
     ctx = new Ctor()
     master = ctx.createGain()
-    master.gain.value = 0.85
+    // Softer overall — the switch should feel present, not loud. Halved from
+    // the original 0.85 so the "clicky" UI never overpowers the soundscape.
+    master.gain.value = 0.42
     master.connect(ctx.destination)
   }
   if (ctx.state === 'suspended') void ctx.resume()
@@ -122,12 +124,12 @@ const VOICES: Record<ClickKind, ClickVoice> = {
   primary: {
     clickHz: 1700,
     clickQ: 7,
-    clickGain: 0.34,
+    clickGain: 0.26,
     clickDecay: 0.03,
     thunkFrom: 150,
     thunkTo: 55,
-    thunkGain: 0.28,
-    thunkDecay: 0.16,
+    thunkGain: 0.2,
+    thunkDecay: 0.15,
     thunkDelay: 0.008,
   },
 }
