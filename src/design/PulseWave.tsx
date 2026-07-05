@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { css } from 'styled-system/css'
+import { proceduralForced, saveDataOn } from '~/lib/nature-assets'
 import { prefersStillScene } from './Scene'
 
 /**
@@ -22,7 +23,22 @@ const IDLE_SWING = 0.05
 
 export function PulseWave({ getSpectrum }: PulseWaveProps) {
   const videoRef = useRef<HTMLVideoElement>(null)
-  const [still] = useState(prefersStillScene)
+  // Shared video policy: nothing under reduced motion, Save-Data, or the
+  // zero-asset procedural path.
+  const [still] = useState(() => prefersStillScene() || saveDataOn() || proceduralForced())
+
+  // Pause when the tab hides; resume when it returns.
+  useEffect(() => {
+    if (still) return
+    const onVisibility = () => {
+      const v = videoRef.current
+      if (!v) return
+      if (document.hidden) v.pause()
+      else void v.play().catch(() => undefined)
+    }
+    document.addEventListener('visibilitychange', onVisibility)
+    return () => document.removeEventListener('visibilitychange', onVisibility)
+  }, [still])
 
   useEffect(() => {
     if (still) return

@@ -1,5 +1,6 @@
 import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react'
 import { css, cx } from 'styled-system/css'
+import { proceduralForced } from '~/lib/nature-assets'
 import { CALM_SCRIM_CANVAS, FADE_MS, GRAIN_URL, NaturePhoto, Scene, useCrossfade, type SceneVariant } from './Scene'
 
 /**
@@ -179,7 +180,10 @@ export function LivingScene({ variant = 'dusk', className }: LivingSceneProps) {
     return () => window.removeEventListener('touchstart', onTouch)
   }, [supported, lost, reduced, variant])
 
-  if (!supported || lost) return <Scene variant={variant} className={className} daylight={false} />
+  // No WebGL, context lost, or procedural-forced (zero-asset QA path): the
+  // CSS Scene carries the full ladder (photo/procedural) without a canvas.
+  if (!supported || lost || proceduralForced())
+    return <Scene variant={variant} className={className} daylight={false} />
 
   return (
     <div

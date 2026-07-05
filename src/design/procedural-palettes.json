@@ -1,0 +1,57 @@
+{
+  "focus": {
+    "family": "violet-hour pine forest, low fog",
+    "sky": ["#2A2350", "#1B1A3E", "#12122B"],
+    "glow": "rgba(139, 108, 246, 0.20)",
+    "ridges": ["#221F44", "#181735", "#0E0E22"],
+    "mist": ["rgba(167, 139, 250, 0.11)", "rgba(233, 228, 255, 0.05)"],
+    "water": null,
+    "stars": false,
+    "treeline": true,
+    "bottom": "#0E0E22"
+  },
+  "flow": {
+    "family": "slow river through canyon at dusk",
+    "sky": ["#34284A", "#281E3E", "#181330"],
+    "glow": "rgba(253, 186, 116, 0.14)",
+    "ridges": ["#3A2440", "#251831", "#140F22"],
+    "mist": ["rgba(216, 180, 254, 0.09)", "rgba(255, 226, 195, 0.05)"],
+    "water": { "base": "#1B1533", "sheen": "rgba(253, 186, 116, 0.12)" },
+    "stars": false,
+    "treeline": false,
+    "bottom": "#140F22"
+  },
+  "calm": {
+    "family": "coastal meadow, golden hour, long grass",
+    "sky": ["#4A3A46", "#382E45", "#1F1B35"],
+    "glow": "rgba(253, 186, 116, 0.18)",
+    "ridges": ["#353040", "#252133", "#141220"],
+    "mist": ["rgba(253, 230, 190, 0.08)", "rgba(255, 244, 224, 0.045)"],
+    "water": null,
+    "stars": false,
+    "treeline": false,
+    "bottom": "#141220"
+  },
+  "winddown": {
+    "family": "moonlit lake, still water, amber horizon glow",
+    "sky": ["#1D2142", "#161A36", "#0F1126"],
+    "glow": "rgba(251, 191, 36, 0.15)",
+    "ridges": ["#161831", "#0D0F22", "#0A0B1C"],
+    "mist": ["rgba(148, 163, 255, 0.08)", "rgba(226, 232, 255, 0.04)"],
+    "water": { "base": "#111330", "sheen": "rgba(203, 213, 255, 0.10)" },
+    "stars": false,
+    "treeline": false,
+    "bottom": "#0A0B1C"
+  },
+  "sleep": {
+    "family": "moonlit lake, deep night — star field, dimmer",
+    "sky": ["#141730", "#0E1124", "#080A18"],
+    "glow": "rgba(251, 191, 36, 0.08)",
+    "ridges": ["#0D0F22", "#080A18", "#060714"],
+    "mist": ["rgba(148, 163, 255, 0.06)", "rgba(226, 232, 255, 0.03)"],
+    "water": { "base": "#0B0D20", "sheen": "rgba(200, 215, 255, 0.09)" },
+    "stars": true,
+    "treeline": false,
+    "bottom": "#060714"
+  }
+}

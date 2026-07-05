@@ -1,6 +1,13 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { css, cx } from 'styled-system/css'
 import { useTheme } from '~/lib/theme'
+import {
+  proceduralForced,
+  resolveNatureUpgrade,
+  VARIANT_NATURE_ID,
+  type NatureUpgrade,
+} from '~/lib/nature-assets'
+import { ProceduralScene } from './ProceduralScene'
 
 /**
  * Scene — the immersive Calm ambient canvas.
@@ -130,7 +137,8 @@ const SCENES: Record<SceneVariant, SceneColors> = {
   },
 }
 
-export const FADE_MS = 1400
+// ~1200ms scene cross-fade, synced with the mode accent transition.
+export const FADE_MS = 1200
 
 /**
  * useCrossfade — keeps the previous value mounted beneath the incoming one
@@ -258,8 +266,8 @@ export interface NaturePhotoProps {
   className?: string
 }
 
-// A registered live-video loop — same deterministic box as the photo, no
-// Ken-Burns (the footage carries its own motion).
+// An ambient loop — same deterministic box as the photo, no Ken-Burns (the
+// footage carries its own motion).
 const videoLayer = css({
   position: 'absolute',
   left: '0',
@@ -271,12 +279,104 @@ const videoLayer = css({
   objectFit: 'cover',
 })
 
-/** The crisp nature layer — a live Higgsfield video loop when the variant has
- * one (still photo under reduced motion), otherwise the photo with its slow
- * Ken-Burns drift. Shared by `Scene`'s sky and `LivingScene`'s 3D world. */
+/** Ambient scene loop with the shared video policy: muted, looping, inline,
+ * poster = the scene photo, and PAUSED whenever the tab is hidden. */
+export function SceneVideo({ src, poster, className }: { src: string; poster?: string; className?: string }) {
+  const ref = useRef<HTMLVideoElement>(null)
+  useEffect(() => {
+    const onVisibility = () => {
+      const v = ref.current
+      if (!v) return
+      if (document.hidden) v.pause()
+      else void v.play().catch(() => undefined)
+    }
+    document.addEventListener('visibilitychange', onVisibility)
+    return () => document.removeEventListener('visibilitychange', onVisibility)
+  }, [])
+  return (
+    <video
+      ref={ref}
+      aria-hidden
+      src={src}
+      poster={poster}
+      autoPlay
+      muted
+      loop
+      playsInline
+      disablePictureInPicture
+      className={cx(videoLayer, className)}
+    />
+  )
+}
+
+/**
+ * The crisp nature layer — resolves the Nature asset ladder for its scene:
+ *
+ *   1. explicit `VARIANT_VIDEO` registration, or a probed
+ *      `/assets/nature/{id}.webm` ambient loop (skipped under reduced motion
+ *      or Save-Data; paused when the tab hides)
+ *   2. a probed `/assets/nature/{id}.avif` high-res still
+ *   3. the bundled scene photograph (Ken-Burns drift)
+ *   4. the procedural landscape (photo load failure, or forced via
+ *      `?scene=procedural` / localStorage ss_scene_source)
+ *
+ * Shared by `Scene`'s sky and `LivingScene`'s 3D world, so a rendered asset
+ * dropped into public/assets/nature/ upgrades every surface with no code.
+ */
 export function NaturePhoto({ variant, className }: NaturePhotoProps) {
-  const video = VARIANT_VIDEO[variant]
   const [still] = useState(prefersStillScene)
+  const forced = useMemo(proceduralForced, [])
+  const [upgrade, setUpgrade] = useState<NatureUpgrade>(null)
+  const [photoFailed, setPhotoFailed] = useState(false)
+  const natureId = VARIANT_NATURE_ID[variant]
+
+  useEffect(() => {
+    if (forced) return
+    let alive = true
+    setUpgrade(null)
+    void resolveNatureUpgrade(natureId, { allowVideo: !still }).then((found) => {
+      if (alive) setUpgrade(found)
+    })
+    return () => {
+      alive = false
+    }
+  }, [natureId, forced, still])
+
+  const legacyVideo = VARIANT_VIDEO[variant]
+
+  let content: ReactNode
+  if (forced || photoFailed) {
+    content = <ProceduralScene id={natureId} />
+  } else if (!still && legacyVideo) {
+    content = <SceneVideo src={legacyVideo} poster={VARIANT_IMAGE[variant]} />
+  } else if (upgrade?.kind === 'video' && !still) {
+    content = <SceneVideo src={upgrade.src} poster={VARIANT_IMAGE[variant]} />
+  } else if (upgrade?.kind === 'image') {
+    content = (
+      <img
+        aria-hidden
+        alt=""
+        loading="lazy"
+        decoding="async"
+        src={upgrade.src}
+        onError={() => setPhotoFailed(true)}
+        className={photoLayer}
+      />
+    )
+  } else {
+    content = (
+      <img
+        aria-hidden
+        alt=""
+        loading="lazy"
+        decoding="async"
+        src={VARIANT_IMAGE[variant]}
+        onError={() => setPhotoFailed(true)}
+        className={photoLayer}
+      />
+    )
+  }
+
   return (
     <div
       aria-hidden
@@ -285,21 +385,7 @@ export function NaturePhoto({ variant, className }: NaturePhotoProps) {
         className,
       )}
     >
-      {video && !still ? (
-        <video
-          aria-hidden
-          src={video}
-          poster={VARIANT_IMAGE[variant]}
-          autoPlay
-          muted
-          loop
-          playsInline
-          disablePictureInPicture
-          className={videoLayer}
-        />
-      ) : (
-        <img aria-hidden alt="" loading="lazy" decoding="async" src={VARIANT_IMAGE[variant]} className={photoLayer} />
-      )}
+      {content}
     </div>
   )
 }
