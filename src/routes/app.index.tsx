@@ -1,12 +1,13 @@
 import { useRef, useState } from 'react'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
-import { motion, useReducedMotion, useScroll, useTransform } from 'motion/react'
+import { motion, useReducedMotion, useTransform } from 'motion/react'
 import { css, cx } from 'styled-system/css'
 import { LiquidGlass } from '~/design/LiquidGlass'
 import { LivingScene } from '~/design/LivingScene'
 import { SmartSoundRings } from '~/design/SmartSoundRings'
 import { useClickSound } from '~/lib/click-sound'
-import { useMainScrollRef } from '~/lib/scroll-context'
+import { useContainerScrollProgress } from '~/lib/scroll-context'
+import { ModeShelf } from '~/components/ModeShelf'
 import { Rail, SessionCard, STATE_SCENE } from '~/components/SessionCard'
 import { suggestFor, suggestedBlockMinutes } from '~/engine/circadian/model'
 import { BAND_LABEL, SOUNDSCAPES, SCENARIOS } from '~/lib/catalog'
@@ -22,11 +23,15 @@ import {
 import type { TargetState } from '~/engine/audio/types'
 
 /**
- * Today — the Calm-style home. A small, centered, time-based greeting floats
- * over the crisp nature scene; below it the daily hero card (the circadian
- * recommendation), the rhythm rings, and horizontal shelves of visible-photo
- * content cards: Focus · Calm · Sleep · Recently played. The hero keeps its
- * gentle sticky parallax (plain static block under reduced motion).
+ * /app — the app now opens on the cinematic 3D mode shelf (ModeShelf): a
+ * near-black stage, giant serif wordmark, and the raked shelf of every
+ * playable mode and scenario, filtered by the bottom pills. Scrolling past
+ * the stage continues into the Today section — the Calm-style editorial
+ * home: time-based greeting, the daily hero card (circadian recommendation),
+ * the rhythm rings, and horizontal shelves of visible-photo content cards.
+ * Nothing was deleted in the revamp, only re-hierarchized: shelf first,
+ * editorial second. The hero keeps its gentle sticky parallax (plain static
+ * block under reduced motion).
  */
 export const Route = createFileRoute('/app/')({
   component: TodayScreen,
@@ -219,14 +224,11 @@ function TodayScreen() {
   const navigate = useNavigate()
   const playClick = useClickSound()
   const reduceMotion = useReducedMotion()
-  const mainRef = useMainScrollRef()
 
   const stageRef = useRef<HTMLDivElement>(null)
-  const { scrollYProgress } = useScroll({
-    target: stageRef,
-    container: mainRef ?? undefined,
-    offset: ['start start', 'end start'],
-  })
+  // Hand-rolled container scroll progress — motion@11's useScroll(container)
+  // freezes under StrictMode double-mounting (see scroll-context.tsx).
+  const scrollYProgress = useContainerScrollProgress(stageRef)
   // Gentle parallax: the pinned scene drifts a little slower than the
   // content sliding over it, dims, and breathes outward — never a hard cut.
   const sceneY = useTransform(scrollYProgress, [0, 1], [0, 28])
@@ -256,6 +258,11 @@ function TodayScreen() {
     // always-dark ambient photo in BOTH themes, so its ink must stay light —
     // without this, Daylight flips the greeting/shelf titles to slate-on-dark.
     <div className="ss-scene-dark">
+      {/* The cinematic 3D mode shelf — the app opens here. Full-bleed stage,
+          exactly one screen tall; everything below is the editorial scroll. */}
+      <ModeShelf />
+
+      <div className={css({ pt: '12' })}>
       {/* Centered, time-based greeting over the scene — Calm's home opening. */}
       <header
         className={css({
@@ -532,6 +539,7 @@ function TodayScreen() {
       {recents && (
         <ShelfRow shelf={recents} reveal={reveal} reduceMotion={reduceMotion} delay={120} />
       )}
+      </div>
     </div>
   )
 }
