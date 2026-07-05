@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useReducedMotion } from 'motion/react'
 import * as Switch from '@radix-ui/react-switch'
@@ -7,6 +8,7 @@ import { ScreenTitle } from '~/components/SereneScreen'
 import { SettingsGroup, SettingsRow } from '~/components/SettingsList'
 import { ThemeToggle } from '~/components/ThemeToggle'
 import { useClickSound, useSfxEnabled } from '~/lib/click-sound'
+import { disableDevAccess, isDevAccess, tryUnlockDevAccess } from '~/lib/dev-access'
 import { useDailyUsage, FREE_DAILY_MIN } from '~/lib/entitlements'
 
 /**
@@ -192,12 +194,172 @@ function SoundRow() {
   )
 }
 
+const KeyIcon = () => (
+  <svg {...iconAttrs}>
+    <circle cx="8" cy="14.5" r="4.2" />
+    <path d="M11.2 11.3 19.5 3M16 6.5l3 3M13.5 9l2 2" />
+  </svg>
+)
+
+/**
+ * Developer access — a password-gated unlock (all modes, no daily cap).
+ * Client-side only, same honesty as the entitlements stub: this reviews the
+ * paid experience, it is not a security boundary. A reload after
+ * unlock/disable lets every `useDailyUsage()` instance re-read the plan.
+ */
+function DevAccessRow() {
+  const playClick = useClickSound()
+  const [unlocked, setUnlocked] = useState(() => isDevAccess())
+  const [value, setValue] = useState('')
+  const [rejected, setRejected] = useState(false)
+
+  const submit = () => {
+    if (tryUnlockDevAccess(value)) {
+      playClick('primary')
+      setUnlocked(true)
+      setRejected(false)
+      window.location.reload()
+    } else {
+      playClick('tap')
+      setRejected(true)
+    }
+  }
+
+  return (
+    <div className={css({ px: '4', py: '3.5' })}>
+      <div className={css({ display: 'flex', alignItems: 'center', gap: '3' })}>
+        <span
+          aria-hidden
+          className={css({
+            display: 'grid',
+            placeItems: 'center',
+            width: '30px',
+            height: '30px',
+            borderRadius: 'full',
+            color: 'accent',
+            background: 'accentSoft',
+            flexShrink: '0',
+            lineHeight: '0',
+          })}
+        >
+          <KeyIcon />
+        </span>
+        <div className={css({ flex: '1', minW: '0' })}>
+          <p className={css({ m: '0', fontSize: 'subhead', fontWeight: '500', color: 'text' })}>
+            Developer access
+          </p>
+          <p className={css({ m: '0', mt: '0.5', fontSize: 'caption', lineHeight: '1.4', color: 'faint' })}>
+            {unlocked
+              ? 'Active — all modes unlocked, no daily cap'
+              : 'Enter the developer password to unlock every mode'}
+          </p>
+        </div>
+        {unlocked && (
+          <button
+            type="button"
+            onClick={() => {
+              playClick('tap')
+              disableDevAccess()
+              setUnlocked(false)
+              window.location.reload()
+            }}
+            className={css({
+              border: 'none',
+              borderRadius: 'capsule',
+              px: '3',
+              py: '1.5',
+              font: 'inherit',
+              fontSize: 'footnote',
+              fontWeight: '600',
+              color: 'text',
+              background: 'var(--ss-control-track)',
+              cursor: 'pointer',
+              flexShrink: '0',
+              WebkitTapHighlightColor: 'transparent',
+            })}
+          >
+            Disable
+          </button>
+        )}
+      </div>
+
+      {!unlocked && (
+        <div className={css({ display: 'flex', gap: '2', mt: '3' })}>
+          <input
+            type="password"
+            value={value}
+            onChange={(e) => {
+              setValue(e.target.value)
+              setRejected(false)
+            }}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') submit()
+            }}
+            placeholder="Developer password"
+            aria-label="Developer password"
+            aria-invalid={rejected || undefined}
+            className={css({
+              flex: '1',
+              minW: '0',
+              px: '3.5',
+              h: '40px',
+              borderRadius: 'control',
+              border: '1px solid',
+              borderColor: rejected ? 'rgba(248, 113, 113, 0.65)' : 'hairline',
+              background: 'var(--ss-control-track-soft)',
+              font: 'inherit',
+              fontSize: 'subhead',
+              color: 'text',
+              outline: 'none',
+              '&::placeholder': { color: 'faint' },
+              _focusVisible: { outline: '2px solid token(colors.accent)', outlineOffset: '2px' },
+            })}
+          />
+          <button
+            type="button"
+            onClick={submit}
+            className={css({
+              border: 'none',
+              borderRadius: 'control',
+              px: '4',
+              h: '40px',
+              font: 'inherit',
+              fontSize: 'subhead',
+              fontWeight: '600',
+              color: 'text',
+              background: 'var(--ss-control-track)',
+              cursor: 'pointer',
+              flexShrink: '0',
+              WebkitTapHighlightColor: 'transparent',
+            })}
+          >
+            Unlock
+          </button>
+        </div>
+      )}
+      {!unlocked && rejected && (
+        <p className={css({ m: '0', mt: '2', fontSize: 'caption', color: 'rgba(252, 165, 165, 0.9)' })}>
+          That password isn&rsquo;t right.
+        </p>
+      )}
+    </div>
+  )
+}
+
+const PLAN_LABEL: Record<string, string> = {
+  free: 'Free',
+  pro: 'Pro',
+  studio: 'Studio',
+}
+
 function ProfileScreen() {
   const reduceMotion = useReducedMotion()
   const usage = useDailyUsage()
   const navigate = useNavigate()
   const playClick = useClickSound()
 
+  const paidPlan = usage.plan !== 'free'
+  const devActive = isDevAccess()
   const usedPct = Math.min(100, Math.round((usage.minutesToday / FREE_DAILY_MIN) * 100))
 
   return (
@@ -229,7 +391,7 @@ function ProfileScreen() {
                 Current plan
               </p>
               <h2 className={css({ m: '0', mt: '0.5', fontFamily: 'display', fontSize: 'title2', fontWeight: '700', color: 'text' })}>
-                Free
+                {PLAN_LABEL[usage.plan] ?? 'Free'}
               </h2>
             </div>
             <span
@@ -243,20 +405,35 @@ function ProfileScreen() {
                 borderRadius: 'capsule',
               })}
             >
-              {usage.capReached ? 'Today’s limit reached' : `${FREE_DAILY_MIN} min / day`}
+              {paidPlan
+                ? devActive
+                  ? 'Developer access'
+                  : 'Unlimited'
+                : usage.capReached
+                  ? 'Today’s limit reached'
+                  : `${FREE_DAILY_MIN} min / day`}
             </span>
           </div>
 
-          <p className={css({ m: '0', mb: '1.5', fontSize: 'footnote', color: 'muted' })}>
-            <span className={`tabular ${css({ fontWeight: '700', color: 'text' })}`}>{Math.round(usage.minutesToday)}</span> of{' '}
-            <span className="tabular">{FREE_DAILY_MIN}</span> minutes used today
-          </p>
-          <div className={css({ height: '4px', borderRadius: 'full', bg: 'hairline', overflow: 'hidden' })}>
-            <div
-              className={css({ height: 'full', borderRadius: 'full', bg: 'accent', transition: 'width token(durations.gentle) ease' })}
-              style={{ width: `${usedPct}%` }}
-            />
-          </div>
+          {paidPlan ? (
+            <p className={css({ m: '0', mb: '1.5', fontSize: 'footnote', color: 'muted' })}>
+              <span className={`tabular ${css({ fontWeight: '700', color: 'text' })}`}>{Math.round(usage.minutesToday)}</span>{' '}
+              minutes today · no daily cap
+            </p>
+          ) : (
+            <>
+              <p className={css({ m: '0', mb: '1.5', fontSize: 'footnote', color: 'muted' })}>
+                <span className={`tabular ${css({ fontWeight: '700', color: 'text' })}`}>{Math.round(usage.minutesToday)}</span> of{' '}
+                <span className="tabular">{FREE_DAILY_MIN}</span> minutes used today
+              </p>
+              <div className={css({ height: '4px', borderRadius: 'full', bg: 'hairline', overflow: 'hidden' })}>
+                <div
+                  className={css({ height: 'full', borderRadius: 'full', bg: 'accent', transition: 'width token(durations.gentle) ease' })}
+                  style={{ width: `${usedPct}%` }}
+                />
+              </div>
+            </>
+          )}
 
           <div className={css({ height: '1px', bg: 'hairline', my: '5' })} />
 
@@ -338,6 +515,10 @@ function ProfileScreen() {
           detail="Your session history stays on this device only. Clearing your browser storage removes it; an in-app control is coming soon."
           last
         />
+      </SettingsGroup>
+
+      <SettingsGroup title="Developer">
+        <DevAccessRow />
       </SettingsGroup>
 
       <SettingsGroup title="Account">
