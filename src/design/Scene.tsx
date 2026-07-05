@@ -245,10 +245,10 @@ const photoLayer = css({
 //            scrolls over the photo: a steadier base dim. `card` — tiles:
 //            bottom-only.
 export const CALM_SCRIM_CANVAS =
-  'linear-gradient(to bottom, rgba(6, 16, 38, 0.55) 0%, rgba(6, 16, 38, 0.28) 18%, rgba(6, 16, 38, 0.18) 40%, rgba(6, 16, 38, 0.28) 58%, rgba(6, 16, 38, 0.62) 78%, rgba(6, 16, 38, 0.88) 100%)'
+  'linear-gradient(to bottom, rgba(6, 16, 38, 0.76) 0%, rgba(6, 16, 38, 0.64) 22%, rgba(6, 16, 38, 0.20) 42%, rgba(6, 16, 38, 0.26) 58%, rgba(6, 16, 38, 0.62) 78%, rgba(6, 16, 38, 0.88) 100%)'
 
 export const CALM_SCRIM_PAGE =
-  'linear-gradient(to bottom, rgba(6, 16, 38, 0.60) 0%, rgba(6, 16, 38, 0.44) 20%, rgba(6, 16, 38, 0.42) 55%, rgba(6, 16, 38, 0.66) 78%, rgba(6, 16, 38, 0.90) 100%)'
+  'linear-gradient(to bottom, rgba(6, 16, 38, 0.76) 0%, rgba(6, 16, 38, 0.66) 14%, rgba(6, 16, 38, 0.46) 26%, rgba(6, 16, 38, 0.42) 55%, rgba(6, 16, 38, 0.66) 78%, rgba(6, 16, 38, 0.90) 100%)'
 
 export const CALM_SCRIM_CARD =
   'linear-gradient(to bottom, rgba(6, 16, 38, 0.14) 0%, rgba(6, 16, 38, 0) 26%, rgba(6, 16, 38, 0) 44%, rgba(6, 16, 38, 0.54) 72%, rgba(6, 16, 38, 0.88) 100%)'

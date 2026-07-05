@@ -10,7 +10,8 @@
     "build": "panda codegen && tsr generate && tsc -b && vite build",
     "typecheck": "panda codegen && tsr generate && tsc -b",
     "emails": "tsx --tsconfig tsconfig.app.json scripts/render-emails.tsx",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "contrast:audit": "node scripts/contrast-audit.mjs"
   },
   "dependencies": {
     "@radix-ui/react-slider": "^1.4.2",
