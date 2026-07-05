@@ -8,6 +8,7 @@ import { LivingScene } from '~/design/LivingScene'
 import { PulseWave } from '~/design/PulseWave'
 import { SignalRing } from '~/design/SignalRing'
 import { VARIANT_IMAGE, type SceneVariant } from '~/design/Scene'
+import { useAttuneVisuals } from '~/design/useAttuneVisuals'
 import { STATE_SCENE } from '~/components/SessionCard'
 import { SciencePanel } from '~/components/SciencePanel'
 import { useClickSound } from '~/lib/click-sound'
@@ -276,15 +277,51 @@ function PlayerScreen() {
   const ringColor = lchToCss(arousalToLch(arousal))
   const breathDuration = bioActive && reading.respiration > 0 ? 60 / reading.respiration : 6
 
+  // Attune-reactive scene modulation — subliminal (≤5% deltas, ≥20s
+  // hysteresis, feature-flagged), static whenever Attune is off.
+  const sceneWrapRef = useRef<HTMLDivElement>(null)
+  const attuneVisuals = useAttuneVisuals({
+    active: bioActive,
+    arousal,
+    respirationBpm: reading.respiration,
+    containerRef: sceneWrapRef,
+  })
+
   return (
     // ss-scene-dark: the immersive player stays dark in both themes (Calm/Endel
     // style) — its text + glass sit over an inherently dark landscape.
     <div className={cx('ss-scene-dark', css({ position: 'fixed', inset: '0', zIndex: '0', overflow: 'hidden' }))}>
-      <LivingScene variant={scene} />
+      {/* Scene stack — one wrapper so Attune modulates it as one surface. */}
+      <div
+        ref={sceneWrapRef}
+        aria-hidden
+        className={css({ position: 'absolute', inset: '0' })}
+        style={attuneVisuals.style}
+      >
+        <LivingScene variant={scene} />
 
-      {/* Beat-pulsed light-wave loop — slightly blurred, screen-blended,
-          intensity driven by the REAL low-band spectrum while running. */}
-      <PulseWave getSpectrum={getSpectrum} />
+        {/* Beat-pulsed light-wave loop — slightly blurred, screen-blended,
+            intensity driven by the REAL low-band spectrum while running. */}
+        <PulseWave getSpectrum={getSpectrum} />
+      </div>
+
+      {/* Elevated → a vignette breathing at the measured respiration pace. */}
+      {attuneVisuals.vignette && (
+        <div
+          aria-hidden
+          className={css({
+            position: 'absolute',
+            inset: '0',
+            pointerEvents: 'none',
+            background:
+              'radial-gradient(ellipse 120% 96% at 50% 46%, transparent 58%, rgba(6, 16, 38, 0.30) 100%)',
+            willChange: 'transform, opacity',
+            animation: 'breathe 8s ease-in-out infinite',
+            '@media (prefers-reduced-motion: reduce)': { animation: 'none !important' },
+          })}
+          style={{ animationDuration: `${attuneVisuals.vignette.durationS}s` }}
+        />
+      )}
 
       <div
         className={css({
