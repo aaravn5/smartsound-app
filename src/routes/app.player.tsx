@@ -7,7 +7,7 @@ import { LiquidGlass } from '~/design/LiquidGlass'
 import { LivingScene } from '~/design/LivingScene'
 import { PulseWave } from '~/design/PulseWave'
 import { SignalRing } from '~/design/SignalRing'
-import { VARIANT_IMAGE, type SceneVariant } from '~/design/Scene'
+import type { SceneVariant } from '~/design/Scene'
 import { useAttuneVisuals } from '~/design/useAttuneVisuals'
 import { STATE_SCENE } from '~/components/SessionCard'
 import { SciencePanel } from '~/components/SciencePanel'
@@ -731,7 +731,7 @@ function PlayerScreen() {
                       alt=""
                       loading="lazy"
                       decoding="async"
-                      src={VARIANT_IMAGE[v]}
+                      src={`/scenes/thumbs/${v}.webp`}
                       className={css({ position: 'absolute', inset: '0', w: '100%', h: '100%', objectFit: 'cover', pointerEvents: 'none' })}
                     />
                   </button>
