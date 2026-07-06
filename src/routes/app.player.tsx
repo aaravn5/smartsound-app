@@ -1,34 +1,29 @@
 import { useEffect, useRef, useState } from 'react'
-import { createFileRoute, useNavigate } from '@tanstack/react-router'
-import { motion, useReducedMotion } from 'motion/react'
+import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import * as Slider from '@radix-ui/react-slider'
 import { css, cx } from 'styled-system/css'
-import { LiquidGlass } from '~/design/LiquidGlass'
-import { LivingScene } from '~/design/LivingScene'
-import { PulseWave } from '~/design/PulseWave'
-import { SignalRing } from '~/design/SignalRing'
-import type { SceneVariant } from '~/design/Scene'
-import { useAttuneVisuals } from '~/design/useAttuneVisuals'
-import { STATE_SCENE } from '~/components/SessionCard'
-import { SciencePanel } from '~/components/SciencePanel'
-import { VinylDisc } from '~/landing/VinylDisc'
-import { VARIANT_IMAGE } from '~/design/Scene'
+import { BandField } from '~/design/BandField'
+import { WaveformRing } from '~/design/WaveformRing'
+import { PulseFlow } from '~/components/PulseFlow'
+import { Card, chipCss, chipActiveCss } from '~/components/Card'
+import { RecordDisc } from '~/components/vinyl/RecordDisc'
 import { useClickSound } from '~/lib/click-sound'
 import { useEngine } from '~/lib/engine-context'
 import { recordRecent } from '~/lib/recents'
 import { clearSessionStartedAt, recordSessionStartedAt } from '~/lib/session-meta'
-import { arousalToLch, lchToCss } from '~/design/signal'
+import { remainingFreeMinutes, shouldWarnLowTime, lowTimeMessage } from '~/lib/free-warning'
 import { TARGET_STATES } from '~/engine/audio/profiles'
 import { BAND_LABEL, SOUNDSCAPES } from '~/lib/catalog'
 import { useDailyUsage, FREE_DAILY_MIN } from '~/lib/entitlements'
 import type { TargetState } from '~/engine/audio/types'
 
 /**
- * Player — the immersive now-playing surface (Milestone 3). A full-bleed
- * Scene keyed to the loaded state, a central signal ring that is honestly
- * live (real spectrum + pulse) or honestly a generative preview, and a
- * Liquid Glass transport wired straight to `useEngine()`. The closed loop
- * underneath is untouched — this is purely a presentation layer over it.
+ * Player — the generative band world (Phase B). No photos, no glass: a
+ * Deep Space canvas with a band-tinted particle drift (Delta slowest/
+ * dimmest → Beta fastest/brightest), the pressed record as the play
+ * control, and a waveform ring rippling at the record's band frequency
+ * scaled (band Hz / 10). The engine underneath is untouched — this is
+ * purely a presentation layer over `useEngine()`.
  */
 
 const VALID_STATES: readonly TargetState[] = ['focus', 'flow', 'calm', 'winddown', 'sleep']
@@ -54,10 +49,10 @@ export const Route = createFileRoute('/app/player')({
   component: PlayerScreen,
 })
 
-/** The revolving record — the disc IS the play control now. */
+/** The revolving record — the disc IS the play control. */
 const DISC_SIZE = 232
-/** The live FFT halo drawn just outside the vinyl's rim. */
-const RING_SIZE = 400
+/** The waveform ring drawn just outside the vinyl's rim. */
+const RING_SIZE = 340
 
 const LENGTH_OPTIONS: { label: string; minutes: number | null }[] = [
   { label: '10', minutes: 10 },
@@ -73,44 +68,7 @@ function formatElapsed(ms: number): string {
   return `${m}:${s.toString().padStart(2, '0')}`
 }
 
-// ── Calm-style scene switcher — pick the player's backdrop ─────────────────
-//
-// `auto` follows the state's own scene (STATE_SCENE); a manual pick persists
-// on this device. A real, wired preference — visual only, the audio engine
-// never changes because of it.
-
-type SceneChoice = SceneVariant | 'auto'
-
-const SCENE_PREF_KEY = 'ss_scene_override_v1'
-const SCENE_ORDER: SceneVariant[] = ['ocean', 'dusk', 'forest', 'dawn', 'aurora']
-const SCENE_NAME: Record<SceneVariant, string> = {
-  ocean: 'Ocean',
-  dusk: 'Dusk hills',
-  forest: 'Forest',
-  dawn: 'Dawn',
-  aurora: 'Aurora',
-}
-
-function readSceneChoice(): SceneChoice {
-  try {
-    const raw = window.localStorage.getItem(SCENE_PREF_KEY)
-    if (raw && (SCENE_ORDER as string[]).includes(raw)) return raw as SceneVariant
-  } catch {
-    // storage unavailable — fall through to auto
-  }
-  return 'auto'
-}
-
-function writeSceneChoice(choice: SceneChoice): void {
-  try {
-    if (choice === 'auto') window.localStorage.removeItem(SCENE_PREF_KEY)
-    else window.localStorage.setItem(SCENE_PREF_KEY, choice)
-  } catch {
-    // storage unavailable — the pick just won't persist
-  }
-}
-
-// ── icons — SF-symbol-flavored strokes, matching the shell's icon language ──
+// ── icons — quiet strokes ───────────────────────────────────────────────────
 
 const iconAttrs = {
   fill: 'none' as const,
@@ -127,39 +85,31 @@ const ChevronDownIcon = () => (
   </svg>
 )
 
-// Larger, optically-centered glyphs for the orb's center. The play triangle is
-// nudged slightly right so its visual mass sits on the true center.
 const CenterPlayIcon = () => (
-  <svg width="38" height="38" viewBox="0 0 24 24" aria-hidden style={{ transform: 'translateX(2px)' }}>
-    <path d="M8.2 5.6a1 1 0 0 1 1.53-.85l9.4 6.4a1 1 0 0 1 0 1.66l-9.4 6.4A1 1 0 0 1 8.2 18.3V5.6z" fill="currentColor" />
+  <svg width="34" height="34" viewBox="0 0 24 24" aria-hidden style={{ transform: 'translateX(2px)' }}>
+    <path
+      d="M8.2 5.6a1 1 0 0 1 1.53-.85l9.4 6.4a1 1 0 0 1 0 1.66l-9.4 6.4A1 1 0 0 1 8.2 18.3V5.6z"
+      fill="currentColor"
+    />
   </svg>
 )
 
 const CenterPauseIcon = () => (
-  <svg width="34" height="34" viewBox="0 0 24 24" aria-hidden>
+  <svg width="30" height="30" viewBox="0 0 24 24" aria-hidden>
     <rect x="6.3" y="5" width="4" height="14" rx="1.4" fill="currentColor" />
     <rect x="13.7" y="5" width="4" height="14" rx="1.4" fill="currentColor" />
   </svg>
 )
 
-const SkipBackIcon = () => (
-  <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden>
-    <path d="M18.5 5.8a1 1 0 0 0-1.53-.85l-8.2 5.2a1 1 0 0 0 0 1.7l8.2 5.2a1 1 0 0 0 1.53-.85V5.8z" fill="currentColor" />
-    <rect x="4.6" y="5" width="1.9" height="14" rx="0.9" fill="currentColor" />
+const PrevIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" {...iconAttrs}>
+    <path d="M15 6l-6 6 6 6" />
   </svg>
 )
 
-const SkipForwardIcon = () => (
-  <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden>
-    <path d="M5.5 5.8a1 1 0 0 1 1.53-.85l8.2 5.2a1 1 0 0 1 0 1.7l-8.2 5.2A1 1 0 0 1 5.5 16.2V5.8z" fill="currentColor" />
-    <rect x="17.5" y="5" width="1.9" height="14" rx="0.9" fill="currentColor" />
-  </svg>
-)
-
-const CameraIcon = () => (
-  <svg width="19" height="19" viewBox="0 0 24 24" {...iconAttrs}>
-    <path d="M4 8.4a1.6 1.6 0 0 1 1.6-1.6h2l1-1.8h6.8l1 1.8h2A1.6 1.6 0 0 1 20 8.4v9A1.6 1.6 0 0 1 18.4 19H5.6A1.6 1.6 0 0 1 4 17.4v-9z" />
-    <circle cx="12" cy="13" r="3.4" />
+const NextIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" {...iconAttrs}>
+    <path d="M9 6l6 6-6 6" />
   </svg>
 )
 
@@ -170,44 +120,34 @@ function ringStatusLabel(status: 'idle' | 'running', bioActive: boolean, capped:
   return bioActive ? 'Live audio + pulse' : 'Live audio'
 }
 
-function attuneStatusLabel(bioStatus: string): string {
-  switch (bioStatus) {
-    case 'requesting':
-      return 'Requesting camera access…'
-    case 'active':
-      return 'On-device pulse detection — nothing leaves your device'
-    case 'denied':
-      return 'Camera access denied — enable it in system settings'
-    case 'nocamera':
-      return 'No camera detected on this device'
-    case 'error':
-      return 'Camera unavailable — try again'
-    default:
-      return 'Off — uses your front camera, on-device only'
-  }
-}
+const quietRoundBtnCss = css({
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  border: '1px solid',
+  borderColor: 'hairline',
+  borderRadius: 'pill',
+  background: 'graphite',
+  color: 'silver',
+  font: 'inherit',
+  cursor: 'pointer',
+  WebkitTapHighlightColor: 'transparent',
+  transition: 'background 300ms ease, color 300ms ease',
+  _hover: { background: '#2d2d3d', color: 'starlight' },
+  '@media (prefers-reduced-motion: reduce)': { transition: 'none' },
+})
 
 function PlayerScreen() {
   const search = Route.useSearch()
   const navigate = useNavigate()
-  const reduceMotion = useReducedMotion()
   const playClick = useClickSound()
   const { plan, capReached, minutesToday, addMinutes, recordSessionStart } = useDailyUsage()
   const {
-    status, profile, params, arousal, reading, bioStatus,
-    start, stop, selectState, setNeuralIntensity, startAttune, stopAttune,
-    getSpectrum, getPulse,
+    status, profile, params, reading, bioStatus,
+    start, stop, selectState, setNeuralIntensity, startAttune, stopAttune, getPulse,
   } = useEngine()
 
   const state = profile.key
-  // Calm-style scene choice: auto follows the state; a manual pick persists.
-  const [sceneChoice, setSceneChoice] = useState<SceneChoice>(() => readSceneChoice())
-  const scene = sceneChoice === 'auto' ? STATE_SCENE[state] : sceneChoice
-  const pickScene = (choice: SceneChoice) => {
-    playClick('tap')
-    setSceneChoice(choice)
-    writeSceneChoice(choice)
-  }
   const title = SOUNDSCAPES.find((s) => s.state === state)?.title ?? profile.label
   const band = BAND_LABEL[state]
   const running = status === 'running'
@@ -224,7 +164,7 @@ function PlayerScreen() {
   }, [])
 
   // Elapsed session timer. A ?minutes= search param presets the length —
-  // the deduped Wind-down record's "15 min" target lands here.
+  // the merged Wind-down record's "15 min" target lands here.
   const [elapsedMs, setElapsedMs] = useState(0)
   const startedAt = useRef<number | null>(null)
   const [length, setLength] = useState<number | null>(search.minutes ?? null)
@@ -254,8 +194,7 @@ function PlayerScreen() {
 
   // Entitlements are a client-side UX stub (see `lib/entitlements.ts`) — this
   // is the single point a session actually starts, so it's the single point
-  // the Free daily cap is honored. A capped Free listener is routed to the
-  // paywall with context rather than silently blocked or let through.
+  // the Free daily cap is honored.
   const handlePlayPause = () => {
     if (running) {
       playClick('primary')
@@ -290,74 +229,31 @@ function PlayerScreen() {
       ? [{ label: String(search.minutes), minutes: search.minutes }, ...LENGTH_OPTIONS]
       : LENGTH_OPTIONS
 
-  const attuneOn = bioStatus === 'active' || bioStatus === 'requesting'
-  const handleAttuneToggle = () => {
-    if (attuneOn) stopAttune()
-    else void startAttune()
-  }
-
-  const ringColor = lchToCss(arousalToLch(arousal))
-  const breathDuration = bioActive && reading.respiration > 0 ? 60 / reading.respiration : 6
-
-  // Attune-reactive scene modulation — subliminal (≤5% deltas, ≥20s
-  // hysteresis, feature-flagged), static whenever Attune is off.
-  const sceneWrapRef = useRef<HTMLDivElement>(null)
-  const attuneVisuals = useAttuneVisuals({
-    active: bioActive,
-    arousal,
-    respirationBpm: reading.respiration,
-    containerRef: sceneWrapRef,
-  })
+  // The gentle two-minute warning — display only; the cap logic in
+  // entitlements.ts stays authoritative.
+  const remaining = remainingFreeMinutes(minutesToday, running ? elapsedMs : 0)
+  const warnLowTime = shouldWarnLowTime(plan, running, remaining)
 
   return (
-    // ss-scene-dark: the immersive player stays dark in both themes (Calm/Endel
-    // style) — its text + glass sit over an inherently dark landscape.
-    <div className={cx('ss-scene-dark', css({ position: 'fixed', inset: '0', zIndex: '0', overflow: 'hidden' }))}>
-      {/* Scene stack — one wrapper so Attune modulates it as one surface. */}
-      <div
-        ref={sceneWrapRef}
-        aria-hidden
-        className={css({ position: 'absolute', inset: '0' })}
-        style={attuneVisuals.style}
-      >
-        <LivingScene variant={scene} />
-
-        {/* Beat-pulsed light-wave loop — slightly blurred, screen-blended,
-            intensity driven by the REAL low-band spectrum while running. */}
-        <PulseWave getSpectrum={getSpectrum} />
-      </div>
-
-      {/* Elevated → a vignette breathing at the measured respiration pace. */}
-      {attuneVisuals.vignette && (
-        <div
-          aria-hidden
-          className={css({
-            position: 'absolute',
-            inset: '0',
-            pointerEvents: 'none',
-            background:
-              'radial-gradient(ellipse 120% 96% at 50% 46%, transparent 58%, rgba(6, 16, 38, 0.30) 100%)',
-            willChange: 'transform, opacity',
-            animation: 'breathe 8s ease-in-out infinite',
-            '@media (prefers-reduced-motion: reduce)': { animation: 'none !important' },
-          })}
-          style={{ animationDuration: `${attuneVisuals.vignette.durationS}s` }}
-        />
+    // ss-scene-dark: the immersive player stays dark — ONE dark world.
+    <div
+      className={cx(
+        'ss-scene-dark',
+        css({ position: 'fixed', inset: '0', zIndex: '0', overflow: 'hidden', bg: 'deepSpace' }),
       )}
+    >
+      {/* The generative band field — the only background this route has. */}
+      <BandField state={state} />
 
       <div
         className={css({
           position: 'absolute',
           inset: '0',
           zIndex: '1',
-          // Mirror app.tsx's tab-bar-safe `<main>` clipping: the Scene
-          // above stays full-bleed, but this scrollable content layer stops
-          // at the fixed bottom nav's top edge, so the timer chips and
-          // transport can never render behind the bar at any viewport.
+          // The scrollable content layer stops at the fixed bottom nav's top
+          // edge so nothing ever renders behind the bar.
           bottom: 'calc(env(safe-area-inset-bottom) + 58px)',
           overflowY: 'auto',
-          // The 400px signal halo is wider than small phones — clip it so it
-          // can never widen the scrollport into a horizontal scroll.
           overflowX: 'hidden',
           WebkitOverflowScrolling: 'touch',
           display: 'flex',
@@ -379,47 +275,30 @@ function PlayerScreen() {
         >
           {/* Top bar — dismiss to Today. The session keeps playing underneath. */}
           <div className={css({ display: 'flex', alignItems: 'center', justifyContent: 'flex-start', mb: '5' })}>
-            <LiquidGlass
-              as="button"
-              variant="control"
-              staticSheen
+            <button
+              type="button"
               onClick={() => void navigate({ to: '/app' })}
               aria-label="Done — back to Today"
-              className={css({
-                border: 'none',
-                font: 'inherit',
-                color: 'text',
-                w: '44px',
-                h: '44px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-              })}
+              className={cx(quietRoundBtnCss, css({ w: '44px', h: '44px' }))}
             >
               <ChevronDownIcon />
-            </LiquidGlass>
+            </button>
           </div>
 
           {/* Now-playing info — the "album" line, title, band/Hz subtitle. */}
-          <div
-            className={css({
-              textAlign: 'center',
-              mb: '6',
-              animation: 'fadeUp token(durations.calm) token(easings.enter) both',
-              '@media (prefers-reduced-motion: reduce)': { animation: 'none' },
-            })}
-          >
+          <div className={css({ textAlign: 'center', mb: '5' })}>
             <p
-              className={css({
-                m: '0',
-                mb: '2',
-                fontSize: 'footnote',
-                fontWeight: '600',
-                letterSpacing: '0.08em',
-                textTransform: 'uppercase',
-                color: 'var(--ss-ink-strong)',
-                textShadow: 'var(--ss-text-glow)',
-              })}
+              className={cx(
+                'tabular',
+                css({
+                  m: '0',
+                  mb: '2',
+                  fontSize: 'caption',
+                  letterSpacing: '0.1em',
+                  textTransform: 'uppercase',
+                  color: 'silver',
+                }),
+              )}
             >
               SmartSound Session · {profile.label}
             </p>
@@ -427,37 +306,26 @@ function PlayerScreen() {
               className={css({
                 m: '0',
                 fontFamily: 'display',
-                fontSize: 'title1',
                 fontWeight: '400',
+                fontSize: 'heading',
                 letterSpacing: '-0.01em',
-                color: 'text',
-                textShadow: 'var(--ss-text-glow)',
-                transition: 'opacity token(durations.gentle) ease',
+                color: 'starlight',
               })}
             >
               {title}
             </h1>
             <p
-              className={`tabular ${css({
-                m: '0',
-                mt: '1.5',
-                fontSize: 'subhead',
-                fontWeight: '500',
-                letterSpacing: '0.01em',
-                color: 'var(--ss-ink-strong)',
-                textShadow: 'var(--ss-text-glow)',
-              })}`}
+              className={cx(
+                'tabular',
+                css({ m: '0', mt: '1.5', fontSize: 'bodySm', letterSpacing: '0.02em', color: 'silver' }),
+              )}
             >
               {band}
             </p>
           </div>
 
-          {/* The revolving record — the vinyl IS the play/pause control.
-              Tapping the disc starts or stops the session (same handler as
-              the orb it replaces); the SignalRing stays mounted BEHIND it as
-              the live FFT halo glowing just outside the rim, and the disc
-              spins at a calm 6s/rev only while audio actually runs. The
-              center hub is a small frosted glass disc carrying the glyph. */}
+          {/* The pressed record — the disc IS the play/pause control, the
+              waveform ring around it ripples at the band's scaled rate. */}
           <div
             className={css({
               position: 'relative',
@@ -466,57 +334,16 @@ function PlayerScreen() {
               alignItems: 'center',
               my: '2',
             })}
-            style={{ minHeight: DISC_SIZE + 24 }}
+            style={{ minHeight: RING_SIZE }}
           >
-            <div
-              aria-hidden
-              className={cx(
-                css({
-                  position: 'absolute',
-                  borderRadius: 'full',
-                  pointerEvents: 'none',
-                  '@media (prefers-reduced-motion: reduce)': { animation: 'none !important' },
-                }),
-              )}
-              style={{
-                width: RING_SIZE * 0.86,
-                height: RING_SIZE * 0.86,
-                background: `radial-gradient(circle, ${ringColor}${running ? '38' : '22'} 0%, transparent 68%)`,
-                animation: reduceMotion ? 'none' : `breathe ${breathDuration}s ease-in-out infinite`,
-                transition: 'background token(durations.slow) ease',
-              }}
-            />
-            {/* The live signal halo — behind and around the disc. */}
-            <span
-              aria-hidden={false}
-              className={css({ position: 'absolute', pointerEvents: 'none' })}
-              style={{ width: RING_SIZE, height: RING_SIZE }}
-            >
-              <SignalRing
-                arousal={arousal}
-                color={ringColor}
-                getSpectrum={getSpectrum}
-                getPulse={getPulse}
-                respirationBpm={reading.respiration}
-                heartBpm={reading.hr}
-                size={RING_SIZE}
-                label={`Signal ring — ${band}, ${ringStatusLabel(status, bioActive, capped)}`}
-              />
+            <span aria-hidden className={css({ position: 'absolute', pointerEvents: 'none' })}>
+              <WaveformRing state={state} size={RING_SIZE} discSize={DISC_SIZE} running={running} />
             </span>
-            <motion.button
+            <button
               type="button"
               onClick={handlePlayPause}
               aria-label={running ? 'Pause session' : 'Play session'}
               aria-pressed={running}
-              whileTap={reduceMotion ? undefined : { scale: 0.955 }}
-              animate={reduceMotion ? undefined : running ? { scale: [1, 1.015, 1] } : { scale: 1 }}
-              transition={
-                reduceMotion
-                  ? undefined
-                  : running
-                    ? { duration: breathDuration, repeat: Infinity, ease: 'easeInOut' }
-                    : { type: 'spring', stiffness: 320, damping: 20 }
-              }
               className={css({
                 position: 'relative',
                 border: 'none',
@@ -529,23 +356,20 @@ function PlayerScreen() {
                 justifyContent: 'center',
                 WebkitTapHighlightColor: 'transparent',
                 touchAction: 'manipulation',
+                transition: 'transform 160ms ease',
+                _active: { transform: 'scale(0.97)' },
                 _focusVisible: {
-                  outline: '2px solid token(colors.accent)',
+                  outline: '2px solid token(colors.ghostBlue)',
                   outlineOffset: '8px',
                   borderRadius: 'full',
                 },
+                '@media (prefers-reduced-motion: reduce)': { transition: 'none', _active: { transform: 'none' } },
               })}
               style={{ width: DISC_SIZE, height: DISC_SIZE }}
             >
-              <span
-                className="vinyl-spin"
-                data-vinyl
-                data-spinning={running ? 'true' : 'false'}
-                style={{ display: 'block', animationPlayState: running ? 'running' : 'paused' }}
-              >
-                <VinylDisc labelSrc={VARIANT_IMAGE[scene]} size={DISC_SIZE} labelRatio={0.42} />
-              </span>
-              {/* Center glyph on the frosted hub — recedes while running. */}
+              {/* plain label — the player issues ZERO photo requests. */}
+              <RecordDisc state={state} size={DISC_SIZE} plain spinning={running ? 'playing' : 'idle'} />
+              {/* Center glyph on the hub — recedes while running. */}
               <span
                 aria-hidden
                 className={css({
@@ -553,21 +377,21 @@ function PlayerScreen() {
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  w: '68px',
-                  h: '68px',
+                  w: '64px',
+                  h: '64px',
                   borderRadius: 'full',
-                  color: 'text',
-                  background: 'rgba(255,255,255,0.10)',
-                  backdropFilter: 'blur(6px)',
-                  boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.16)',
+                  color: 'starlight',
+                  background: 'rgba(39, 39, 53, 0.85)',
+                  boxShadow: 'inset 0 0 0 1px rgba(112, 112, 125, 0.4)',
                   pointerEvents: 'none',
-                  transition: 'opacity token(durations.gentle) ease, transform token(durations.gentle) ease',
+                  transition: 'opacity 420ms ease',
+                  '@media (prefers-reduced-motion: reduce)': { transition: 'none' },
                 })}
-                style={{ opacity: running ? 0.3 : 0.96 }}
+                style={{ opacity: running ? 0.28 : 0.96 }}
               >
                 {running ? <CenterPauseIcon /> : <CenterPlayIcon />}
               </span>
-            </motion.button>
+            </button>
           </div>
 
           <p
@@ -576,48 +400,57 @@ function PlayerScreen() {
               mt: '3',
               textAlign: 'center',
               fontSize: 'caption',
-              fontWeight: '500',
               letterSpacing: '0.02em',
-              color: 'var(--ss-ink-body)',
-              textShadow: 'var(--ss-text-glow)',
-              transition: 'opacity token(durations.gentle) ease',
+              color: 'silver',
             })}
           >
             {ringStatusLabel(status, bioActive, capped)}
           </p>
 
-          {/* Free-tier honesty (acceptance #9): remaining minutes shown near
-              the play control BEFORE playback starts. Display only — the
-              entitlements stub stays the single source of truth. */}
+          {/* Free-tier honesty: remaining minutes BEFORE playback; a gentle
+              2-minute warning DURING playback — no hard-cut surprises. */}
           {plan === 'free' && !running && (
             <p
               data-testid="free-minutes-left"
-              className={`tabular ${css({
-                m: '0',
-                mt: '1.5',
-                textAlign: 'center',
-                fontSize: 'caption',
-                letterSpacing: '0.06em',
-                color: 'var(--ss-ink-strong)',
-                textShadow: 'var(--ss-text-glow)',
-              })}`}
+              className={cx(
+                'tabular',
+                css({ m: '0', mt: '1.5', textAlign: 'center', fontSize: 'caption', letterSpacing: '0.06em', color: 'silver' }),
+              )}
             >
               {Math.max(0, Math.floor(FREE_DAILY_MIN - minutesToday))} min left today
             </p>
           )}
-          <div className={css({ mb: '6' })} />
+          {warnLowTime && (
+            <p
+              data-testid="two-min-warning"
+              className={cx(
+                'tabular',
+                css({ m: '0', mt: '1.5', textAlign: 'center', fontSize: 'caption', letterSpacing: '0.06em', color: 'silver' }),
+              )}
+            >
+              {lowTimeMessage(remaining)}
+            </p>
+          )}
 
-          {/* Timer + session length. */}
+          {/* Tune to your pulse — THE differentiator, near the disc. */}
+          <div className={css({ display: 'flex', justifyContent: 'center', mt: '4', mb: '5' })}>
+            <PulseFlow
+              state={state}
+              bioStatus={bioStatus}
+              reading={reading}
+              getPulse={getPulse}
+              startAttune={startAttune}
+              stopAttune={stopAttune}
+            />
+          </div>
+
+          {/* Timer + session length — design.md chips. */}
           <div className={css({ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '3', mb: '6' })}>
             <span
-              className={`tabular ${css({
-                fontFamily: 'rounded',
-                fontSize: 'largeTitle',
-                fontWeight: '700',
-                letterSpacing: '-0.02em',
-                color: 'text',
-                textShadow: 'var(--ss-text-glow)',
-              })}`}
+              className={cx(
+                'tabular',
+                css({ fontSize: 'heading', letterSpacing: '-0.01em', color: 'starlight' }),
+              )}
             >
               {formatElapsed(elapsedMs)}
             </span>
@@ -625,193 +458,89 @@ function PlayerScreen() {
               {lengthOptions.map((opt) => {
                 const selected = opt.minutes === length
                 return (
-                  <LiquidGlass
+                  <button
                     key={opt.label}
-                    as="button"
-                    variant="control"
-                    staticSheen
+                    type="button"
                     aria-pressed={selected}
-                    onClick={() => setLength(opt.minutes)}
-                    tint={selected ? 'var(--signal)' : undefined}
-                    className={css({
-                      border: 'none',
-                      font: 'inherit',
-                      minW: '44px',
-                      h: '36px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                    })}
+                    onClick={() => {
+                      playClick('tap')
+                      setLength(opt.minutes)
+                    }}
+                    className={cx(chipCss, selected ? chipActiveCss : undefined, 'tabular')}
                   >
-                    <span
-                      className={`tabular ${css({
-                        px: '2',
-                        fontSize: 'footnote',
-                        fontWeight: '600',
-                        whiteSpace: 'nowrap',
-                      })}`}
-                      style={{ color: selected ? 'var(--signal)' : 'var(--colors-text)' }}
-                    >
-                      {opt.label}{opt.minutes != null && <span aria-hidden> min</span>}
-                    </span>
-                  </LiquidGlass>
+                    {opt.label}
+                    {opt.minutes != null && <span aria-hidden> min</span>}
+                  </button>
                 )
               })}
             </div>
           </div>
 
-          {/* Transport — the orb above owns play/pause; this row only shifts
-              between states. A centered pill keeps prev/next visually paired
-              with the current state's name, so the row reads as one control. */}
+          {/* Transport — shifts between states only; visually quiet. */}
           <div
             className={css({
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               gap: '3',
-              mb: '6',
+              mb: '2',
             })}
           >
-            <LiquidGlass
-              as="button"
-              variant="control"
-              staticSheen
+            <button
+              type="button"
               onClick={() => cycleState(-1)}
               aria-label="Previous state"
-              className={css({
-                border: 'none',
-                color: 'text',
-                w: '52px',
-                h: '52px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-              })}
+              className={cx(quietRoundBtnCss, css({ w: '48px', h: '48px' }))}
             >
-              <SkipBackIcon />
-            </LiquidGlass>
-
+              <PrevIcon />
+            </button>
             <div
-              className={css({
-                minW: '128px',
-                textAlign: 'center',
-                fontSize: 'footnote',
-                fontWeight: '600',
-                letterSpacing: '0.14em',
-                textTransform: 'uppercase',
-                color: 'var(--ss-ink-strong)',
-                textShadow: 'var(--ss-text-glow)',
-              })}
+              className={cx(
+                'tabular',
+                css({
+                  minW: '128px',
+                  textAlign: 'center',
+                  fontSize: 'caption',
+                  letterSpacing: '0.14em',
+                  textTransform: 'uppercase',
+                  color: 'silver',
+                }),
+              )}
             >
               {profile.label}
             </div>
-
-            <LiquidGlass
-              as="button"
-              variant="control"
-              staticSheen
+            <button
+              type="button"
               onClick={() => cycleState(1)}
               aria-label="Next state"
-              className={css({
-                border: 'none',
-                color: 'text',
-                w: '52px',
-                h: '52px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-              })}
+              className={cx(quietRoundBtnCss, css({ w: '48px', h: '48px' }))}
             >
-              <SkipForwardIcon />
-            </LiquidGlass>
+              <NextIcon />
+            </button>
           </div>
 
-          {/* Scenes — Calm's scene switcher: pick the backdrop, or Auto to
-              follow the state. Visual preference only; audio is untouched. */}
-          <LiquidGlass variant="card" className={css({ mb: '4' })}>
-            <div className={css({ px: '5', py: '4' })}>
-              <div className={css({ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: '3' })}>
-                <span className={css({ fontSize: 'subhead', fontWeight: '600', color: 'text' })}>
-                  Scene
-                </span>
-                <span className={css({ fontSize: 'footnote', fontWeight: '500', color: 'muted' })}>
-                  {sceneChoice === 'auto' ? `Auto · ${SCENE_NAME[STATE_SCENE[state]]}` : SCENE_NAME[sceneChoice]}
-                </span>
-              </div>
-              <div className={css({ display: 'flex', alignItems: 'center', gap: '2.5', overflowX: 'auto', pb: '1', scrollbarWidth: 'none', '&::-webkit-scrollbar': { display: 'none' } })}>
-                <button
-                  type="button"
-                  onClick={() => pickScene('auto')}
-                  aria-pressed={sceneChoice === 'auto'}
-                  aria-label="Scene: automatic — follows the session state"
-                  className={css({
-                    flexShrink: '0',
-                    h: '52px',
-                    px: '3.5',
-                    borderRadius: 'capsule',
-                    border: '1.5px solid',
-                    font: 'inherit',
-                    fontSize: 'footnote',
-                    fontWeight: '600',
-                    cursor: 'pointer',
-                    color: 'text',
-                    background: 'var(--ss-control-track-soft)',
-                    WebkitTapHighlightColor: 'transparent',
-                  })}
-                  style={{
-                    borderColor: sceneChoice === 'auto' ? 'var(--signal)' : 'transparent',
-                  }}
-                >
-                  Auto
-                </button>
-                {SCENE_ORDER.map((v) => (
-                  <button
-                    key={v}
-                    type="button"
-                    onClick={() => pickScene(v)}
-                    aria-pressed={sceneChoice === v}
-                    aria-label={`Scene: ${SCENE_NAME[v]}`}
-                    className={css({
-                      position: 'relative',
-                      flexShrink: '0',
-                      w: '76px',
-                      h: '52px',
-                      p: '0',
-                      borderRadius: 'control',
-                      border: '1.5px solid',
-                      overflow: 'hidden',
-                      cursor: 'pointer',
-                      background: 'rgba(10, 18, 38, 1)',
-                      WebkitTapHighlightColor: 'transparent',
-                    })}
-                    style={{
-                      borderColor: sceneChoice === v ? 'var(--signal)' : 'rgba(255,255,255,0.14)',
-                    }}
-                  >
-                    <img
-                      aria-hidden
-                      alt=""
-                      loading="lazy"
-                      decoding="async"
-                      src={`/scenes/thumbs/${v}.webp`}
-                      className={css({ position: 'absolute', inset: '0', w: '100%', h: '100%', objectFit: 'cover', pointerEvents: 'none' })}
-                    />
-                  </button>
-                ))}
-              </div>
-            </div>
-          </LiquidGlass>
+          {/* Constrained-player honesty — that's the point. */}
+          <p
+            className={css({
+              m: '0',
+              mb: '6',
+              textAlign: 'center',
+              fontSize: 'caption',
+              lineHeight: '1.5',
+              color: 'silver',
+            })}
+          >
+            No skipping. Records play through — that&rsquo;s the point.
+          </p>
 
           {/* Neural depth. */}
-          <LiquidGlass variant="card" className={css({ mb: '4' })}>
+          <Card className={css({ mb: '4' })}>
             <div className={css({ px: '5', py: '4' })}>
               <div className={css({ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: '3' })}>
-                <span className={css({ fontSize: 'subhead', fontWeight: '600', color: 'text' })}>
+                <span className={css({ fontSize: 'bodySm', fontWeight: '500', color: 'starlight' })}>
                   Neural depth
                 </span>
-                <span
-                  className={`tabular ${css({ fontSize: 'footnote', fontWeight: '600', color: 'muted' })}`}
-                >
+                <span className={cx('tabular', css({ fontSize: 'caption', color: 'silver' }))}>
                   {Math.round(params.neuralDepth * 100)}%
                 </span>
               </div>
@@ -834,121 +563,70 @@ function PlayerScreen() {
                   className={css({
                     position: 'relative',
                     flex: '1',
-                    h: '5px',
-                    borderRadius: 'capsule',
-                    bg: 'var(--ss-control-track)',
+                    h: '4px',
+                    borderRadius: 'pill',
+                    bg: 'rgba(112, 112, 125, 0.35)',
                   })}
                 >
                   <Slider.Range
-                    className={css({ position: 'absolute', h: 'full', borderRadius: 'capsule' })}
-                    style={{ background: 'var(--signal)' }}
+                    className={css({
+                      position: 'absolute',
+                      h: 'full',
+                      borderRadius: 'pill',
+                      bg: 'silver',
+                    })}
                   />
                 </Slider.Track>
                 <Slider.Thumb
                   aria-label="Neural depth"
                   className={css({
                     display: 'block',
-                    w: '28px',
-                    h: '28px',
+                    w: '22px',
+                    h: '22px',
                     borderRadius: 'full',
-                    bg: 'white',
-                    boxShadow: '0 2px 8px rgba(3,6,18,0.4)',
+                    bg: 'starlight',
+                    border: '1px solid',
+                    borderColor: 'lead',
                     cursor: 'pointer',
-                    transition: 'transform var(--spring-smooth-duration) var(--spring-smooth)',
-                    _active: { transform: 'scale(1.15)' },
-                    _focusVisible: { outline: '2px solid token(colors.accent)', outlineOffset: '2px' },
-                    '@media (prefers-reduced-motion: reduce)': { transition: 'none' },
+                    _focusVisible: { outline: '2px solid token(colors.ghostBlue)', outlineOffset: '2px' },
                   })}
                 />
               </Slider.Root>
             </div>
-          </LiquidGlass>
+          </Card>
 
-          {/* Attune — camera-based presence, honest about what it is. */}
-          <LiquidGlass variant="card">
-            <div className={css({ px: '5', py: '4' })}>
-              <div className={css({ display: 'flex', alignItems: 'center', gap: '3' })}>
-                <span
-                  aria-hidden
-                  className={css({
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    w: '40px',
-                    h: '40px',
-                    borderRadius: 'full',
-                    flexShrink: '0',
-                    color: attuneOn ? 'signal' : 'faint',
-                    background: attuneOn ? 'signalFaint' : 'var(--ss-control-track-soft)',
-                    transition: 'color token(durations.gentle) ease, background token(durations.gentle) ease',
-                  })}
-                >
-                  <CameraIcon />
-                </span>
-                <div className={css({ flex: '1', minW: '0' })}>
-                  <p className={css({ m: '0', fontSize: 'subhead', fontWeight: '600', color: 'text' })}>
-                    Attune
-                  </p>
-                  <p className={css({ m: '0', mt: '0.5', fontSize: 'caption', lineHeight: '1.4', color: 'faint' })}>
-                    {attuneStatusLabel(bioStatus)}
-                  </p>
-                </div>
-                <LiquidGlass
-                  as="button"
-                  variant="control"
-                  staticSheen
-                  role="switch"
-                  aria-checked={attuneOn}
-                  aria-label="Toggle Attune camera"
-                  onClick={handleAttuneToggle}
-                  tint={attuneOn ? 'var(--signal)' : undefined}
-                  className={css({
-                    border: 'none',
-                    minW: '64px',
-                    h: '44px',
-                    flexShrink: '0',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  })}
-                >
-                  <span
-                    className={css({ px: '2', fontSize: 'footnote', fontWeight: '600' })}
-                    style={{ color: attuneOn ? 'var(--signal)' : 'var(--colors-text)' }}
-                  >
-                    {attuneOn ? 'On' : 'Off'}
-                  </span>
-                </LiquidGlass>
-              </div>
-
-              {bioActive && (
-                <div
-                  className={`tabular ${css({
-                    display: 'flex',
-                    gap: '4',
-                    mt: '3',
-                    pt: '3',
-                    borderTop: '1px solid',
-                    borderColor: 'hairline',
-                    fontSize: 'footnote',
-                    fontWeight: '600',
-                    color: 'muted',
-                    animation: 'fadeUp token(durations.gentle) token(easings.enter) both',
-                    '@media (prefers-reduced-motion: reduce)': { animation: 'none' },
-                  })}`}
-                >
-                  <span>{Math.round(reading.hr)} bpm</span>
-                  <span aria-hidden>·</span>
-                  <span>{Math.round(reading.confidence * 100)}% confidence</span>
-                </div>
-              )}
-            </div>
-          </LiquidGlass>
-
-          {/* The science — honest, cited disclosure of the actual mechanisms. */}
-          <div className={css({ mt: '4' })}>
-            <SciencePanel />
-          </div>
+          {/* The science — the full evidence ledger lives on /science. */}
+          <Link
+            to="/science"
+            className={css({
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: '3',
+              px: '5',
+              py: '4',
+              borderRadius: '4px',
+              border: '1px solid',
+              borderColor: 'hairline',
+              background: 'midnightSlate',
+              textDecoration: 'none',
+              transition: 'background 300ms ease',
+              _hover: { background: 'graphite' },
+              '@media (prefers-reduced-motion: reduce)': { transition: 'none' },
+            })}
+          >
+            <span>
+              <span className={css({ display: 'block', fontSize: 'bodySm', fontWeight: '500', color: 'starlight' })}>
+                The science, honestly
+              </span>
+              <span className={css({ display: 'block', mt: '0.5', fontSize: 'caption', color: 'silver' })}>
+                Every mechanism, cited — read the evidence ledger
+              </span>
+            </span>
+            <span aria-hidden className={css({ color: 'silver' })}>
+              <NextIcon />
+            </span>
+          </Link>
         </div>
       </div>
     </div>

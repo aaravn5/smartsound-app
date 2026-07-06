@@ -55,6 +55,28 @@ const tintLayer: Record<BandKey, string> = {
   delta: css({ background: '#4a5a8a', mixBlendMode: 'color' }),
 }
 
+// Generative label — a band-tinted radial press with NO photograph, for
+// routes that must issue zero image requests (the player's generative
+// world). Same static-map discipline.
+const plainLabelLayer: Record<BandKey, string> = {
+  beta: css({
+    background:
+      'radial-gradient(circle at 38% 34%, rgba(111, 127, 240, 0.62) 0%, rgba(111, 127, 240, 0.30) 44%, rgba(16, 16, 24, 0.92) 100%)',
+  }),
+  alpha: css({
+    background:
+      'radial-gradient(circle at 38% 34%, rgba(95, 184, 201, 0.62) 0%, rgba(95, 184, 201, 0.30) 44%, rgba(16, 16, 24, 0.92) 100%)',
+  }),
+  theta: css({
+    background:
+      'radial-gradient(circle at 38% 34%, rgba(183, 143, 214, 0.62) 0%, rgba(183, 143, 214, 0.30) 44%, rgba(16, 16, 24, 0.92) 100%)',
+  }),
+  delta: css({
+    background:
+      'radial-gradient(circle at 38% 34%, rgba(74, 90, 138, 0.72) 0%, rgba(74, 90, 138, 0.36) 44%, rgba(16, 16, 24, 0.92) 100%)',
+  }),
+}
+
 const platterCss = css({
   position: 'relative',
   display: 'block',
@@ -128,10 +150,12 @@ export interface RecordDiscProps {
   spinning?: 'idle' | 'playing' | 'none'
   /** When set, the label carries this initial instead of scene art (Profile avatar). */
   initial?: string
+  /** Generative band-tinted label — NO photo request (the player's world). */
+  plain?: boolean
   className?: string
 }
 
-export function RecordDisc({ state, size, spinning = 'idle', initial, className }: RecordDiscProps) {
+export function RecordDisc({ state, size, spinning = 'idle', initial, plain, className }: RecordDiscProps) {
   const uid = useId()
   const band = STATE_BAND[state]
   const label = Math.round(size * 0.44)
@@ -160,6 +184,8 @@ export function RecordDisc({ state, size, spinning = 'idle', initial, className 
           <span className={initialCss} style={{ fontSize: Math.round(label * 0.5) }}>
             {initial}
           </span>
+        ) : plain ? (
+          <span className={cx(overlayCss, plainLabelLayer[band])} />
         ) : (
           <>
             <img

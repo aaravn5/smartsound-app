@@ -1,116 +1,183 @@
-import { useMemo } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
+import { useReducedMotion } from 'motion/react'
 import { css, cx } from 'styled-system/css'
-import { BoomerangVideoBg } from '~/landing/BoomerangVideoBg'
 import { LandingHeader } from '~/landing/LandingHeader'
-import { HeroSearch } from '~/landing/HeroSearch'
-import { RecordCarousel } from '~/landing/RecordCarousel'
+import { LandingSearch } from '~/landing/LandingSearch'
 import { NowPlayingWidget } from '~/landing/NowPlayingWidget'
+import { StudyCanvas } from '~/landing/StudyCanvas'
+import { PressingCarousel, PRESSINGS, pressingTint } from '~/landing/PressingCarousel'
+import { RecordDisc } from '~/components/vinyl/RecordDisc'
+import {
+  HERO_SCROLL_VH,
+  heroProgress,
+  headlineOpacity,
+  cueOpacity,
+  act3Opacity,
+  clamp01,
+} from '~/landing/hero-math'
 import { hasAccount } from '~/lib/account'
-import { DAYPART_GRADE, DAYPART_HEADLINE, DAYPART_PRESS, DAYPART_TINT, daypart } from '~/lib/daypart'
 import { useClickSound } from '~/lib/click-sound'
 import { usePageTitle } from '~/lib/page-title'
 import { suggestFor } from '~/engine/circadian/model'
-import { SOUNDSCAPES } from '~/lib/catalog'
 import type { TargetState } from '~/engine/audio/types'
 
 /**
- * `/` — the vinyl hero. SmartSound as a quiet record label: the boomerang
- * daylight loop graded to the hour behind a one-viewport pressing-room —
- * liquid-glass chrome, a Fraunces headline that shifts with the daypart,
- * the self-typing search, and the lazy-susan of records (the five modes +
- * scenario pressings, each labeled with its OWN landscape).
+ * `/` — the three-act scroll-zoom hero. No video, no photos: a real-time
+ * generative canvas. The page scrolls through a ~320vh container with a
+ * position:sticky stage; scroll progress drives the camera timeline
+ * (hero-math.ts):
+ *
+ *   Act I  — The Study: a dark room, desk in near-silhouette, one glowing
+ *            screen, neural-drift particles, a whisper of EEG. Headline.
+ *   Act II — The Zoom: the camera pushes INTO the screen across three
+ *            parallax particle depths; the bezel becomes the viewport.
+ *   Act III— The Pressings: inside the computer, the revolving rack of
+ *            records (tonearm drop on play), CTAs, search, the pulse line.
  *
  * Browsing stays open (`/app` is one click away); LISTENING is the gate —
  * any play intent without an on-device account routes through
- * /onboarding/auth with the intent preserved. No page scroll: the viewport
- * is the sleeve.
+ * /onboarding/auth with the intent preserved.
+ *
+ * prefers-reduced-motion: no scroll-jack, no particles, no spin — a static
+ * composed study + headline, then a normal-flow static record row + CTAs.
  */
 export const Route = createFileRoute('/')({
   component: Landing,
 })
 
-const FRAUNCES = '"Fraunces", Georgia, "Times New Roman", serif'
-
-/**
- * The legibility scrim over the graded footage — transparent enough to keep
- * the landscape alive, dark enough that every text zone (header, headline
- * band, caption/footer bottom 40%) clears WCAG AA for white ink in EVERY
- * daypart (the ungraded morning frame is the audited worst case — see
- * scripts/hero-contrast-audit.mjs).
- */
-const HERO_SCRIM =
-  'linear-gradient(to bottom, rgba(4, 8, 22, 0.68) 0%, rgba(4, 8, 22, 0.56) 16%, rgba(4, 8, 22, 0.56) 34%, rgba(4, 8, 22, 0.6) 52%, rgba(4, 8, 22, 0.68) 68%, rgba(4, 8, 22, 0.82) 84%, rgba(4, 8, 22, 0.92) 100%)'
-
-const solidCtaCss = css({
+/** Secondary pill — Ghost Blue @20%, Starlight text. */
+const secondaryCtaCss = css({
   display: 'inline-flex',
   alignItems: 'center',
   justifyContent: 'center',
   minH: '50px',
   px: '7',
-  borderRadius: 'capsule',
+  borderRadius: 'pill',
   border: 'none',
   font: 'inherit',
-  fontSize: 'callout',
-  fontWeight: '600',
+  fontSize: 'bodyMd',
+  fontWeight: '500',
   letterSpacing: '0.01em',
-  background: 'rgba(246, 245, 250, 0.97)',
-  color: 'rgba(14, 16, 26, 0.95)',
+  background: 'rgba(205, 221, 255, 0.20)',
+  color: 'starlight',
   textDecoration: 'none',
   cursor: 'pointer',
   WebkitTapHighlightColor: 'transparent',
-  boxShadow: '0 10px 32px rgba(2, 4, 12, 0.4)',
-  transition: 'transform 180ms cubic-bezier(0.32, 0.72, 0, 1)',
-  _hover: { transform: 'translateY(-1px)' },
+  transition: 'background 300ms ease, transform 160ms ease',
+  _hover: { background: 'rgba(205, 221, 255, 0.28)' },
   _active: { transform: 'scale(0.965)' },
-  '@media (prefers-reduced-motion: reduce)': { transition: 'none', _hover: { transform: 'none' }, _active: { transform: 'none' } },
+  '@media (prefers-reduced-motion: reduce)': { transition: 'none', _active: { transform: 'none' } },
 })
 
-const glassCtaCss = css({
+/** Primary pill — Mercury Blue bg, Pure White text. THE accent. */
+const primaryCtaCss = css({
   display: 'inline-flex',
   alignItems: 'center',
   justifyContent: 'center',
   minH: '50px',
   px: '7',
-  borderRadius: 'capsule',
+  borderRadius: 'pill',
   border: 'none',
   font: 'inherit',
-  fontSize: 'callout',
-  fontWeight: '600',
+  fontSize: 'bodyMd',
+  fontWeight: '500',
   letterSpacing: '0.01em',
-  color: 'rgba(255, 255, 255, 0.95)',
+  background: 'mercuryBlue',
+  color: 'white',
   textDecoration: 'none',
   cursor: 'pointer',
   WebkitTapHighlightColor: 'transparent',
-  transition: 'transform 180ms cubic-bezier(0.32, 0.72, 0, 1)',
+  transition: 'background 300ms ease, transform 160ms ease',
+  _hover: { background: '#6377ee' },
   _active: { transform: 'scale(0.965)' },
   '@media (prefers-reduced-motion: reduce)': { transition: 'none', _active: { transform: 'none' } },
 })
 
 const footLinkCss = css({
-  color: 'rgba(235, 238, 250, 0.62)',
+  color: 'silver',
   textDecoration: 'none',
-  _hover: { color: 'rgba(255,255,255,0.9)', textDecoration: 'underline' },
+  _hover: { color: 'starlight', textDecoration: 'underline' },
 })
 
+const headlineCss = css({
+  m: '0',
+  fontFamily: 'display',
+  fontWeight: '400',
+  fontSize: 'clamp(2.6rem, 6.5vw, 4rem)',
+  letterSpacing: '-0.02em',
+  lineHeight: '1.1',
+  color: 'starlight',
+})
+
+const sublineCss = css({
+  m: '0',
+  maxW: '30rem',
+  fontSize: 'clamp(0.9375rem, 1.4vw, 1.0625rem)',
+  lineHeight: '1.55',
+  color: 'silver',
+})
+
+/** The PROMOTED honesty line — body size, not footer whisper (audit 1.5). */
+const pulseLineCss = css({
+  m: '0',
+  fontSize: 'bodyMd',
+  lineHeight: '1.5',
+  textAlign: 'center',
+  color: 'silver',
+})
+
+const PULSE_LINE = 'No wearable needed — your camera reads your pulse, on-device, always.'
+const SUBLINE =
+  'Neuroacoustic soundscapes pressed like rare vinyl — each mode tuned to your pulse. Focus, flow, calm, sleep.'
+
+function Headline() {
+  return (
+    <h1 className={headlineCss}>
+      <span className={css({ display: 'block' })}>records cut for</span>
+      <span className={css({ display: 'block' })}>
+        the <em className={css({ fontStyle: 'italic' })}>waking mind.</em>
+      </span>
+    </h1>
+  )
+}
+
+function FooterLine() {
+  return (
+    <p
+      className={css({
+        m: '0',
+        px: '5',
+        py: '7',
+        textAlign: 'center',
+        fontSize: 'caption',
+        color: 'silver',
+      })}
+    >
+      Free to explore · The camera stays on your device ·{' '}
+      <Link to="/privacy" className={footLinkCss}>
+        Privacy
+      </Link>{' '}
+      ·{' '}
+      <Link to="/terms" className={footLinkCss}>
+        Terms
+      </Link>
+    </p>
+  )
+}
+
 function Landing() {
-  // The landing keeps its title — re-asserted here so SPA back-navigation
-  // from a retitled /app route restores it.
+  // Re-asserted on mount so SPA back-navigation restores the title.
   usePageTitle('SmartSound — calm, tuned to your body')
   const navigate = useNavigate()
   const playClick = useClickSound()
-
-  // Daypart is read once per mount — a visit straddling a boundary simply
-  // re-grades on the next load; no per-minute reactivity needed.
-  const dp = useMemo(() => daypart(), [])
+  const reduce = useReducedMotion()
   const suggestion = useMemo(() => suggestFor(new Date()), [])
-  const pressTitle = SOUNDSCAPES.find((s) => s.state === suggestion.state)?.title ?? suggestion.label
-  const [headA, headB] = DAYPART_HEADLINE[dp]
 
   /** THE gate — listening requires the on-device account; browsing never does. */
-  const gatedPlay = (state: TargetState) => {
+  const gatedPlay = (state: TargetState, minutes?: number) => {
     if (hasAccount()) {
-      void navigate({ to: '/app/player', search: { state } })
+      void navigate({ to: '/app/player', search: { state, minutes } })
     } else {
       void navigate({
         to: '/onboarding/$step',
@@ -120,178 +187,334 @@ function Landing() {
     }
   }
 
+  const startListening = () => {
+    playClick('primary')
+    gatedPlay(suggestion.state)
+  }
+
+  if (reduce) {
+    return <ReducedLanding gatedPlay={gatedPlay} onStart={startListening} onBrowse={() => playClick('primary')} />
+  }
+  return <ScrollLanding gatedPlay={gatedPlay} onStart={startListening} onBrowse={() => playClick('primary')} />
+}
+
+interface LandingBodyProps {
+  gatedPlay: (state: TargetState, minutes?: number) => void
+  onStart: () => void
+  onBrowse: () => void
+}
+
+// ── the moving hero — sticky stage + scroll-progress camera ────────────────
+
+function ScrollLanding({ gatedPlay, onStart, onBrowse }: LandingBodyProps) {
+  const heroRef = useRef<HTMLDivElement>(null)
+  const headlineRef = useRef<HTMLDivElement>(null)
+  const cueRef = useRef<HTMLDivElement>(null)
+  const act3Ref = useRef<HTMLDivElement>(null)
+  const progressRef = useRef(0)
+  const tintRef = useRef('#6f7ff0')
+
+  useEffect(() => {
+    let raf = 0
+    let disposed = false
+    const loop = () => {
+      if (disposed) return
+      raf = requestAnimationFrame(loop)
+      const hero = heroRef.current
+      if (!hero) return
+      const rect = hero.getBoundingClientRect()
+      const vh = window.innerHeight
+      const p = heroProgress(-rect.top, 0, rect.height, vh)
+      progressRef.current = p
+
+      const headline = headlineRef.current
+      if (headline) {
+        headline.style.opacity = headlineOpacity(p).toFixed(3)
+        headline.style.transform = `translateY(${(-90 * clamp01(p / 0.42)).toFixed(1)}px)`
+      }
+      const cue = cueRef.current
+      if (cue) cue.style.opacity = cueOpacity(p).toFixed(3)
+      const act3 = act3Ref.current
+      if (act3) {
+        const a = act3Opacity(p)
+        act3.style.opacity = a.toFixed(3)
+        const live = a > 0.15
+        act3.style.pointerEvents = live ? 'auto' : 'none'
+        // inert keeps the hidden acts out of the tab order.
+        act3.toggleAttribute('inert', !live)
+      }
+    }
+    raf = requestAnimationFrame(loop)
+    return () => {
+      disposed = true
+      cancelAnimationFrame(raf)
+    }
+  }, [])
+
   return (
-    <div
-      className={cx(
-        'ss-scene-dark',
-        css({
-          position: 'relative',
-          height: '100dvh',
-          minHeight: '540px',
-          overflow: 'hidden',
-          bg: 'black',
-          color: 'text',
-        }),
-      )}
-    >
-      {/* The graded boomerang footage. */}
-      <BoomerangVideoBg grade={DAYPART_GRADE[dp]} />
-
-      {/* Daypart tint (evening amber lean, night navy) under the AA scrim. */}
-      <div
-        aria-hidden
-        className={css({ position: 'absolute', inset: '0', zIndex: '1', pointerEvents: 'none' })}
-        style={{ background: DAYPART_TINT[dp] }}
-      />
-      <div
-        aria-hidden
-        className={css({ position: 'absolute', inset: '0', zIndex: '1', pointerEvents: 'none' })}
-        style={{ background: HERO_SCRIM }}
-      />
-
+    <div className={css({ position: 'relative', bg: 'deepSpace', color: 'starlight' })}>
       <LandingHeader />
 
-      {/* Hero column + the records. */}
-      <div
-        className={css({
-          position: 'absolute',
-          inset: '0',
-          zIndex: '10',
-          display: 'flex',
-          flexDirection: 'column',
-        })}
-      >
+      {/* The three-act scroll container. */}
+      <div ref={heroRef} data-hero-scroll className={css({ position: 'relative' })} style={{ height: `${HERO_SCROLL_VH}vh` }}>
+        {/* The sticky viewport stage. */}
         <div
           className={css({
-            flex: '1',
-            minH: '0',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            textAlign: 'center',
-            px: '5',
-            pt: 'calc(env(safe-area-inset-top) + clamp(56px, 9dvh, 92px))',
-            gap: 'clamp(10px, 1.8dvh, 18px)',
+            position: 'sticky',
+            top: '0',
+            height: '100dvh',
+            minHeight: '480px',
+            overflow: 'hidden',
           })}
         >
-          {/* Badge — the current pressing, from the circadian engine. */}
-          <p
-            className={cx(
-              'liquid-glass',
-              'fade-up',
-              'fade-up-d1',
-              'tabular',
-              css({
-                m: '0',
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '2',
-                borderRadius: 'capsule',
-                px: '4',
-                py: '2',
-                fontSize: 'footnote',
-                fontWeight: '600',
-                letterSpacing: '0.08em',
-                textTransform: 'uppercase',
-                color: 'rgba(240, 242, 252, 0.88)',
-              }),
-            )}
-          >
-            <span aria-hidden className={css({ w: '6px', h: '6px', borderRadius: 'full', background: 'rgba(167, 139, 250, 0.95)', boxShadow: '0 0 10px rgba(167,139,250,0.8)' })} />
-            {DAYPART_PRESS[dp]} · {pressTitle}
-          </p>
+          <StudyCanvas
+            getProgress={() => progressRef.current}
+            getTint={() => tintRef.current}
+            reduced={false}
+          />
 
-          <h1
-            className={cx(
-              'fade-up',
-              'fade-up-d2',
-              css({
-                m: '0',
-                fontSize: 'clamp(2.5rem, 6.4vw, 4.5rem)',
-                fontWeight: '500',
-                letterSpacing: '-0.03em',
-                lineHeight: '1.1',
-                color: 'rgba(255, 255, 255, 0.98)',
-                textShadow: '0 2px 24px rgba(2, 4, 12, 0.55)',
-              }),
-            )}
-            style={{ fontFamily: FRAUNCES }}
+          {/* Act I — headline over the study. */}
+          <div
+            ref={headlineRef}
+            className={css({
+              position: 'absolute',
+              inset: '0',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'flex-start',
+              textAlign: 'center',
+              gap: '4',
+              px: '5',
+              pt: 'calc(env(safe-area-inset-top) + 16dvh)',
+              pointerEvents: 'none',
+            })}
           >
-            <span className={css({ display: 'block' })}>{headA}</span>
-            <span className={css({ display: 'block', fontStyle: 'italic' })}>{headB}</span>
-          </h1>
+            <Headline />
+            <p className={sublineCss}>{SUBLINE}</p>
+          </div>
 
-          <p
-            className={cx(
-              'fade-up',
-              'fade-up-d3',
-              css({
-                m: '0',
-                maxW: '28rem',
-                fontSize: 'clamp(0.9375rem, 1.4vw, 1.0625rem)',
-                lineHeight: '1.55',
-                color: 'rgba(255, 255, 255, 0.9)',
-                textShadow: '0 1px 14px rgba(2, 4, 12, 0.55)',
-              }),
-            )}
+          {/* Scroll cue — thin line + caption pulsing at ~1 Hz. */}
+          <div
+            ref={cueRef}
+            aria-hidden
+            className={css({
+              position: 'absolute',
+              insetX: '0',
+              bottom: 'calc(env(safe-area-inset-bottom) + 22px)',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: '2',
+              pointerEvents: 'none',
+            })}
           >
-            Neuroacoustic soundscapes pressed like rare vinyl — each mode tuned to your pulse.
-            Focus, flow, calm, sleep.
-          </p>
-
-          <div className={cx('fade-up', 'fade-up-d4', css({ display: 'flex', alignItems: 'center', flexWrap: 'wrap', justifyContent: 'center', gap: '3', mt: '1' }))}>
-            <Link to="/app" className={solidCtaCss} onClick={() => playClick('primary')}>
-              Browse the library
-            </Link>
-            <button
-              type="button"
-              className={cx('liquid-glass', glassCtaCss)}
-              onClick={() => {
-                playClick('primary')
-                gatedPlay(suggestion.state)
-              }}
+            <span className={cx('ss-cue-pulse', css({ display: 'block', width: '1px', height: '44px', background: 'starlight' }))} />
+            <span
+              className={cx(
+                'ss-cue-pulse',
+                'tabular',
+                css({ fontSize: 'caption', letterSpacing: '0.14em', textTransform: 'uppercase', color: 'silver' }),
+              )}
             >
-              Start listening
-            </button>
+              scroll
+            </span>
           </div>
 
-          <div className={cx('fade-up', 'fade-up-d5', css({ width: 'min(430px, 100%)', mt: '1' }))}>
-            <HeroSearch onPlay={gatedPlay} />
-          </div>
-        </div>
+          {/* Act III — inside the computer: the pressings + the offer. */}
+          <div
+            ref={act3Ref}
+            data-act3
+            className={css({
+              position: 'absolute',
+              inset: '0',
+              display: 'flex',
+              flexDirection: 'column',
+              px: '5',
+              pt: 'calc(env(safe-area-inset-top) + 82px)',
+              pb: 'calc(env(safe-area-inset-bottom) + 18px)',
+            })}
+            style={{ opacity: 0, pointerEvents: 'none' }}
+          >
+            <p
+              className={cx(
+                'tabular',
+                css({
+                  m: '0',
+                  textAlign: 'center',
+                  fontSize: 'caption',
+                  letterSpacing: '0.12em',
+                  textTransform: 'uppercase',
+                  color: 'silver',
+                }),
+              )}
+            >
+              The pressings
+            </p>
+            <div className={css({ flex: '1', minH: '150px', mt: '2', mb: '10' })}>
+              <PressingCarousel
+                onPlay={gatedPlay}
+                onFocus={(_item, tint) => {
+                  tintRef.current = tint
+                }}
+              />
+            </div>
 
-        {/* The record lazy-susan — the bottom third. */}
-        <div className={css({ flexShrink: '0', height: 'clamp(185px, 29dvh, 300px)', pb: 'env(safe-area-inset-bottom)' })}>
-          <RecordCarousel onOpen={gatedPlay} />
+            <div
+              className={css({
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                gap: '4',
+                maxW: '520px',
+                w: 'full',
+                mx: 'auto',
+              })}
+            >
+              <div className={css({ display: 'flex', alignItems: 'center', flexWrap: 'wrap', justifyContent: 'center', gap: '3' })}>
+                <Link to="/app" className={secondaryCtaCss} onClick={onBrowse}>
+                  Browse the library
+                </Link>
+                <button type="button" className={primaryCtaCss} onClick={onStart}>
+                  Start listening
+                </button>
+              </div>
+              <LandingSearch onPlay={gatedPlay} className={css({ maxW: '430px' })} />
+              <p className={pulseLineCss}>{PULSE_LINE}</p>
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* Footer microline — honest, tiny, desktop corners. */}
-      <p
+      <FooterLine />
+      <NowPlayingWidget />
+    </div>
+  )
+}
+
+// ── reduced motion — a static composed study, normal flow, no tricks ───────
+
+function ReducedLanding({ gatedPlay, onStart, onBrowse }: LandingBodyProps) {
+  return (
+    <div className={css({ position: 'relative', bg: 'deepSpace', color: 'starlight' })}>
+      <LandingHeader />
+
+      {/* The study as a still + the headline. */}
+      <section
         className={css({
-          display: 'none',
-          md: { display: 'block' },
-          position: 'absolute',
-          left: 'clamp(16px, 4vw, 44px)',
-          bottom: 'calc(env(safe-area-inset-bottom) + 14px)',
-          zIndex: '20',
-          m: '0',
-          fontSize: 'caption',
-          color: 'rgba(235, 238, 250, 0.62)',
-          textShadow: '0 1px 8px rgba(2,4,12,0.6)',
+          position: 'relative',
+          minHeight: '86dvh',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          overflow: 'hidden',
         })}
       >
-        Free to explore · The camera stays on your device ·{' '}
-        <Link to="/privacy" className={footLinkCss}>
-          Privacy
-        </Link>{' '}
-        ·{' '}
-        <Link to="/terms" className={footLinkCss}>
-          Terms
-        </Link>
-      </p>
+        <div aria-hidden className={css({ position: 'absolute', inset: '0' })}>
+          <StudyCanvas getProgress={() => 0} getTint={() => '#6f7ff0'} reduced />
+        </div>
+        <div
+          className={css({
+            position: 'relative',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            textAlign: 'center',
+            gap: '4',
+            px: '5',
+            pt: 'calc(env(safe-area-inset-top) + 64px)',
+          })}
+        >
+          <Headline />
+          <p className={sublineCss}>{SUBLINE}</p>
+        </div>
+      </section>
 
+      {/* The pressings — a static row, fully reachable. */}
+      <section
+        aria-label="The pressings — every mode as a record"
+        role="group"
+        className={css({ maxW: '1200px', mx: 'auto', px: '5', pt: '10', pb: '4' })}
+      >
+        <div
+          className={css({
+            display: 'flex',
+            alignItems: 'flex-start',
+            gap: '6',
+            overflowX: 'auto',
+            pb: '3',
+            WebkitOverflowScrolling: 'touch',
+          })}
+        >
+          {PRESSINGS.map((item) => (
+            <div key={item.id} className={css({ flexShrink: '0', textAlign: 'center', width: '132px' })}>
+              <button
+                type="button"
+                onClick={() => gatedPlay(item.state, item.minutes)}
+                aria-label={`${item.title} — ${item.meta}. Play`}
+                className={css({
+                  display: 'block',
+                  p: '0',
+                  m: '0',
+                  mx: 'auto',
+                  border: 'none',
+                  background: 'transparent',
+                  cursor: 'pointer',
+                  borderRadius: 'full',
+                  WebkitTapHighlightColor: 'transparent',
+                  _focusVisible: { outline: '2px solid token(colors.ghostBlue)', outlineOffset: '4px' },
+                })}
+                style={{ color: pressingTint(item) }}
+              >
+                <RecordDisc state={item.state} size={120} spinning="none" />
+              </button>
+              <p
+                className={css({
+                  m: '0',
+                  mt: '2.5',
+                  fontFamily: 'display',
+                  fontWeight: '400',
+                  fontSize: 'bodyMd',
+                  color: 'starlight',
+                })}
+              >
+                {item.title}
+              </p>
+              <p className={cx('tabular', css({ m: '0', mt: '0.5', fontSize: 'caption2', letterSpacing: '0.06em', color: 'silver' }))}>
+                {item.meta}
+              </p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* CTAs + search + the pulse line. */}
+      <section
+        className={css({
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          gap: '4',
+          maxW: '520px',
+          mx: 'auto',
+          px: '5',
+          pb: '12',
+        })}
+      >
+        <div className={css({ display: 'flex', alignItems: 'center', flexWrap: 'wrap', justifyContent: 'center', gap: '3' })}>
+          <Link to="/app" className={secondaryCtaCss} onClick={onBrowse}>
+            Browse the library
+          </Link>
+          <button type="button" className={primaryCtaCss} onClick={onStart}>
+            Start listening
+          </button>
+        </div>
+        <LandingSearch onPlay={gatedPlay} reduced className={css({ maxW: '430px' })} />
+        <p className={pulseLineCss}>{PULSE_LINE}</p>
+      </section>
+
+      <FooterLine />
       <NowPlayingWidget />
     </div>
   )

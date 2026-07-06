@@ -211,6 +211,30 @@
   55%, 100% { opacity: 0; }
 }
 
+/* Landing hero scroll cue — pulses at the study's ~1 Hz synapse rate. */
+@keyframes ss-cue-pulse {
+  0%, 100% { opacity: 0.35; }
+  50% { opacity: 1; }
+}
+.ss-cue-pulse {
+  animation: ss-cue-pulse 1s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .ss-cue-pulse {
+    animation: none;
+  }
+}
+
+/* /science mechanism diagram — the envelope's dashes flow, the modulated
+ * signal breathes. Both frozen under reduced motion. */
+@keyframes ss-mech-flow {
+  to { stroke-dashoffset: -28; }
+}
+@keyframes ss-mech-pulse {
+  0%, 100% { transform: scaleY(0.42); }
+  50% { transform: scaleY(1); }
+}
+
 /* ── Always-dark immersive surfaces ───────────────────────────────────────────
  *
  * The full-screen Player and the Today hero card are cinematic, scene-backed

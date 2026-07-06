@@ -7,18 +7,16 @@ import { DAYPART_GREETING, daypart } from '~/lib/daypart'
 import { useClickSound } from '~/lib/click-sound'
 
 /**
- * LandingHeader — the quietpress chrome, rebranded SmartSound.
+ * LandingHeader — Pressed-at-Night chrome (design.md pills, no glass).
  *
  * Left: the Fraunces wordmark. Center (desktop): Library · Science ·
- * Contact · Legal. Right: signed out → "Log in" (glass) + "Sign up" (solid
- * white); signed in → a glass chip with the daypart greeting ("Welcome,
- * {name}" on the very first visit after signup) and a tiny account menu
- * with Sign out. No cart — SmartSound sells sessions, not merchandise, so
- * the template's shop affordance is honestly dropped. Mobile: a glass
- * square toggling a glass dropdown with the same links and actions.
+ * Contact · Legal as quiet Silver links that brighten to Starlight over a
+ * Graphite pill. Right: signed out → "Log in" (secondary pill, Ghost Blue
+ * @20%) + "Sign up" (primary pill, Mercury Blue — THE accent); signed in →
+ * a Graphite pill with the daypart greeting ("Welcome, {name}" on the very
+ * first visit after signup) and a tiny account menu with Sign out.
+ * Fixed to the top so the nav survives the hero's three-act scroll.
  */
-
-const FRAUNCES = '"Fraunces", Georgia, "Times New Roman", serif'
 
 const NAV = [
   { label: 'Library', to: '/app' },
@@ -28,56 +26,63 @@ const NAV = [
 ] as const
 
 const navLinkCss = css({
-  fontSize: 'subhead',
+  fontSize: 'bodySm',
   fontWeight: '500',
   letterSpacing: '0.01em',
-  color: 'rgba(255,255,255,0.82)',
+  color: 'silver',
   textDecoration: 'none',
   px: '3',
   py: '2',
-  borderRadius: 'capsule',
-  transition: 'color 160ms ease, background 160ms ease',
-  _hover: { color: 'rgba(255,255,255,1)', background: 'rgba(255,255,255,0.08)' },
+  borderRadius: 'pill',
+  transition: 'color 300ms ease, background 300ms ease',
+  _hover: { color: 'starlight', background: 'graphite' },
+  '@media (prefers-reduced-motion: reduce)': { transition: 'none' },
 })
 
-const glassPillCss = css({
+/** Secondary pill — Ghost Blue @ ~20%, Starlight text (design.md). */
+const secondaryPillCss = css({
   display: 'inline-flex',
   alignItems: 'center',
   justifyContent: 'center',
   minH: '40px',
   px: '4.5',
-  borderRadius: 'capsule',
+  borderRadius: 'pill',
   border: 'none',
   font: 'inherit',
-  fontSize: 'subhead',
-  fontWeight: '600',
-  color: 'rgba(255,255,255,0.94)',
+  fontSize: 'bodySm',
+  fontWeight: '500',
+  background: 'rgba(205, 221, 255, 0.20)',
+  color: 'starlight',
   textDecoration: 'none',
   cursor: 'pointer',
   WebkitTapHighlightColor: 'transparent',
-  transition: 'transform 160ms ease',
+  transition: 'background 300ms ease, transform 160ms ease',
+  _hover: { background: 'rgba(205, 221, 255, 0.28)' },
   _active: { transform: 'scale(0.96)' },
+  '@media (prefers-reduced-motion: reduce)': { transition: 'none', _active: { transform: 'none' } },
 })
 
-const solidPillCss = css({
+/** Primary pill — Mercury Blue, Pure White text. The one accent. */
+const primaryPillCss = css({
   display: 'inline-flex',
   alignItems: 'center',
   justifyContent: 'center',
   minH: '40px',
   px: '4.5',
-  borderRadius: 'capsule',
+  borderRadius: 'pill',
   border: 'none',
   font: 'inherit',
-  fontSize: 'subhead',
-  fontWeight: '600',
-  background: 'rgba(246, 245, 250, 0.97)',
-  color: 'rgba(14, 16, 26, 0.95)',
+  fontSize: 'bodySm',
+  fontWeight: '500',
+  background: 'mercuryBlue',
+  color: 'white',
   textDecoration: 'none',
   cursor: 'pointer',
   WebkitTapHighlightColor: 'transparent',
-  boxShadow: '0 6px 22px rgba(2,4,12,0.35)',
-  transition: 'transform 160ms ease',
+  transition: 'background 300ms ease, transform 160ms ease',
+  _hover: { background: '#6377ee' },
   _active: { transform: 'scale(0.96)' },
+  '@media (prefers-reduced-motion: reduce)': { transition: 'none', _active: { transform: 'none' } },
 })
 
 const menuRowCss = css({
@@ -90,14 +95,22 @@ const menuRowCss = css({
   border: 'none',
   background: 'transparent',
   font: 'inherit',
-  fontSize: 'body',
+  fontSize: 'bodySm',
   fontWeight: '500',
-  color: 'rgba(255,255,255,0.92)',
+  color: 'starlight',
   textAlign: 'left',
   textDecoration: 'none',
   cursor: 'pointer',
   WebkitTapHighlightColor: 'transparent',
-  _hover: { background: 'rgba(255,255,255,0.08)' },
+  _hover: { background: 'graphite' },
+})
+
+const dropdownCss = css({
+  border: '1px solid',
+  borderColor: 'hairline',
+  background: 'midnightSlate',
+  borderRadius: '4px',
+  overflow: 'hidden',
 })
 
 export function LandingHeader() {
@@ -145,16 +158,17 @@ export function LandingHeader() {
   return (
     <header
       className={css({
-        position: 'absolute',
+        position: 'fixed',
         insetX: '0',
         top: '0',
-        zIndex: '20',
+        zIndex: '50',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
         gap: '3',
         px: 'clamp(16px, 4vw, 44px)',
-        pt: 'calc(env(safe-area-inset-top) + 16px)',
+        pt: 'calc(env(safe-area-inset-top) + 14px)',
+        pb: '2',
       })}
     >
       {/* Wordmark. */}
@@ -163,14 +177,13 @@ export function LandingHeader() {
         aria-label="SmartSound — home"
         className={css({
           textDecoration: 'none',
+          fontFamily: 'display',
           fontSize: 'clamp(1.25rem, 2.2vw, 1.5rem)',
           fontWeight: '600',
           letterSpacing: '-0.03em',
-          color: 'rgba(248, 247, 252, 0.97)',
-          textShadow: '0 1px 14px rgba(2,4,12,0.6)',
+          color: 'starlight',
           whiteSpace: 'nowrap',
         })}
-        style={{ fontFamily: FRAUNCES }}
       >
         SmartSound
       </Link>
@@ -178,18 +191,18 @@ export function LandingHeader() {
       {/* Center nav — desktop only. */}
       <nav
         aria-label="Landing"
-        className={cx(
-          'liquid-glass',
-          css({
-            display: 'none',
-            md: { display: 'flex' },
-            alignItems: 'center',
-            gap: '1',
-            borderRadius: 'capsule',
-            px: '2',
-            py: '1',
-          }),
-        )}
+        className={css({
+          display: 'none',
+          md: { display: 'flex' },
+          alignItems: 'center',
+          gap: '1',
+          borderRadius: 'pill',
+          border: '1px solid',
+          borderColor: 'hairline',
+          background: 'rgba(30, 30, 42, 0.85)',
+          px: '2',
+          py: '1',
+        })}
       >
         {NAV.map((n) => (
           <Link key={n.to} to={n.to} className={navLinkCss} onClick={() => playClick('tap')}>
@@ -201,7 +214,10 @@ export function LandingHeader() {
       {/* Right side. */}
       <div className={css({ display: 'flex', alignItems: 'center', gap: '2.5' })}>
         {account ? (
-          <div ref={accountWrapRef} className={css({ position: 'relative', display: 'none', sm: { display: 'block' } })}>
+          <div
+            ref={accountWrapRef}
+            className={css({ position: 'relative', display: 'none', sm: { display: 'block' } })}
+          >
             <button
               type="button"
               onClick={() => {
@@ -210,10 +226,15 @@ export function LandingHeader() {
               }}
               aria-haspopup="menu"
               aria-expanded={accountOpen}
-              className={cx('liquid-glass', glassPillCss)}
+              className={cx(
+                secondaryPillCss,
+                css({ background: 'graphite', _hover: { background: '#2d2d3d' } }),
+              )}
               data-greeting
             >
-              <span style={{ fontFamily: FRAUNCES }} className={css({ fontWeight: '500', letterSpacing: '-0.01em' })}>
+              <span
+                className={css({ fontFamily: 'display', fontWeight: '400', letterSpacing: '-0.01em' })}
+              >
                 {greeting}
               </span>
             </button>
@@ -221,13 +242,23 @@ export function LandingHeader() {
               <div
                 role="menu"
                 className={cx(
-                  'liquid-glass',
-                  css({ position: 'absolute', right: '0', top: 'calc(100% + 8px)', minW: '200px', borderRadius: '16px', overflow: 'hidden', py: '1' }),
+                  dropdownCss,
+                  css({ position: 'absolute', right: '0', top: 'calc(100% + 8px)', minW: '200px', py: '1' }),
                 )}
-                // Inline: .liquid-glass (unlayered) would beat layered utilities.
-                style={{ position: 'absolute' }}
               >
-                <p className={css({ m: '0', px: '4', pt: '2.5', pb: '1.5', fontSize: 'caption', color: 'rgba(235,238,250,0.6)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' })}>
+                <p
+                  className={css({
+                    m: '0',
+                    px: '4',
+                    pt: '2.5',
+                    pb: '1.5',
+                    fontSize: 'caption',
+                    color: 'silver',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                  })}
+                >
                   {account.email} · on this device
                 </p>
                 <button type="button" role="menuitem" onClick={handleSignOut} className={menuRowCss}>
@@ -239,10 +270,18 @@ export function LandingHeader() {
           </div>
         ) : (
           <>
-            <button type="button" onClick={toAuth} className={cx('liquid-glass', glassPillCss, css({ display: 'none', sm: { display: 'inline-flex' } }))}>
+            <button
+              type="button"
+              onClick={toAuth}
+              className={cx(secondaryPillCss, css({ display: 'none', sm: { display: 'inline-flex' } }))}
+            >
               Log in
             </button>
-            <button type="button" onClick={toAuth} className={cx(solidPillCss, css({ display: 'none', sm: { display: 'inline-flex' } }))}>
+            <button
+              type="button"
+              onClick={toAuth}
+              className={cx(primaryPillCss, css({ display: 'none', sm: { display: 'inline-flex' } }))}
+            >
               Sign up
             </button>
           </>
@@ -257,21 +296,20 @@ export function LandingHeader() {
             playClick('tap')
             setMenuOpen((o) => !o)
           }}
-          className={cx(
-            'liquid-glass',
-            css({
-              display: 'grid',
-              md: { display: 'none' },
-              placeItems: 'center',
-              w: '42px',
-              h: '42px',
-              borderRadius: '12px',
-              border: 'none',
-              color: 'rgba(255,255,255,0.92)',
-              cursor: 'pointer',
-              WebkitTapHighlightColor: 'transparent',
-            }),
-          )}
+          className={css({
+            display: 'grid',
+            md: { display: 'none' },
+            placeItems: 'center',
+            w: '42px',
+            h: '42px',
+            borderRadius: 'pill',
+            border: '1px solid',
+            borderColor: 'hairline',
+            background: 'graphite',
+            color: 'starlight',
+            cursor: 'pointer',
+            WebkitTapHighlightColor: 'transparent',
+          })}
         >
           {menuOpen ? <X size={20} strokeWidth={2} aria-hidden /> : <Menu size={20} strokeWidth={2} aria-hidden />}
         </button>
@@ -281,31 +319,37 @@ export function LandingHeader() {
       {menuOpen && (
         <div
           className={cx(
-            'liquid-glass',
+            dropdownCss,
             css({
               position: 'absolute',
               right: '4',
               top: 'calc(env(safe-area-inset-top) + 68px)',
-              zIndex: '25',
+              zIndex: '55',
               minW: '230px',
-              borderRadius: '18px',
-              overflow: 'hidden',
               py: '1.5',
               md: { display: 'none' },
             }),
           )}
-          // Inline: .liquid-glass (unlayered) would beat layered utilities.
-          style={{ position: 'absolute' }}
         >
           {NAV.map((n) => (
             <Link key={n.to} to={n.to} className={menuRowCss} onClick={() => setMenuOpen(false)}>
               {n.label}
             </Link>
           ))}
-          <div aria-hidden className={css({ my: '1', borderTop: '1px solid rgba(255,255,255,0.12)' })} />
+          <div aria-hidden className={css({ my: '1', borderTop: '1px solid', borderColor: 'hairline' })} />
           {account ? (
             <>
-              <p className={css({ m: '0', px: '4', py: '1.5', fontSize: 'caption', color: 'rgba(235,238,250,0.6)' })} style={{ fontFamily: FRAUNCES }} data-greeting>
+              <p
+                className={css({
+                  m: '0',
+                  px: '4',
+                  py: '1.5',
+                  fontFamily: 'display',
+                  fontSize: 'caption',
+                  color: 'silver',
+                })}
+                data-greeting
+              >
                 {greeting}
               </p>
               <button type="button" onClick={handleSignOut} className={menuRowCss}>

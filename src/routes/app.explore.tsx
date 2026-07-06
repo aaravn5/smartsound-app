@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
 import { css, cx } from 'styled-system/css'
 import { Rail } from '~/components/SessionCard'
@@ -7,6 +7,7 @@ import { RecordSleeve } from '~/components/vinyl/RecordSleeve'
 import { chipCss } from '~/components/Card'
 import { useClickSound } from '~/lib/click-sound'
 import { useGatedPlay } from '~/lib/gated-play'
+import { useTypewriterPlaceholder } from '~/lib/typewriter'
 import { suggestedBlockMinutes } from '~/engine/circadian/model'
 import { SCENARIOS, SOUNDSCAPES } from '~/lib/catalog'
 import type { TargetState } from '~/engine/audio/types'
@@ -131,63 +132,6 @@ const CRATES: Crate[] = [
 function itemMeta(item: CrateItem): string {
   const duration = item.windDown ? '15 MIN | OPEN' : item.minutes ? `${item.minutes} MIN` : 'OPEN-ENDED'
   return `${capText(item.state)} · ${duration}`
-}
-
-// ── the self-typing placeholder — paused on focus, phase in a ref ───────────
-
-const LINES = [
-  'Want to focus? Try Deep Focus.',
-  'Racing mind? Still it in 10 minutes.',
-  'Sleep deeper tonight.',
-  'Find your calm.',
-]
-
-const TYPE_MS = 46
-const DELETE_MS = 22
-const HOLD_MS = 1700
-const GAP_MS = 420
-
-/**
- * Audit 1.5 fix: the whole typing phase (line index, character position,
- * direction) lives in a ref, so re-renders never reset it mid-word; and the
- * loop simply stops while `paused` (field focused / query present / reduced
- * motion), resuming exactly where it left off.
- */
-function useTypewriterPlaceholder(paused: boolean): string {
-  const phase = useRef({ line: 0, pos: 0, dir: 1 as 1 | -1 })
-  const [text, setText] = useState(() => LINES[0].slice(0, 0))
-
-  useEffect(() => {
-    if (paused) return
-    let disposed = false
-    let timer = 0
-
-    const step = () => {
-      if (disposed) return
-      const p = phase.current
-      const line = LINES[p.line]
-      p.pos = Math.max(0, p.pos + p.dir)
-      setText(line.slice(0, p.pos))
-      let delay = p.dir === 1 ? TYPE_MS : DELETE_MS
-      if (p.dir === 1 && p.pos >= line.length) {
-        p.dir = -1
-        delay = HOLD_MS
-      } else if (p.dir === -1 && p.pos <= 0) {
-        p.dir = 1
-        p.line = (p.line + 1) % LINES.length
-        delay = GAP_MS
-      }
-      timer = window.setTimeout(step, delay)
-    }
-
-    timer = window.setTimeout(step, 500)
-    return () => {
-      disposed = true
-      window.clearTimeout(timer)
-    }
-  }, [paused])
-
-  return text
 }
 
 const SearchIcon = () => (
