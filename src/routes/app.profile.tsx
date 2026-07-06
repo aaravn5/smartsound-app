@@ -8,6 +8,7 @@ import { ScreenTitle } from '~/components/SereneScreen'
 import { SettingsGroup, SettingsRow } from '~/components/SettingsList'
 import { ThemeToggle } from '~/components/ThemeToggle'
 import { useClickSound, useSfxEnabled } from '~/lib/click-sound'
+import { signOut, useAccount } from '~/lib/account'
 import { disableDevAccess, isDevAccess, tryUnlockDevAccess } from '~/lib/dev-access'
 import { useDailyUsage, FREE_DAILY_MIN } from '~/lib/entitlements'
 
@@ -357,6 +358,7 @@ function ProfileScreen() {
   const usage = useDailyUsage()
   const navigate = useNavigate()
   const playClick = useClickSound()
+  const account = useAccount()
 
   const paidPlan = usage.plan !== 'free'
   const devActive = isDevAccess()
@@ -366,17 +368,20 @@ function ProfileScreen() {
     <>
       <ScreenTitle caption="You" title="Profile" />
 
-      {/* Identity — honest about being a guest, no external image. */}
+      {/* Identity — the on-device account when one exists, guest otherwise.
+          Honest either way: no external image, no invented sync status. */}
       <LiquidGlass variant="card" className={cx(css({ mb: '5' }), cardAnim)}>
         <div className={css({ display: 'flex', alignItems: 'center', gap: '4', px: '6', py: '6' })}>
           <Avatar />
           <div className={css({ display: 'flex', flexDirection: 'column', gap: '1', minW: '0' })}>
-            <span className={css({ fontFamily: 'display', fontSize: 'title3', fontWeight: '600', color: 'text' })}>
-              Guest
+            <span className={css({ fontFamily: 'display', fontSize: 'title3', fontWeight: '600', color: 'text', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' })}>
+              {account ? account.name : 'Guest'}
             </span>
-            <span className={css({ fontSize: 'footnote', color: 'faint' })}>@exploring</span>
+            <span className={css({ fontSize: 'footnote', color: 'faint', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' })}>
+              {account ? account.email : '@exploring'}
+            </span>
             <span className={css({ mt: '1', fontSize: 'caption', fontWeight: '500', color: 'muted' })}>
-              Sign-in coming — exploring as guest
+              {account ? 'Account on this device — sync coming' : 'Sign-in coming — exploring as guest'}
             </span>
           </div>
         </div>
@@ -499,8 +504,9 @@ function ProfileScreen() {
           label="Notifications"
           value="Off"
           detail="Session reminders aren't built yet — they're coming in a future update."
-          last
         />
+        <LegalLinkRow to="/privacy" label="Privacy Policy" />
+        <LegalLinkRow to="/terms" label="Terms of Use" last />
       </SettingsGroup>
 
       <SettingsGroup title="Data">
@@ -522,13 +528,100 @@ function ProfileScreen() {
       </SettingsGroup>
 
       <SettingsGroup title="Account">
-        <SettingsRow
-          icon={<SignOutIcon />}
-          label="Sign out"
-          detail="You're already browsing as a guest — there's nothing signed in to sign out of yet."
-          last
-        />
+        {account ? (
+          <button
+            type="button"
+            onClick={() => {
+              playClick('tap')
+              signOut()
+              void navigate({ to: '/' })
+            }}
+            className={css({
+              display: 'flex',
+              alignItems: 'center',
+              gap: '3',
+              w: 'full',
+              px: '4',
+              py: '3.5',
+              border: 'none',
+              background: 'transparent',
+              font: 'inherit',
+              color: 'text',
+              textAlign: 'left',
+              cursor: 'pointer',
+              WebkitTapHighlightColor: 'transparent',
+            })}
+          >
+            <span
+              aria-hidden
+              className={css({ display: 'grid', placeItems: 'center', width: '30px', height: '30px', borderRadius: 'full', color: 'accent', background: 'accentSoft', flexShrink: '0', lineHeight: '0' })}
+            >
+              <SignOutIcon />
+            </span>
+            <span className={css({ flex: '1', minW: '0' })}>
+              <span className={css({ display: 'block', fontSize: 'subhead', fontWeight: '500' })}>Sign out</span>
+              <span className={css({ display: 'block', mt: '0.5', fontSize: 'caption', color: 'faint', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' })}>
+                {account.email} — removes the account from this device
+              </span>
+            </span>
+          </button>
+        ) : (
+          <SettingsRow
+            icon={<SignOutIcon />}
+            label="Sign out"
+            detail="You're browsing as a guest — create an account from the landing page to sign in on this device."
+            last
+          />
+        )}
       </SettingsGroup>
     </>
   )
 }
+
+/** A settings row that actually navigates — the legal pages exist now. */
+function LegalLinkRow({ to, label, last = false }: { to: '/privacy' | '/terms'; label: string; last?: boolean }) {
+  const navigate = useNavigate()
+  const playClick = useClickSound()
+  return (
+    <div className={last ? undefined : css({ borderBottom: '1px solid', borderColor: 'hairline' })}>
+      <button
+        type="button"
+        onClick={() => {
+          playClick('tap')
+          void navigate({ to })
+        }}
+        className={css({
+          display: 'flex',
+          alignItems: 'center',
+          gap: '3',
+          w: 'full',
+          px: '4',
+          py: '3.5',
+          border: 'none',
+          background: 'transparent',
+          font: 'inherit',
+          color: 'text',
+          textAlign: 'left',
+          cursor: 'pointer',
+          WebkitTapHighlightColor: 'transparent',
+        })}
+      >
+        <span
+          aria-hidden
+          className={css({ display: 'grid', placeItems: 'center', width: '30px', height: '30px', borderRadius: 'full', color: 'accent', background: 'accentSoft', flexShrink: '0', lineHeight: '0' })}
+        >
+          <DocumentIcon />
+        </span>
+        <span className={css({ flex: '1', fontSize: 'subhead', fontWeight: '500' })}>{label}</span>
+        <span aria-hidden className={css({ color: 'ghost', fontSize: 'footnote' })}>→</span>
+      </button>
+    </div>
+  )
+}
+
+const DocumentIcon = () => (
+  <svg {...iconAttrs}>
+    <path d="M7 3.5h6.5L18 8v11a1.5 1.5 0 0 1-1.5 1.5h-9A1.5 1.5 0 0 1 6 19V5a1.5 1.5 0 0 1 1-1.4z" />
+    <path d="M13.5 3.5V8H18M9 12h6M9 15.5h6" />
+  </svg>
+)

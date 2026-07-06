@@ -79,6 +79,115 @@
   --ss-text-glow: none;
 }
 
+/* ── Liquid glass (quietpress landing material) ───────────────────────────────
+ *
+ * The landing's glass slab, authored UNLAYERED so it beats Panda's layers.
+ * The ::before is the gradient-border trick: a 1px padding box whose two
+ * stacked masks are composited with `exclude`, leaving ONLY the 1px border
+ * ring painted by the gradient — a lit rim no plain border can draw. */
+.liquid-glass {
+  position: relative;
+  isolation: isolate;
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.12) 0%,
+    rgba(255, 255, 255, 0.045) 100%
+  );
+  -webkit-backdrop-filter: blur(18px) saturate(160%);
+  backdrop-filter: blur(18px) saturate(160%);
+  box-shadow:
+    0 8px 32px rgba(2, 6, 18, 0.36),
+    inset 0 1px 0 rgba(255, 255, 255, 0.14);
+}
+.liquid-glass::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.42) 0%,
+    rgba(255, 255, 255, 0.08) 38%,
+    rgba(255, 255, 255, 0.03) 62%,
+    rgba(255, 255, 255, 0.22) 100%
+  );
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+  pointer-events: none;
+  z-index: -1;
+}
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .liquid-glass {
+    background: rgba(18, 22, 38, 0.92);
+  }
+}
+@media (prefers-reduced-transparency: reduce) {
+  .liquid-glass {
+    background: rgba(18, 22, 38, 0.92);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
+
+/* Fade-up entrances for the landing. fill-mode MUST be `backwards`:
+ * 'both'/'forwards' would leave a resolved transform on the element after
+ * the animation, which creates a containing block and silently breaks
+ * backdrop-filter on liquid-glass descendants. `backwards` only fills the
+ * delay period and releases the element entirely once done. */
+@keyframes lq-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(26px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.fade-up {
+  animation: lq-fade-up 0.9s cubic-bezier(0.16, 1, 0.3, 1) backwards;
+}
+.fade-up-d1 { animation-delay: 0.15s; }
+.fade-up-d2 { animation-delay: 0.3s; }
+.fade-up-d3 { animation-delay: 0.45s; }
+.fade-up-d4 { animation-delay: 0.6s; }
+.fade-up-d5 { animation-delay: 0.75s; }
+@media (prefers-reduced-motion: reduce) {
+  .fade-up {
+    animation: none;
+  }
+}
+
+/* The revolving record — 6s/rev reads as calm; `paused` play-state while the
+ * session is idle. Reduced motion stops the spin entirely. */
+@keyframes vinyl-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.vinyl-spin {
+  animation: vinyl-spin 6s linear infinite;
+  will-change: transform;
+}
+@media (prefers-reduced-motion: reduce) {
+  .vinyl-spin {
+    animation: none;
+  }
+}
+
+/* Search caret blink for the self-typing placeholder. */
+@keyframes lq-caret {
+  0%, 45% { opacity: 1; }
+  55%, 100% { opacity: 0; }
+}
+
 /* ── Always-dark immersive surfaces ───────────────────────────────────────────
  *
  * The full-screen Player and the Today hero card are cinematic, scene-backed

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { createFileRoute, redirect, useNavigate } from '@tanstack/react-router'
+import { createFileRoute, Link, redirect, useNavigate } from '@tanstack/react-router'
 import { motion, useReducedMotion } from 'motion/react'
 import * as Slider from '@radix-ui/react-slider'
 import { css, cx } from 'styled-system/css'
@@ -7,6 +7,7 @@ import { LiquidGlass } from '~/design/LiquidGlass'
 import { Scene, type SceneVariant } from '~/design/Scene'
 import { STATE_SCENE } from '~/components/SessionCard'
 import { useClickSound } from '~/lib/click-sound'
+import { createAccount, hasAccount, isValidEmail, readAccount } from '~/lib/account'
 import type { TargetState } from '~/engine/audio/types'
 import {
   FEEL_SCALE,
@@ -23,17 +24,42 @@ import {
 } from '~/lib/onboarding'
 
 /**
- * Onboarding — the guided goal-capture flow (§1 benchmark gap). Four short,
- * skippable steps over an immersive `Scene`: welcome → goal → when → ready.
- * Nothing here is a hard gate — `markOnboarded` fires on Skip just as it does
- * on Begin, and a returning visitor never sees this route (see `beforeLoad`
- * here and on `/`).
+ * Onboarding — the guided flow: welcome → auth → goal → when → ready, over
+ * an immersive `Scene`. The AUTH step is the landing's listen gate target:
+ * arriving with `?intent=play&state=X`, a created account routes straight
+ * into the intended player state. Nothing else is a hard gate — Skip still
+ * works everywhere, and browsing `/app` never requires an account.
  */
+
+const VALID_STATES: readonly TargetState[] = ['focus', 'flow', 'calm', 'winddown', 'sleep']
+
+interface OnboardingSearch {
+  /** The gated action that sent the visitor here — only 'play' exists. */
+  intent?: 'play'
+  /** The engine state the intent should resume with. */
+  state?: TargetState
+}
+
 export const Route = createFileRoute('/onboarding/$step')({
-  beforeLoad: ({ params }) => {
-    if (hasOnboarded()) throw redirect({ to: '/app' })
+  validateSearch: (search: Record<string, unknown>): OnboardingSearch => ({
+    intent: search.intent === 'play' ? 'play' : undefined,
+    state:
+      typeof search.state === 'string' && (VALID_STATES as readonly string[]).includes(search.state)
+        ? (search.state as TargetState)
+        : undefined,
+  }),
+  beforeLoad: ({ params, search }) => {
     if (!isOnboardingStep(params.step)) {
-      throw redirect({ to: '/onboarding/$step', params: { step: 'welcome' } })
+      throw redirect({ to: '/onboarding/$step', params: { step: 'welcome' }, search })
+    }
+    // Signed-in visitors don't need the flow: an intent goes straight to the
+    // player; otherwise a finished device bounces to the app. An onboarded
+    // visitor WITHOUT an account must still reach the auth step (the gate).
+    if (hasAccount()) {
+      if (search.intent === 'play') {
+        throw redirect({ to: '/app/player', search: { state: search.state } })
+      }
+      if (hasOnboarded()) throw redirect({ to: '/app' })
     }
   },
   component: OnboardingScreen,
@@ -42,6 +68,7 @@ export const Route = createFileRoute('/onboarding/$step')({
 const enter = { duration: 1.1, ease: [0.16, 1, 0.3, 1] as const }
 
 function sceneFor(step: OnboardingStep): SceneVariant {
+  if (step === 'auth') return 'dawn'
   if (step === 'goal') return 'aurora'
   if (step === 'when') return 'ocean'
   if (step === 'ready') return STATE_SCENE[onboarding.goal]
@@ -211,6 +238,7 @@ function PrimaryButton({
 function OnboardingScreen() {
   const rawStep = Route.useParams().step
   const current: OnboardingStep = isOnboardingStep(rawStep) ? rawStep : 'welcome'
+  const search = Route.useSearch()
   const navigate = useNavigate()
   const reduce = useReducedMotion()
 
@@ -224,12 +252,15 @@ function OnboardingScreen() {
         }
 
   const goStep = (step: OnboardingStep) =>
-    void navigate({ to: '/onboarding/$step', params: { step } })
+    void navigate({ to: '/onboarding/$step', params: { step }, search })
 
-  const finish = (to: 'app' | 'player') => {
+  const finish = (to: 'app' | 'player' | 'home') => {
     markOnboarded()
     if (to === 'player') {
       void navigate({ to: '/app/player', search: { state: onboarding.goal } })
+    } else if (to === 'home') {
+      // The flow ends back on the landing, which now greets by name.
+      void navigate({ to: '/' })
     } else {
       void navigate({ to: '/app' })
     }
@@ -324,6 +355,25 @@ function OnboardingScreen() {
       >
         <div className={css({ w: 'full', maxW: '520px', display: 'flex', flexDirection: 'column', alignItems: 'center' })}>
           {current === 'welcome' && <WelcomeStep reveal={reveal} />}
+          {current === 'auth' && (
+            <AuthStep
+              reveal={reveal}
+              intentState={search.intent === 'play' ? (search.state ?? onboarding.goal) : null}
+              onDone={(destination) => {
+                if (destination === 'player') {
+                  markOnboarded()
+                  void navigate({
+                    to: '/app/player',
+                    search: { state: search.state ?? onboarding.goal },
+                  })
+                } else if (destination === 'home') {
+                  void navigate({ to: '/' })
+                } else {
+                  goStep('goal')
+                }
+              }}
+            />
+          )}
           {current === 'goal' && <GoalStep reveal={reveal} />}
           {current === 'when' && <WhenStep reveal={reveal} />}
           {current === 'ready' && <ReadyStep reveal={reveal} />}
@@ -340,12 +390,12 @@ function OnboardingScreen() {
         })}
       >
         <div className={css({ w: 'full', maxW: '520px', mx: 'auto', display: 'flex', flexDirection: 'column', gap: '3' })}>
-          {current === 'welcome' && <PrimaryButton label="Continue" onClick={() => goStep('goal')} />}
+          {current === 'welcome' && <PrimaryButton label="Continue" onClick={() => goStep('auth')} />}
           {current === 'goal' && <PrimaryButton label="Continue" onClick={() => goStep('when')} />}
           {current === 'when' && <PrimaryButton label="Continue" onClick={() => goStep('ready')} />}
           {current === 'ready' && (
             <>
-              <PrimaryButton label="Begin" onClick={() => finish('player')} />
+              <PrimaryButton label="Finish" onClick={() => finish('home')} />
               <button
                 type="button"
                 onClick={() => finish('app')}
@@ -361,7 +411,7 @@ function OnboardingScreen() {
                   WebkitTapHighlightColor: 'transparent',
                 })}
               >
-                Take me to Today instead
+                Take me to the library instead
               </button>
             </>
           )}
@@ -390,6 +440,255 @@ function WelcomeStep({ reveal }: { reveal: Reveal }) {
         What you want more of, and how you're feeling right now — so your first session opens
         already tuned to you.
       </motion.p>
+    </>
+  )
+}
+
+// ── auth — the local-first account step ─────────────────────────────────────
+
+const fieldLabelCss = css({
+  display: 'block',
+  mb: '1.5',
+  fontSize: 'footnote',
+  fontWeight: '600',
+  letterSpacing: '0.04em',
+  textTransform: 'uppercase',
+  color: 'faint',
+  textAlign: 'left',
+})
+
+const fieldInputCss = css({
+  display: 'block',
+  w: 'full',
+  h: '50px',
+  px: '3.5',
+  border: '1px solid rgba(255,255,255,0.16)',
+  borderRadius: 'control',
+  background: 'rgba(255,255,255,0.07)',
+  font: 'inherit',
+  fontSize: 'body',
+  color: 'text',
+  outline: 'none',
+  transition: 'border-color token(durations.quick) ease, background token(durations.quick) ease',
+  _focus: { borderColor: 'accent', background: 'rgba(255,255,255,0.1)' },
+  _placeholder: { color: 'ghost' },
+})
+
+const oauthBtnCss = css({
+  flex: '1',
+  border: 'none',
+  font: 'inherit',
+  color: 'text',
+  cursor: 'pointer',
+})
+
+const errorCss = css({
+  m: '0',
+  mt: '1.5',
+  fontSize: 'caption',
+  fontWeight: '500',
+  color: '#FCA5A5',
+  textAlign: 'left',
+})
+
+function AuthStep({
+  reveal,
+  intentState,
+  onDone,
+}: {
+  reveal: Reveal
+  /** Non-null when a gated play sent the visitor here — names the mode. */
+  intentState: TargetState | null
+  onDone: (destination: 'player' | 'home' | 'next') => void
+}) {
+  const playClick = useClickSound()
+  const existing = readAccount()
+  const [name, setName] = useState(existing?.name ?? '')
+  const [email, setEmail] = useState(existing?.email ?? '')
+  const [nameError, setNameError] = useState<string | null>(null)
+  const [emailError, setEmailError] = useState<string | null>(null)
+  const [sheet, setSheet] = useState<'google' | 'apple' | null>(null)
+
+  const intentTitle = intentState
+    ? GOAL_OPTIONS.find((g) => g.state === intentState)?.label ??
+      intentState.charAt(0).toUpperCase() + intentState.slice(1)
+    : null
+
+  const destination = (): 'player' | 'home' | 'next' => {
+    if (intentState) return 'player'
+    if (hasOnboarded()) return 'home'
+    return 'next'
+  }
+
+  const submit = () => {
+    const trimmedName = name.trim()
+    const trimmedEmail = email.trim()
+    const nameOk = trimmedName.length >= 2
+    const emailOk = isValidEmail(trimmedEmail)
+    setNameError(nameOk ? null : 'Tell us what to call you (2+ characters).')
+    setEmailError(emailOk ? null : 'That doesn’t look like an email address.')
+    if (!nameOk || !emailOk) return
+    playClick('primary')
+    createAccount(trimmedName, trimmedEmail)
+    onDone(destination())
+  }
+
+  if (existing) {
+    // Already signed in (e.g. back navigation) — nothing to create.
+    return (
+      <>
+        <motion.p {...reveal(0.02)} className={caption}>
+          Your account
+        </motion.p>
+        <motion.h1 {...reveal(0.1)} className={title}>
+          You’re signed in,
+          <br />
+          {existing.name}
+        </motion.h1>
+        <motion.p {...reveal(0.2)} className={subtitle}>
+          Your account lives on this device. Continue whenever you’re ready.
+        </motion.p>
+        <motion.div {...reveal(0.3)} className={css({ w: 'full', mt: '7' })}>
+          <PrimaryButton label="Continue" onClick={() => onDone(destination())} />
+        </motion.div>
+      </>
+    )
+  }
+
+  return (
+    <>
+      <motion.p {...reveal(0.02)} className={caption}>
+        Your account
+      </motion.p>
+      <motion.h1 {...reveal(0.1)} className={title}>
+        Create your
+        <br />
+        account
+      </motion.h1>
+      <motion.p {...reveal(0.2)} className={subtitle}>
+        {intentTitle
+          ? `One quick step before your first ${intentTitle} session — listening is tied to an account.`
+          : 'A name and an email — stored on this device, nowhere else.'}
+      </motion.p>
+
+      <motion.div {...reveal(0.3)} className={css({ w: 'full', mt: '7' })}>
+        <LiquidGlass variant="card" staticSheen>
+          <form
+            className={css({ px: '5', py: '5', display: 'flex', flexDirection: 'column', gap: '4' })}
+            onSubmit={(e) => {
+              e.preventDefault()
+              submit()
+            }}
+          >
+            <div>
+              <label htmlFor="ss-auth-name" className={fieldLabelCss}>
+                Name
+              </label>
+              <input
+                id="ss-auth-name"
+                name="name"
+                type="text"
+                autoComplete="name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="What should we call you?"
+                className={fieldInputCss}
+                aria-invalid={nameError != null}
+              />
+              {nameError && <p className={errorCss}>{nameError}</p>}
+            </div>
+            <div>
+              <label htmlFor="ss-auth-email" className={fieldLabelCss}>
+                Email
+              </label>
+              <input
+                id="ss-auth-email"
+                name="email"
+                type="email"
+                autoComplete="email"
+                inputMode="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="you@example.com"
+                className={fieldInputCss}
+                aria-invalid={emailError != null}
+              />
+              {emailError && <p className={errorCss}>{emailError}</p>}
+            </div>
+            <button type="submit" className={css({ display: 'none' })} aria-hidden tabIndex={-1} />
+          </form>
+        </LiquidGlass>
+
+        <div className={css({ display: 'flex', gap: '3', mt: '4' })}>
+          {(['google', 'apple'] as const).map((provider) => (
+            <LiquidGlass
+              key={provider}
+              as="button"
+              variant="control"
+              staticSheen
+              onClick={() => {
+                playClick('tap')
+                setSheet(provider)
+              }}
+              className={oauthBtnCss}
+            >
+              <span className={css({ display: 'flex', alignItems: 'center', justifyContent: 'center', h: '48px', px: '3', fontSize: 'subhead', fontWeight: '600' })}>
+                {provider === 'google' ? 'Continue with Google' : 'Continue with Apple'}
+              </span>
+            </LiquidGlass>
+          ))}
+        </div>
+
+        <div className={css({ mt: '5' })}>
+          <PrimaryButton label={intentTitle ? `Create account & play ${intentTitle}` : 'Continue'} onClick={submit} />
+        </div>
+
+        <p className={css({ m: '0', mt: '3.5', fontSize: 'caption', lineHeight: '1.5', color: 'faint', textAlign: 'center' })}>
+          By continuing you agree to our{' '}
+          <Link to="/terms" className={css({ color: 'muted', textDecoration: 'underline' })}>
+            Terms
+          </Link>{' '}
+          and{' '}
+          <Link to="/privacy" className={css({ color: 'muted', textDecoration: 'underline' })}>
+            Privacy Policy
+          </Link>
+          . Your account lives on this device — there’s no server yet.
+        </p>
+      </motion.div>
+
+      {/* Honest provider sheet — no fake OAuth redirect, ever. */}
+      {sheet && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label={sheet === 'google' ? 'Google sign-in' : 'Apple sign-in'}
+          className={css({ position: 'fixed', inset: '0', zIndex: '50', display: 'flex', alignItems: 'center', justifyContent: 'center', p: '5' })}
+        >
+          <button
+            type="button"
+            aria-label="Dismiss"
+            onClick={() => setSheet(null)}
+            className={css({ position: 'absolute', inset: '0', border: 'none', background: 'rgba(3, 6, 16, 0.6)', cursor: 'pointer' })}
+          />
+          <LiquidGlass variant="sheet" className={css({ position: 'relative', w: 'full', maxW: '380px' })}>
+            <div className={css({ px: '6', py: '6', textAlign: 'center' })}>
+              <p className={css({ m: '0', fontSize: 'title3', fontWeight: '700', color: 'text' })}>
+                {sheet === 'google' ? 'Google sign-in' : 'Apple sign-in'}
+              </p>
+              <p className={css({ m: '0', mt: '3', fontSize: 'subhead', lineHeight: '1.55', color: 'muted' })}>
+                {sheet === 'google' ? 'Google' : 'Apple'} sign-in connects when accounts sync ships —
+                your account lives on this device for now.
+              </p>
+              <div className={css({ mt: '5' })}>
+                <PrimaryButton
+                  label="Continue with email"
+                  onClick={() => setSheet(null)}
+                />
+              </div>
+            </div>
+          </LiquidGlass>
+        </div>
+      )}
     </>
   )
 }
@@ -649,8 +948,9 @@ function ReadyStep({ reveal }: { reveal: Reveal }) {
         you are
       </motion.h1>
       <motion.p {...reveal(0.42)} className={subtitle}>
-        We'll open with {goal.label} — tuned for feeling {feelLabel(onboarding.wired).toLowerCase()}{' '}
-        right now.
+        Your first press is {goal.label} — tuned for feeling{' '}
+        {feelLabel(onboarding.wired).toLowerCase()} right now. Find it on the shelf whenever
+        you&rsquo;re ready.
       </motion.p>
     </>
   )

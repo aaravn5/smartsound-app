@@ -1,134 +1,120 @@
-import { useEffect, useRef } from 'react'
-import { createFileRoute, redirect, useNavigate } from '@tanstack/react-router'
-import { motion, useReducedMotion } from 'motion/react'
+import { useMemo } from 'react'
+import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import { css, cx } from 'styled-system/css'
-import { LiquidGlass } from '~/design/LiquidGlass'
+import { BoomerangVideoBg } from '~/landing/BoomerangVideoBg'
+import { LandingHeader } from '~/landing/LandingHeader'
+import { HeroSearch } from '~/landing/HeroSearch'
+import { RecordCarousel } from '~/landing/RecordCarousel'
+import { NowPlayingWidget } from '~/landing/NowPlayingWidget'
+import { hasAccount } from '~/lib/account'
+import { DAYPART_GRADE, DAYPART_HEADLINE, DAYPART_PRESS, DAYPART_TINT, daypart } from '~/lib/daypart'
 import { useClickSound } from '~/lib/click-sound'
-import { hasOnboarded } from '~/lib/onboarding'
+import { suggestFor } from '~/engine/circadian/model'
+import { SOUNDSCAPES } from '~/lib/catalog'
+import type { TargetState } from '~/engine/audio/types'
 
 /**
- * Welcome — the interactive landing. A full-screen dark hero built on two
- * Higgsfield renders of the SAME ridge: barren rock (your mind under noise)
- * and the identical ridge in bloom (your mind with SmartSound). A soft
- * cursor-following spotlight reveals the "with" state through a radial mask —
- * an interactive before/after demonstration, no claims beyond the metaphor.
+ * `/` — the vinyl hero. SmartSound as a quiet record label: the boomerang
+ * daylight loop graded to the hour behind a one-viewport pressing-room —
+ * liquid-glass chrome, a Fraunces headline that shifts with the daypart,
+ * the self-typing search, and the lazy-susan of records (the five modes +
+ * scenario pressings, each labeled with its OWN landscape).
  *
- * Returning visitors (onboarded flag) skip straight to /app. The spotlight
- * follows mouse and touch; under reduced motion it still works (snaps, no
- * easing, no slow zoom). Always dark (`ss-scene-dark`) in both themes.
+ * Browsing stays open (`/app` is one click away); LISTENING is the gate —
+ * any play intent without an on-device account routes through
+ * /onboarding/auth with the intent preserved. No page scroll: the viewport
+ * is the sleeve.
  */
 export const Route = createFileRoute('/')({
-  beforeLoad: () => {
-    if (hasOnboarded()) throw redirect({ to: '/app' })
-  },
-  component: Welcome,
+  component: Landing,
 })
 
-const BASE_IMAGE = '/intro/mind-before.webp'
-const REVEAL_IMAGE = '/intro/mind-after.webp'
-const SPOTLIGHT_R = 260
+const FRAUNCES = '"Fraunces", Georgia, "Times New Roman", serif'
 
-const enter = { duration: 1.1, ease: [0.16, 1, 0.3, 1] as const }
+/**
+ * The legibility scrim over the graded footage — transparent enough to keep
+ * the landscape alive, dark enough that every text zone (header, headline
+ * band, caption/footer bottom 40%) clears WCAG AA for white ink in EVERY
+ * daypart (the ungraded morning frame is the audited worst case — see
+ * scripts/hero-contrast-audit.mjs).
+ */
+const HERO_SCRIM =
+  'linear-gradient(to bottom, rgba(4, 8, 22, 0.68) 0%, rgba(4, 8, 22, 0.56) 16%, rgba(4, 8, 22, 0.56) 34%, rgba(4, 8, 22, 0.6) 52%, rgba(4, 8, 22, 0.68) 68%, rgba(4, 8, 22, 0.82) 84%, rgba(4, 8, 22, 0.92) 100%)'
 
-function spotlightMask(x: number, y: number): string {
-  return `radial-gradient(circle ${SPOTLIGHT_R}px at ${x}px ${y}px, rgb(0 0 0) 0%, rgb(0 0 0) 40%, rgb(0 0 0 / 0.75) 60%, rgb(0 0 0 / 0.4) 75%, rgb(0 0 0 / 0.12) 88%, transparent 100%)`
-}
-
-const heroImage = css({
-  position: 'absolute',
-  left: '0',
-  top: '0',
-  width: '100%',
-  height: '100%',
-  maxWidth: 'none',
-  objectFit: 'cover',
-  pointerEvents: 'none',
+const solidCtaCss = css({
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  minH: '50px',
+  px: '7',
+  borderRadius: 'capsule',
+  border: 'none',
+  font: 'inherit',
+  fontSize: 'callout',
+  fontWeight: '600',
+  letterSpacing: '0.01em',
+  background: 'rgba(246, 245, 250, 0.97)',
+  color: 'rgba(14, 16, 26, 0.95)',
+  textDecoration: 'none',
+  cursor: 'pointer',
+  WebkitTapHighlightColor: 'transparent',
+  boxShadow: '0 10px 32px rgba(2, 4, 12, 0.4)',
+  transition: 'transform 180ms cubic-bezier(0.32, 0.72, 0, 1)',
+  _hover: { transform: 'translateY(-1px)' },
+  _active: { transform: 'scale(0.965)' },
+  '@media (prefers-reduced-motion: reduce)': { transition: 'none', _hover: { transform: 'none' }, _active: { transform: 'none' } },
 })
 
-/** The reveal layer — the blooming ridge, visible only inside the soft
- * spotlight that trails the cursor. The mask is mutated directly on the DOM
- * node from a rAF loop (smoothed lerp), so nothing re-renders per frame. */
-function RevealLayer({ reduceMotion }: { reduceMotion: boolean }) {
-  const layerRef = useRef<HTMLDivElement>(null)
+const glassCtaCss = css({
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  minH: '50px',
+  px: '7',
+  borderRadius: 'capsule',
+  border: 'none',
+  font: 'inherit',
+  fontSize: 'callout',
+  fontWeight: '600',
+  letterSpacing: '0.01em',
+  color: 'rgba(255, 255, 255, 0.95)',
+  textDecoration: 'none',
+  cursor: 'pointer',
+  WebkitTapHighlightColor: 'transparent',
+  transition: 'transform 180ms cubic-bezier(0.32, 0.72, 0, 1)',
+  _active: { transform: 'scale(0.965)' },
+  '@media (prefers-reduced-motion: reduce)': { transition: 'none', _active: { transform: 'none' } },
+})
 
-  useEffect(() => {
-    const el = layerRef.current
-    if (!el) return
-    // Start with the spotlight parked off-center so the contrast is visible
-    // before the first pointer move (especially on touch devices).
-    const mouse = { x: window.innerWidth * 0.62, y: window.innerHeight * 0.42 }
-    const smooth = { ...mouse }
+const footLinkCss = css({
+  color: 'rgba(235, 238, 250, 0.62)',
+  textDecoration: 'none',
+  _hover: { color: 'rgba(255,255,255,0.9)', textDecoration: 'underline' },
+})
 
-    const apply = () => {
-      const mask = spotlightMask(smooth.x, smooth.y)
-      el.style.maskImage = mask
-      el.style.webkitMaskImage = mask
-    }
-    apply()
-
-    const onMove = (e: MouseEvent) => {
-      mouse.x = e.clientX
-      mouse.y = e.clientY
-    }
-    const onTouch = (e: TouchEvent) => {
-      const t = e.touches[0]
-      if (t) {
-        mouse.x = t.clientX
-        mouse.y = t.clientY
-      }
-    }
-    window.addEventListener('mousemove', onMove, { passive: true })
-    window.addEventListener('touchmove', onTouch, { passive: true })
-    window.addEventListener('touchstart', onTouch, { passive: true })
-
-    let raf = 0
-    const tick = () => {
-      const ease = reduceMotion ? 1 : 0.1
-      smooth.x += (mouse.x - smooth.x) * ease
-      smooth.y += (mouse.y - smooth.y) * ease
-      apply()
-      raf = requestAnimationFrame(tick)
-    }
-    raf = requestAnimationFrame(tick)
-
-    return () => {
-      window.removeEventListener('mousemove', onMove)
-      window.removeEventListener('touchmove', onTouch)
-      window.removeEventListener('touchstart', onTouch)
-      cancelAnimationFrame(raf)
-    }
-  }, [reduceMotion])
-
-  return (
-    <div
-      ref={layerRef}
-      aria-hidden
-      className={css({
-        position: 'absolute',
-        inset: '0',
-        zIndex: '2',
-        pointerEvents: 'none',
-      })}
-      style={{ maskSize: '100% 100%', WebkitMaskSize: '100% 100%' }}
-    >
-      <img aria-hidden alt="" decoding="async" src={REVEAL_IMAGE} className={heroImage} />
-    </div>
-  )
-}
-
-function Welcome() {
-  const reduce = useReducedMotion()
+function Landing() {
   const navigate = useNavigate()
   const playClick = useClickSound()
 
-  const reveal = (delay: number) =>
-    reduce
-      ? {}
-      : {
-          initial: { opacity: 0, y: 18 },
-          animate: { opacity: 1, y: 0 },
-          transition: { ...enter, delay },
-        }
+  // Daypart is read once per mount — a visit straddling a boundary simply
+  // re-grades on the next load; no per-minute reactivity needed.
+  const dp = useMemo(() => daypart(), [])
+  const suggestion = useMemo(() => suggestFor(new Date()), [])
+  const pressTitle = SOUNDSCAPES.find((s) => s.state === suggestion.state)?.title ?? suggestion.label
+  const [headA, headB] = DAYPART_HEADLINE[dp]
+
+  /** THE gate — listening requires the on-device account; browsing never does. */
+  const gatedPlay = (state: TargetState) => {
+    if (hasAccount()) {
+      void navigate({ to: '/app/player', search: { state } })
+    } else {
+      void navigate({
+        to: '/onboarding/$step',
+        params: { step: 'auth' },
+        search: { intent: 'play', state },
+      })
+    }
+  }
 
   return (
     <div
@@ -144,188 +130,165 @@ function Welcome() {
         }),
       )}
     >
-      {/* Base — the barren ridge: the mind under noise. Slow settle-zoom. */}
-      <motion.div
-        aria-hidden
-        className={css({ position: 'absolute', inset: '0', zIndex: '1' })}
-        initial={reduce ? undefined : { scale: 1.1 }}
-        animate={reduce ? undefined : { scale: 1 }}
-        transition={reduce ? undefined : { duration: 1.8, ease: [0.16, 1, 0.3, 1] }}
-      >
-        <img aria-hidden alt="" decoding="async" src={BASE_IMAGE} className={heroImage} />
-      </motion.div>
+      {/* The graded boomerang footage. */}
+      <BoomerangVideoBg grade={DAYPART_GRADE[dp]} />
 
-      {/* Spotlight reveal — the same ridge in bloom: the mind with SmartSound. */}
-      <RevealLayer reduceMotion={Boolean(reduce)} />
-
-      {/* Legibility scrim — the renders are mostly black; this only steadies
-          the top and bottom text zones. */}
+      {/* Daypart tint (evening amber lean, night navy) under the AA scrim. */}
       <div
         aria-hidden
+        className={css({ position: 'absolute', inset: '0', zIndex: '1', pointerEvents: 'none' })}
+        style={{ background: DAYPART_TINT[dp] }}
+      />
+      <div
+        aria-hidden
+        className={css({ position: 'absolute', inset: '0', zIndex: '1', pointerEvents: 'none' })}
+        style={{ background: HERO_SCRIM }}
+      />
+
+      <LandingHeader />
+
+      {/* Hero column + the records. */}
+      <div
         className={css({
           position: 'absolute',
           inset: '0',
-          zIndex: '3',
-          pointerEvents: 'none',
-          background:
-            'linear-gradient(to bottom, rgba(2, 4, 10, 0.6) 0%, rgba(2, 4, 10, 0) 26%, rgba(2, 4, 10, 0) 62%, rgba(2, 4, 10, 0.72) 100%)',
-        })}
-      />
-
-      {/* Heading — centered over the scene. */}
-      <div
-        className={css({
-          position: 'absolute',
-          top: '13%',
-          insetX: '0',
-          zIndex: '4',
+          zIndex: '10',
           display: 'flex',
           flexDirection: 'column',
-          alignItems: 'center',
-          textAlign: 'center',
-          px: '5',
-          pointerEvents: 'none',
         })}
       >
-        <motion.p
-          {...reveal(0.1)}
+        <div
           className={css({
-            m: '0',
-            mb: '3',
-            fontSize: 'footnote',
-            fontWeight: '600',
-            letterSpacing: '0.22em',
-            textTransform: 'uppercase',
-            color: 'var(--ss-ink-soft)',
-            textShadow: 'var(--ss-text-glow)',
+            flex: '1',
+            minH: '0',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            textAlign: 'center',
+            px: '5',
+            pt: 'calc(env(safe-area-inset-top) + clamp(56px, 9dvh, 92px))',
+            gap: 'clamp(10px, 1.8dvh, 18px)',
           })}
         >
-          SmartSound
-        </motion.p>
-        <motion.h1
-          {...reveal(0.25)}
-          className={css({
-            m: '0',
-            fontFamily: 'display',
-            fontSize: 'clamp(2.6rem, 8.5vw, 4.5rem)',
-            fontWeight: '700',
-            letterSpacing: '-0.03em',
-            lineHeight: '0.98',
-            color: 'text',
-            textShadow: 'var(--ss-text-glow)',
-          })}
-        >
-          <span className={css({ display: 'block', fontStyle: 'italic', fontWeight: '500' })}>
-            Same mind,
-          </span>
-          <span className={css({ display: 'block', mt: '1' })}>different state</span>
-        </motion.h1>
-        <motion.p
-          {...reveal(0.45)}
-          className={css({
-            m: '0',
-            mt: '4',
-            fontSize: 'subhead',
-            fontWeight: '500',
-            color: 'var(--ss-ink-body)',
-            textShadow: 'var(--ss-text-glow)',
-          })}
-        >
-          Move the light — that&rsquo;s you, with SmartSound.
-        </motion.p>
+          {/* Badge — the current pressing, from the circadian engine. */}
+          <p
+            className={cx(
+              'liquid-glass',
+              'fade-up',
+              'fade-up-d1',
+              'tabular',
+              css({
+                m: '0',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '2',
+                borderRadius: 'capsule',
+                px: '4',
+                py: '2',
+                fontSize: 'footnote',
+                fontWeight: '600',
+                letterSpacing: '0.08em',
+                textTransform: 'uppercase',
+                color: 'rgba(240, 242, 252, 0.88)',
+              }),
+            )}
+          >
+            <span aria-hidden className={css({ w: '6px', h: '6px', borderRadius: 'full', background: 'rgba(167, 139, 250, 0.95)', boxShadow: '0 0 10px rgba(167,139,250,0.8)' })} />
+            {DAYPART_PRESS[dp]} · {pressTitle}
+          </p>
+
+          <h1
+            className={cx(
+              'fade-up',
+              'fade-up-d2',
+              css({
+                m: '0',
+                fontSize: 'clamp(2.5rem, 6.4vw, 4.5rem)',
+                fontWeight: '500',
+                letterSpacing: '-0.03em',
+                lineHeight: '1.1',
+                color: 'rgba(255, 255, 255, 0.98)',
+                textShadow: '0 2px 24px rgba(2, 4, 12, 0.55)',
+              }),
+            )}
+            style={{ fontFamily: FRAUNCES }}
+          >
+            <span className={css({ display: 'block' })}>{headA}</span>
+            <span className={css({ display: 'block', fontStyle: 'italic' })}>{headB}</span>
+          </h1>
+
+          <p
+            className={cx(
+              'fade-up',
+              'fade-up-d3',
+              css({
+                m: '0',
+                maxW: '28rem',
+                fontSize: 'clamp(0.9375rem, 1.4vw, 1.0625rem)',
+                lineHeight: '1.55',
+                color: 'rgba(255, 255, 255, 0.9)',
+                textShadow: '0 1px 14px rgba(2, 4, 12, 0.55)',
+              }),
+            )}
+          >
+            Neuroacoustic soundscapes pressed like rare vinyl — each mode tuned to your pulse.
+            Focus, flow, calm, sleep.
+          </p>
+
+          <div className={cx('fade-up', 'fade-up-d4', css({ display: 'flex', alignItems: 'center', flexWrap: 'wrap', justifyContent: 'center', gap: '3', mt: '1' }))}>
+            <Link to="/app" className={solidCtaCss} onClick={() => playClick('primary')}>
+              Browse the library
+            </Link>
+            <button
+              type="button"
+              className={cx('liquid-glass', glassCtaCss)}
+              onClick={() => {
+                playClick('primary')
+                gatedPlay(suggestion.state)
+              }}
+            >
+              Start listening
+            </button>
+          </div>
+
+          <div className={cx('fade-up', 'fade-up-d5', css({ width: 'min(430px, 100%)', mt: '1' }))}>
+            <HeroSearch onPlay={gatedPlay} />
+          </div>
+        </div>
+
+        {/* The record lazy-susan — the bottom third. */}
+        <div className={css({ flexShrink: '0', height: 'clamp(185px, 29dvh, 300px)', pb: 'env(safe-area-inset-bottom)' })}>
+          <RecordCarousel onOpen={gatedPlay} />
+        </div>
       </div>
 
-      {/* Bottom-left — the metaphor, spelled out honestly. */}
-      <motion.div
-        {...reveal(0.7)}
+      {/* Footer microline — honest, tiny, desktop corners. */}
+      <p
         className={css({
           display: 'none',
-          sm: { display: 'block' },
+          md: { display: 'block' },
           position: 'absolute',
-          bottom: '14',
-          left: '10',
-          zIndex: '4',
-          maxW: '270px',
-          pointerEvents: 'none',
+          left: 'clamp(16px, 4vw, 44px)',
+          bottom: 'calc(env(safe-area-inset-bottom) + 14px)',
+          zIndex: '20',
+          m: '0',
+          fontSize: 'caption',
+          color: 'rgba(235, 238, 250, 0.62)',
+          textShadow: '0 1px 8px rgba(2,4,12,0.6)',
         })}
       >
-        <p
-          className={css({
-            m: '0',
-            fontSize: 'footnote',
-            lineHeight: '1.6',
-            color: 'var(--ss-ink-body)',
-            textShadow: 'var(--ss-text-glow)',
-          })}
-        >
-          The dark ridge is a day of noise. Under the light, the same ground is in bloom —
-          neuroacoustic soundscapes that listen to your pulse and steer you toward focus, rest,
-          or sleep.
-        </p>
-      </motion.div>
+        Free to explore · The camera stays on your device ·{' '}
+        <Link to="/privacy" className={footLinkCss}>
+          Privacy
+        </Link>{' '}
+        ·{' '}
+        <Link to="/terms" className={footLinkCss}>
+          Terms
+        </Link>
+      </p>
 
-      {/* Bottom-right — the door in. */}
-      <motion.div
-        {...reveal(0.85)}
-        className={css({
-          position: 'absolute',
-          bottom: '10',
-          left: '5',
-          right: '5',
-          zIndex: '4',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'flex-start',
-          gap: '4',
-          sm: { left: 'auto', right: '10', bottom: '14', maxW: '280px' },
-        })}
-      >
-        <p
-          className={css({
-            m: '0',
-            fontSize: 'footnote',
-            lineHeight: '1.6',
-            color: 'var(--ss-ink-body)',
-            textShadow: 'var(--ss-text-glow)',
-          })}
-        >
-          Two minutes of setup. No account needed to explore.
-        </p>
-        <LiquidGlass
-          as="button"
-          variant="control"
-          tint="rgba(139, 108, 246, 0.6)"
-          onClick={() => {
-            playClick('primary')
-            void navigate({ to: '/onboarding/$step', params: { step: 'welcome' } })
-          }}
-          className={css({
-            minW: '200px',
-            minH: '52px',
-            border: '1px solid rgba(196, 181, 253, 0.38)',
-            color: 'text',
-            font: 'inherit',
-          })}
-        >
-          <span
-            className={css({
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              height: '52px',
-              px: '8',
-              fontSize: 'headline',
-              fontWeight: '600',
-              letterSpacing: '0.01em',
-            })}
-          >
-            Get started
-          </span>
-        </LiquidGlass>
-        <p className={css({ m: '0', fontSize: 'caption', color: 'var(--ss-ink-soft)', textShadow: 'var(--ss-text-glow)' })}>
-          Free to explore. The camera stays on your device.
-        </p>
-      </motion.div>
+      <NowPlayingWidget />
     </div>
   )
 }

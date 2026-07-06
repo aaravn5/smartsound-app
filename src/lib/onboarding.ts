@@ -28,11 +28,13 @@ export const onboarding: OnboardingDraft = {
 }
 
 /**
- * The guided goal-capture flow (§1 gap): welcome → goal → when → ready. A
- * light, skippable four steps — never a hard gate — over an immersive
- * `Scene`, ending in a "Begin" that carries the chosen goal into the player.
+ * The guided goal-capture flow: welcome → auth → goal → when → ready.
+ * `auth` is the local-first account step (name + email in localStorage —
+ * see lib/account.ts): the landing's listen gate routes straight to it with
+ * a play intent, and the organic flow passes through it after the welcome.
+ * Browsing is never gated — Skip still works on every step.
  */
-export const ONBOARDING_STEPS = ['welcome', 'goal', 'when', 'ready'] as const
+export const ONBOARDING_STEPS = ['welcome', 'auth', 'goal', 'when', 'ready'] as const
 export type OnboardingStep = (typeof ONBOARDING_STEPS)[number]
 
 export function isOnboardingStep(value: string): value is OnboardingStep {

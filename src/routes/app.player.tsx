@@ -11,9 +11,12 @@ import type { SceneVariant } from '~/design/Scene'
 import { useAttuneVisuals } from '~/design/useAttuneVisuals'
 import { STATE_SCENE } from '~/components/SessionCard'
 import { SciencePanel } from '~/components/SciencePanel'
+import { VinylDisc } from '~/landing/VinylDisc'
+import { VARIANT_IMAGE } from '~/design/Scene'
 import { useClickSound } from '~/lib/click-sound'
 import { useEngine } from '~/lib/engine-context'
 import { recordRecent } from '~/lib/recents'
+import { clearSessionStartedAt, recordSessionStartedAt } from '~/lib/session-meta'
 import { arousalToLch, lchToCss } from '~/design/signal'
 import { TARGET_STATES } from '~/engine/audio/profiles'
 import { BAND_LABEL, SOUNDSCAPES } from '~/lib/catalog'
@@ -45,7 +48,10 @@ export const Route = createFileRoute('/app/player')({
   component: PlayerScreen,
 })
 
-const RING_SIZE = 252
+/** The revolving record — the disc IS the play control now. */
+const DISC_SIZE = 232
+/** The live FFT halo drawn just outside the vinyl's rim. */
+const RING_SIZE = 400
 
 const LENGTH_OPTIONS: { label: string; minutes: number | null }[] = [
   { label: '10', minutes: 10 },
@@ -247,6 +253,7 @@ function PlayerScreen() {
     if (running) {
       playClick('primary')
       if (elapsedMs > 0) addMinutes(elapsedMs / 60_000)
+      clearSessionStartedAt()
       void stop()
       return
     }
@@ -258,6 +265,7 @@ function PlayerScreen() {
     playClick('primary')
     recordSessionStart()
     recordRecent(state)
+    recordSessionStartedAt()
     void start(state)
   }
 
@@ -334,6 +342,9 @@ function PlayerScreen() {
           // render behind it on first paint (not just after scrolling).
           bottom: 'calc(env(safe-area-inset-bottom) + 96px)',
           overflowY: 'auto',
+          // The 400px signal halo is wider than small phones — clip it so it
+          // can never widen the scrollport into a horizontal scroll.
+          overflowX: 'hidden',
           WebkitOverflowScrolling: 'touch',
           display: 'flex',
           flexDirection: 'column',
@@ -427,11 +438,12 @@ function PlayerScreen() {
             </p>
           </div>
 
-          {/* Central orb — the signal ring IS the play/pause control. Tapping
-              the living orb starts or stops the session; a soft center glyph
-              invites the touch (bright when paused, receding while it plays so
-              the ring's motion reads as "alive"). The breathing halo doubles as
-              the press feedback. This is the merged orb⇄transport surface. */}
+          {/* The revolving record — the vinyl IS the play/pause control.
+              Tapping the disc starts or stops the session (same handler as
+              the orb it replaces); the SignalRing stays mounted BEHIND it as
+              the live FFT halo glowing just outside the rim, and the disc
+              spins at a calm 6s/rev only while audio actually runs. The
+              center hub is a small frosted glass disc carrying the glyph. */}
           <div
             className={css({
               position: 'relative',
@@ -440,6 +452,7 @@ function PlayerScreen() {
               alignItems: 'center',
               my: '2',
             })}
+            style={{ minHeight: DISC_SIZE + 24 }}
           >
             <div
               aria-hidden
@@ -452,13 +465,30 @@ function PlayerScreen() {
                 }),
               )}
               style={{
-                width: RING_SIZE * 1.32,
-                height: RING_SIZE * 1.32,
+                width: RING_SIZE * 0.86,
+                height: RING_SIZE * 0.86,
                 background: `radial-gradient(circle, ${ringColor}${running ? '38' : '22'} 0%, transparent 68%)`,
                 animation: reduceMotion ? 'none' : `breathe ${breathDuration}s ease-in-out infinite`,
                 transition: 'background token(durations.slow) ease',
               }}
             />
+            {/* The live signal halo — behind and around the disc. */}
+            <span
+              aria-hidden={false}
+              className={css({ position: 'absolute', pointerEvents: 'none' })}
+              style={{ width: RING_SIZE, height: RING_SIZE }}
+            >
+              <SignalRing
+                arousal={arousal}
+                color={ringColor}
+                getSpectrum={getSpectrum}
+                getPulse={getPulse}
+                respirationBpm={reading.respiration}
+                heartBpm={reading.hr}
+                size={RING_SIZE}
+                label={`Signal ring — ${band}, ${ringStatusLabel(status, bioActive, capped)}`}
+              />
+            </span>
             <motion.button
               type="button"
               onClick={handlePlayPause}
@@ -491,20 +521,17 @@ function PlayerScreen() {
                   borderRadius: 'full',
                 },
               })}
-              style={{ width: RING_SIZE, height: RING_SIZE }}
+              style={{ width: DISC_SIZE, height: DISC_SIZE }}
             >
-              <SignalRing
-                arousal={arousal}
-                color={ringColor}
-                getSpectrum={getSpectrum}
-                getPulse={getPulse}
-                respirationBpm={reading.respiration}
-                heartBpm={reading.hr}
-                size={RING_SIZE}
-                label={`Signal ring — ${band}, ${ringStatusLabel(status, bioActive, capped)}`}
-              />
-              {/* Center glyph on a frosted disc — the play affordance living
-                  inside the orb. Recedes (not vanishes) while running. */}
+              <span
+                className="vinyl-spin"
+                data-vinyl
+                data-spinning={running ? 'true' : 'false'}
+                style={{ display: 'block', animationPlayState: running ? 'running' : 'paused' }}
+              >
+                <VinylDisc labelSrc={VARIANT_IMAGE[scene]} size={DISC_SIZE} labelRatio={0.42} />
+              </span>
+              {/* Center glyph on the frosted hub — recedes while running. */}
               <span
                 aria-hidden
                 className={css({
@@ -512,8 +539,8 @@ function PlayerScreen() {
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  w: '84px',
-                  h: '84px',
+                  w: '68px',
+                  h: '68px',
                   borderRadius: 'full',
                   color: 'text',
                   background: 'rgba(255,255,255,0.10)',
@@ -522,7 +549,7 @@ function PlayerScreen() {
                   pointerEvents: 'none',
                   transition: 'opacity token(durations.gentle) ease, transform token(durations.gentle) ease',
                 })}
-                style={{ opacity: running ? 0.28 : 0.96 }}
+                style={{ opacity: running ? 0.3 : 0.96 }}
               >
                 {running ? <CenterPauseIcon /> : <CenterPlayIcon />}
               </span>
