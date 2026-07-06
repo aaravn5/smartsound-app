@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { InfoPage, InfoSection } from '~/landing/InfoPage'
+import { usePageTitle } from '~/lib/page-title'
 
 /**
  * /terms — honest terms for what SmartSound actually is today: a local-first
@@ -10,6 +11,7 @@ export const Route = createFileRoute('/terms')({
 })
 
 function TermsPage() {
+  usePageTitle('Terms of Use — SmartSound')
   return (
     <InfoPage scene="dusk" eyebrow="Legal" title="Terms of Use" updated="Updated July 2026">
       <InfoSection title="What SmartSound is">

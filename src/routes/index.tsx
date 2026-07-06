@@ -9,6 +9,7 @@ import { NowPlayingWidget } from '~/landing/NowPlayingWidget'
 import { hasAccount } from '~/lib/account'
 import { DAYPART_GRADE, DAYPART_HEADLINE, DAYPART_PRESS, DAYPART_TINT, daypart } from '~/lib/daypart'
 import { useClickSound } from '~/lib/click-sound'
+import { usePageTitle } from '~/lib/page-title'
 import { suggestFor } from '~/engine/circadian/model'
 import { SOUNDSCAPES } from '~/lib/catalog'
 import type { TargetState } from '~/engine/audio/types'
@@ -93,6 +94,9 @@ const footLinkCss = css({
 })
 
 function Landing() {
+  // The landing keeps its title — re-asserted here so SPA back-navigation
+  // from a retitled /app route restores it.
+  usePageTitle('SmartSound — calm, tuned to your body')
   const navigate = useNavigate()
   const playClick = useClickSound()
 

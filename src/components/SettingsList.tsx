@@ -1,6 +1,6 @@
 import { useState, type ReactNode } from 'react'
 import { css } from 'styled-system/css'
-import { LiquidGlass } from '~/design/LiquidGlass'
+import { Card } from '~/components/Card'
 
 /**
  * SettingsList — the HIG grouped-list idiom in Liquid Glass: a small
@@ -36,16 +36,16 @@ export function SettingsGroup({ title, children }: { title: string; children: Re
           m: '0',
           mb: '2',
           px: '1',
-          fontSize: 'footnote',
-          fontWeight: '600',
-          letterSpacing: '0.06em',
+          fontSize: 'caption',
+          fontWeight: '500',
+          letterSpacing: '0.1em',
           textTransform: 'uppercase',
-          color: 'faint',
+          color: 'silver',
         })}
       >
         {title}
       </h2>
-      <LiquidGlass variant="card">{children}</LiquidGlass>
+      <Card>{children}</Card>
     </section>
   )
 }

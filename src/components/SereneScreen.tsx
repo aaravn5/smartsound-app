@@ -21,13 +21,13 @@ export function ScreenTitle({ title, caption }: { title: string; caption?: strin
         <p
           className={css({
             m: '0',
-            mb: '1',
-            fontSize: 'footnote',
-            fontWeight: '600',
-            letterSpacing: '0.06em',
+            mb: '1.5',
+            fontFamily: 'mono',
+            fontSize: '0.75rem',
+            fontWeight: '400',
+            letterSpacing: '0.1em',
             textTransform: 'uppercase',
-            color: 'faint',
-            textShadow: 'var(--ss-text-glow)',
+            color: 'silver',
           })}
         >
           {caption}
@@ -37,12 +37,11 @@ export function ScreenTitle({ title, caption }: { title: string; caption?: strin
         className={css({
           m: '0',
           fontFamily: 'display',
-          fontSize: 'largeTitle',
-          fontWeight: '700',
-          letterSpacing: '-0.015em',
-          lineHeight: '1.12',
-          color: 'text',
-          textShadow: 'var(--ss-text-glow)',
+          fontSize: 'heading',
+          fontWeight: '400',
+          letterSpacing: '-0.01em',
+          lineHeight: '1.1',
+          color: 'starlight',
         })}
       >
         {title}

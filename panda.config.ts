@@ -23,9 +23,25 @@ export default defineConfig({
     extend: {
       tokens: {
         colors: {
-          // Deep scene base — indigo-black, never pure black (dark = dimmed, not inverted).
-          base: { value: 'oklch(0.145 0.03 275)' },
-          baseDeep: { value: 'oklch(0.11 0.025 278)' },
+          // ── "Pressed at Night" palette (design.md — the single source of truth) ──
+          deepSpace: { value: '#171721' }, // outermost page background
+          midnightSlate: { value: '#1e1e2a' }, // section / card backgrounds
+          graphite: { value: '#272735' }, // interactive surfaces, hover fills
+          lead: { value: '#70707d' }, // borders, dividers, etched groove lines
+          starlight: { value: '#ededf3' }, // primary text
+          silver: { value: '#c3c3cc' }, // secondary text, captions
+          mercuryBlue: { value: '#5266eb' }, // THE accent — primary CTAs, active dot, stylus
+          ghostBlue: { value: '#cdddff' }, // secondary button bg @ ~20%, focus rings
+          // Band tints — content-only palette (labels, waveforms, band-mix bars).
+          band: {
+            beta: { value: '#6f7ff0' },
+            alpha: { value: '#5fb8c9' },
+            theta: { value: '#b78fd6' },
+            delta: { value: '#4a5a8a' },
+          },
+          // Deep scene base — legacy aliases, re-pointed at the Pressed-at-Night neutrals.
+          base: { value: '#1e1e2a' },
+          baseDeep: { value: '#171721' },
           // HIG-style label hierarchy — soft off-white ink with warmth.
           label: { value: 'rgba(248, 247, 252, 0.96)' },
           // Alphas tuned so body/caption text clears ~4.5:1 against the lightest
@@ -82,29 +98,40 @@ export default defineConfig({
           },
         },
         fonts: {
-          // SF system stack — SF is not licensed as a webfont; rely on the stack.
+          // Fraunces — ALL display & headlines (weight 400 at large sizes is the
+          // signature; never 700). Loaded via @fontsource in main.tsx.
           display: {
-            value:
-              '-apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", system-ui, sans-serif',
+            value: '"Fraunces", Georgia, "Times New Roman", serif',
           },
+          // Inter — UI, body, labels, nav, forms. Replaces every -apple-system fallback.
           text: {
-            value:
-              '-apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Helvetica Neue", system-ui, sans-serif',
+            value: '"Inter", system-ui, "Helvetica Neue", Arial, sans-serif',
           },
-          // Rounded numerals for ring values and timers.
+          // JetBrains Mono — every number: Hz, min, %, BPM, dates, timers.
+          mono: {
+            value: '"JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace',
+          },
+          // Legacy alias (timers/ring values) — numbers are mono in this world.
           rounded: {
-            value:
-              'ui-rounded, "SF Pro Rounded", -apple-system, BlinkMacSystemFont, system-ui, sans-serif',
+            value: '"JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace',
           },
         },
         fontSizes: {
-          // Serene HIG-derived scale.
+          // design.md scale: display 64 / heading-lg 44 / heading 32 / heading-sm 21
+          // / body 16 / body-sm 14 / caption 12.
+          display: { value: '4rem' }, // 64
+          headingLg: { value: '2.75rem' }, // 44
+          heading: { value: '2rem' }, // 32
+          headingSm: { value: '1.3125rem' }, // 21
+          bodyMd: { value: '1rem' }, // 16
+          bodySm: { value: '0.875rem' }, // 14
+          // Legacy HIG names still referenced by older surfaces.
           largeTitle: { value: '2.125rem' }, // 34
           title1: { value: '1.75rem' }, // 28
           title2: { value: '1.375rem' }, // 22
           title3: { value: '1.25rem' }, // 20
           headline: { value: '1.0625rem' }, // 17 semibold
-          body: { value: '1.0625rem' }, // 17
+          body: { value: '1rem' }, // 16 — design.md body
           callout: { value: '1rem' }, // 16
           subhead: { value: '0.9375rem' }, // 15
           footnote: { value: '0.8125rem' }, // 13
@@ -113,9 +140,12 @@ export default defineConfig({
         },
         radii: {
           control: { value: '14px' },
-          card: { value: '26px' },
+          // Cards & record sleeves are square-cornered like real jackets (design.md).
+          card: { value: '4px' },
           sheet: { value: '32px' },
           capsule: { value: '9999px' },
+          // Buttons & inputs — pill.
+          pill: { value: '9999px' },
         },
         durations: {
           quick: { value: '160ms' },
@@ -191,17 +221,19 @@ export default defineConfig({
       },
       semanticTokens: {
         colors: {
-          bg: { value: '{colors.base}' },
-          bgDeep: { value: '{colors.baseDeep}' },
-          text: { value: '{colors.label}' },
-          muted: { value: '{colors.secondaryLabel}' },
-          faint: { value: '{colors.tertiaryLabel}' },
-          ghost: { value: '{colors.quaternaryLabel}' },
-          hairline: { value: '{colors.separator}' },
-          // One calm accent per scene — the shell sets --scene-accent per tab.
-          accent: { value: 'var(--scene-accent, {colors.scene.dusk})' },
+          // Pressed at Night — ONE dark world. Semantic tokens point at the
+          // design.md neutrals so the whole app lives in it.
+          bg: { value: '{colors.midnightSlate}' },
+          bgDeep: { value: '{colors.deepSpace}' },
+          text: { value: '{colors.starlight}' },
+          muted: { value: '{colors.silver}' },
+          faint: { value: 'rgba(195, 195, 204, 0.62)' },
+          ghost: { value: 'rgba(195, 195, 204, 0.45)' },
+          hairline: { value: 'rgba(112, 112, 125, 0.28)' },
+          // ONE accent for the whole app — Mercury Blue, primary actions only.
+          accent: { value: '{colors.mercuryBlue}' },
           accentSoft: {
-            value: 'color-mix(in oklab, var(--scene-accent, {colors.scene.dusk}) 24%, transparent)',
+            value: 'color-mix(in oklab, #5266eb 24%, transparent)',
           },
           // The living biofeedback accent — driven by the loop, unchanged mechanism.
           signal: { value: 'var(--signal, {colors.scene.dusk})' },
@@ -221,8 +253,8 @@ export default defineConfig({
       // The biofeedback accent — the loop overwrites this every frame.
       '--signal': 'oklch(0.72 0.14 285)',
       '--signal-glow': '0 0 48px color-mix(in oklab, var(--signal) 45%, transparent)',
-      // Scene accent — the shell overrides per active scene.
-      '--scene-accent': '#A78BFA',
+      // ONE accent for every surface — Mercury Blue (no per-tab scene accents).
+      '--scene-accent': '#5266eb',
       // Raw Liquid Glass vars for inline styles / canvas that can't read tokens.
       '--glass-fill': 'rgba(22, 26, 44, 0.40)',
       '--glass-stroke': 'rgba(255, 255, 255, 0.13)',
@@ -253,8 +285,10 @@ export default defineConfig({
       WebkitFontSmoothing: 'antialiased',
       MozOsxFontSmoothing: 'grayscale',
     },
-    // Numeric readouts (timers, ring values) must never jitter.
+    // Numeric readouts (timers, ring values) — mono ("this was measured") and
+    // tabular so they never jitter. Every number in the app wears this class.
     '.tabular': {
+      fontFamily: 'mono',
       fontVariantNumeric: 'tabular-nums',
       fontFeatureSettings: '"tnum" 1',
     },

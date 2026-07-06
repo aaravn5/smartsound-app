@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { InfoPage, InfoSection } from '~/landing/InfoPage'
+import { usePageTitle } from '~/lib/page-title'
 
 /**
  * /privacy — the honest privacy page. Everything here describes what the
@@ -12,6 +13,7 @@ export const Route = createFileRoute('/privacy')({
 })
 
 function PrivacyPage() {
+  usePageTitle('Privacy Policy — SmartSound')
   return (
     <InfoPage scene="forest" eyebrow="Legal" title="Privacy Policy" updated="Updated July 2026">
       <InfoSection title="The short version">

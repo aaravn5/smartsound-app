@@ -1,39 +1,40 @@
 import { createFileRoute, Link, Outlet, useRouterState } from '@tanstack/react-router'
 import { useEffect, useRef } from 'react'
-import type { CSSProperties, ReactNode } from 'react'
+import type { ReactNode } from 'react'
 import { css } from 'styled-system/css'
-import { LiquidGlass } from '~/design/LiquidGlass'
-import { Scene, type SceneVariant } from '~/design/Scene'
 import { useClickSound } from '~/lib/click-sound'
 import { ensureDevPlan } from '~/lib/dev-access'
 import { MainScrollContext } from '~/lib/scroll-context'
 
 /**
- * AppShell — the Calm-native frame. An immersive Scene sky fills the frame,
- * content scrolls above it, and a floating Liquid Glass HIG tab bar carries
- * the five sections: Today · Explore · Player · Progress · Profile.
- * Each tab keys its own scene + calm accent; the sky cross-fades between tabs.
+ * AppShell — the "Pressed at Night" frame. ONE dark world: a Deep Space
+ * canvas (no photographic page backgrounds), content scrolling above it,
+ * and a Midnight Slate bottom nav with a Lead hairline. One accent for all
+ * five tabs — the active item turns Starlight and carries a 4px Mercury
+ * Blue dot. No per-tab scene accents, no glass, no shadows.
  */
 export const Route = createFileRoute('/app')({
   component: AppShell,
 })
+
+/** The nav bar's footprint — the scrollport stops above it. */
+export const NAV_HEIGHT = 58
 
 interface Tab {
   to: string
   label: string
   icon: ReactNode
   exact?: boolean
-  scene: SceneVariant
-  accent: string
+  title: string
 }
 
 const iconAttrs = {
-  width: 23,
-  height: 23,
+  width: 22,
+  height: 22,
   viewBox: '0 0 24 24',
   fill: 'none' as const,
   stroke: 'currentColor',
-  strokeWidth: 1.8,
+  strokeWidth: 1.7,
   strokeLinecap: 'round' as const,
   strokeLinejoin: 'round' as const,
   'aria-hidden': true,
@@ -46,21 +47,22 @@ const TodayIcon = () => (
     <path d="M12 2.8v2.2M12 19v2.2M21.2 12H19M5 12H2.8M18.5 5.5L17 7M7 17l-1.5 1.5M18.5 18.5L17 17M7 7L5.5 5.5" />
   </svg>
 )
-/** safari-style compass needle. */
-const ExploreIcon = () => (
+/** a crate of records — The Library. */
+const LibraryIcon = () => (
   <svg {...iconAttrs}>
-    <circle cx="12" cy="12" r="8.8" />
-    <path d="M15.4 8.6l-2 4.8-4.8 2 2-4.8 4.8-2z" />
+    <rect x="3.4" y="5" width="17.2" height="15" rx="1.4" />
+    <path d="M7.4 5v15M11.2 5v15M15 5l3.4 15" />
   </svg>
 )
-/** play within the session circle. */
+/** the record itself. */
 const PlayerIcon = () => (
   <svg {...iconAttrs}>
     <circle cx="12" cy="12" r="8.8" />
-    <path d="M10.2 8.9l5 3.1-5 3.1V8.9z" fill="currentColor" stroke="none" />
+    <circle cx="12" cy="12" r="2.6" />
+    <path d="M12 3.2v2M12 18.8v2" opacity="0" />
   </svg>
 )
-/** the rings themselves. */
+/** concentric grooves — the Listening Rings. */
 const ProgressIcon = () => (
   <svg {...iconAttrs}>
     <path d="M12 3.2a8.8 8.8 0 1 1-6.2 2.6" />
@@ -78,23 +80,27 @@ const ProfileIcon = () => (
 )
 
 const TABS: Tab[] = [
-  { to: '/app', label: 'Today', icon: <TodayIcon />, exact: true, scene: 'dusk', accent: '#A78BFA' },
-  { to: '/app/explore', label: 'Explore', icon: <ExploreIcon />, scene: 'aurora', accent: '#5EEAD4' },
-  { to: '/app/player', label: 'Player', icon: <PlayerIcon />, scene: 'ocean', accent: '#7DD3FC' },
-  { to: '/app/progress', label: 'Progress', icon: <ProgressIcon />, scene: 'dawn', accent: '#FDBA74' },
-  { to: '/app/profile', label: 'Profile', icon: <ProfileIcon />, scene: 'dusk', accent: '#A78BFA' },
+  { to: '/app', label: 'Today', icon: <TodayIcon />, exact: true, title: 'Today — SmartSound' },
+  { to: '/app/explore', label: 'Library', icon: <LibraryIcon />, title: 'The Library — SmartSound' },
+  { to: '/app/player', label: 'Player', icon: <PlayerIcon />, title: 'Player — SmartSound' },
+  { to: '/app/progress', label: 'Progress', icon: <ProgressIcon />, title: 'Progress — SmartSound' },
+  { to: '/app/profile', label: 'Profile', icon: <ProfileIcon />, title: 'Profile — SmartSound' },
 ]
 
-function activeTab(pathname: string): Tab {
-  return (
-    TABS.find((tab) => (tab.exact ? pathname === tab.to : pathname.startsWith(tab.to))) ?? TABS[0]
-  )
+/** Per-route document titles (audit 1.5) — every /app route gets its own. */
+function routeTitle(pathname: string): string {
+  if (pathname.startsWith('/app/paywall')) return 'Plans — SmartSound'
+  const tab = TABS.find((t) => (t.exact ? pathname === t.to : pathname !== '/app' && pathname.startsWith(t.to)))
+  return tab?.title ?? 'Today — SmartSound'
 }
 
 function AppShell() {
   const pathname = useRouterState({ select: (s) => s.location.pathname })
-  const tab = activeTab(pathname)
   const mainRef = useRef<HTMLElement>(null)
+
+  useEffect(() => {
+    document.title = routeTitle(pathname)
+  }, [pathname])
 
   // Developer access: keep the elevated plan alive across the local-midnight
   // rollover (the entitlements stub's fresh record resets plan to 'free').
@@ -113,31 +119,16 @@ function AppShell() {
         color: 'text',
         bg: 'bgDeep',
       })}
-      style={
-        {
-          // Panda resolves token vars at :root, so re-declare them here where
-          // the per-tab scene accent is known — they then inherit downward.
-          '--scene-accent': tab.accent,
-          '--colors-accent': tab.accent,
-          '--colors-accent-soft': `color-mix(in oklab, ${tab.accent} 24%, transparent)`,
-        } as CSSProperties
-      }
     >
-      {/* `page` scrim — a steadier base dim so browsable text stays legible
-          while the landscape remains clearly visible behind it. */}
-      <Scene variant={tab.scene} scrim="page" />
-
       <main
         ref={mainRef}
         className={css({
           position: 'absolute',
           inset: '0',
           zIndex: '1',
-          // The scrollable viewport itself stops short of the floating tab
-          // bar's footprint (offset 14px + ~60px bar height + safe area, with
-          // a buffer) — so content can never render *behind* the bar, on
-          // first paint or otherwise, regardless of viewport height.
-          bottom: 'calc(env(safe-area-inset-bottom) + 96px)',
+          // The scrollable viewport stops at the nav bar's top edge, so
+          // content can never render behind the bar.
+          bottom: 'calc(env(safe-area-inset-bottom) + 58px)',
           overflowY: 'auto',
           WebkitOverflowScrolling: 'touch',
         })}
@@ -148,7 +139,7 @@ function AppShell() {
             mx: 'auto',
             px: '5',
             pt: 'calc(env(safe-area-inset-top) + 28px)',
-            pb: '8',
+            pb: '10',
           })}
         >
           <MainScrollContext.Provider value={mainRef}>
@@ -165,79 +156,72 @@ function AppShell() {
 function TabBar({ pathname }: { pathname: string }) {
   const playClick = useClickSound()
   return (
-    <div
+    <nav
+      aria-label="Primary"
       className={css({
         position: 'fixed',
         left: '0',
         right: '0',
-        bottom: 'calc(env(safe-area-inset-bottom) + 14px)',
+        bottom: '0',
         zIndex: '20',
-        display: 'flex',
-        justifyContent: 'center',
-        px: '4',
-        pointerEvents: 'none',
+        background: 'midnightSlate',
+        borderTop: '1px solid',
+        borderColor: 'hairline',
+        paddingBottom: 'env(safe-area-inset-bottom)',
       })}
     >
-      <LiquidGlass
-        as="nav"
-        variant="bar"
-        aria-label="Primary"
-        className={css({ pointerEvents: 'auto', w: 'full', maxW: '420px' })}
-      >
-        <div className={css({ display: 'flex', px: '2', py: '1.5' })}>
-          {TABS.map((tab) => {
-            const active = tab.exact ? pathname === tab.to : pathname.startsWith(tab.to)
-            return (
-              <Link
-                key={tab.to}
-                to={tab.to}
-                aria-current={active ? 'page' : undefined}
-                onClick={() => playClick('tap')}
+      <div className={css({ display: 'flex', maxW: '520px', mx: 'auto', px: '2' })}>
+        {TABS.map((tab) => {
+          const active = tab.exact ? pathname === tab.to : pathname.startsWith(tab.to)
+          return (
+            <Link
+              key={tab.to}
+              to={tab.to}
+              aria-current={active ? 'page' : undefined}
+              onClick={() => playClick('tap')}
+              className={css({
+                flex: '1',
+                minH: '57px',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '2px',
+                textDecoration: 'none',
+                WebkitTapHighlightColor: 'transparent',
+                touchAction: 'manipulation',
+                color: 'silver',
+                transition: 'color 300ms ease',
+                '&[aria-current=page]': { color: 'starlight' },
+                '@media (prefers-reduced-motion: reduce)': { transition: 'none' },
+              })}
+            >
+              <span className={css({ lineHeight: '0' })}>{tab.icon}</span>
+              <span
                 className={css({
-                  flex: '1',
-                  minH: '48px',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '0.5',
-                  borderRadius: 'capsule',
-                  textDecoration: 'none',
-                  WebkitTapHighlightColor: 'transparent',
-                  touchAction: 'manipulation',
-                  transition: 'transform token(durations.quick) token(easings.calm)',
-                  _active: { transform: 'scale(0.94)' },
-                  '@media (prefers-reduced-motion: reduce)': {
-                    transition: 'none',
-                    _active: { transform: 'none' },
-                  },
+                  fontSize: '10px',
+                  fontWeight: '500',
+                  letterSpacing: '0.04em',
                 })}
               >
-                <span
-                  className={css({
-                    lineHeight: '0',
-                    transition: 'color token(durations.gentle) ease',
-                  })}
-                  style={{ color: active ? 'var(--scene-accent)' : 'var(--ss-ink-dim)' }}
-                >
-                  {tab.icon}
-                </span>
-                <span
-                  className={css({
-                    fontSize: '10px',
-                    fontWeight: active ? '600' : '500',
-                    letterSpacing: '0.01em',
-                    transition: 'color token(durations.gentle) ease',
-                  })}
-                  style={{ color: active ? 'var(--scene-accent)' : 'var(--ss-ink-dim)' }}
-                >
-                  {tab.label}
-                </span>
-              </Link>
-            )
-          })}
-        </div>
-      </LiquidGlass>
-    </div>
+                {tab.label}
+              </span>
+              {/* The 4px Mercury Blue dot — the single accent in the chrome. */}
+              <span
+                aria-hidden
+                className={css({
+                  width: '4px',
+                  height: '4px',
+                  borderRadius: 'full',
+                  background: 'mercuryBlue',
+                  transition: 'opacity 300ms ease',
+                })}
+                style={{ opacity: active ? 1 : 0 }}
+              />
+            </Link>
+          )
+        })}
+      </div>
+    </nav>
   )
 }

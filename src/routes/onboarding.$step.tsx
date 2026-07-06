@@ -7,6 +7,7 @@ import { LiquidGlass } from '~/design/LiquidGlass'
 import { Scene, type SceneVariant } from '~/design/Scene'
 import { STATE_SCENE } from '~/components/SessionCard'
 import { useClickSound } from '~/lib/click-sound'
+import { usePageTitle } from '~/lib/page-title'
 import { createAccount, hasAccount, isValidEmail, readAccount } from '~/lib/account'
 import type { TargetState } from '~/engine/audio/types'
 import {
@@ -236,6 +237,7 @@ function PrimaryButton({
 }
 
 function OnboardingScreen() {
+  usePageTitle('Welcome — SmartSound')
   const rawStep = Route.useParams().step
   const current: OnboardingStep = isOnboardingStep(rawStep) ? rawStep : 'welcome'
   const search = Route.useSearch()

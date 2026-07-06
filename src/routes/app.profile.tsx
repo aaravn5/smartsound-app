@@ -3,21 +3,21 @@ import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useReducedMotion } from 'motion/react'
 import * as Switch from '@radix-ui/react-switch'
 import { css, cx } from 'styled-system/css'
-import { LiquidGlass } from '~/design/LiquidGlass'
+import { Card } from '~/components/Card'
 import { ScreenTitle } from '~/components/SereneScreen'
 import { SettingsGroup, SettingsRow } from '~/components/SettingsList'
-import { ThemeToggle } from '~/components/ThemeToggle'
+import { RecordDisc } from '~/components/vinyl/RecordDisc'
 import { useClickSound, useSfxEnabled } from '~/lib/click-sound'
 import { signOut, useAccount } from '~/lib/account'
 import { disableDevAccess, isDevAccess, tryUnlockDevAccess } from '~/lib/dev-access'
 import { useDailyUsage, FREE_DAILY_MIN } from '~/lib/entitlements'
 
 /**
- * Profile — Calm/Apple settings idiom. No live account yet (the `server/`
- * scaffold in `src/lib/api.ts` isn't wired in this milestone) so everything
- * here is honest about being a guest: a generated avatar (no external
- * image), a Free-plan membership card with a non-fatal Pro disclosure, and
- * grouped Liquid Glass settings rows.
+ * Profile — Pressed at Night. The avatar is a mini RecordDisc whose label
+ * carries the listener's initial; the plan card is a Midnight Slate surface
+ * with the ONE Mercury Blue primary pill and the plain-words transparency
+ * block. One dark world: no theme toggle. Dev access, data rows, and legal
+ * links keep working exactly as before.
  */
 export const Route = createFileRoute('/app/profile')({
   component: ProfileScreen,
@@ -88,36 +88,11 @@ const CheckIcon = () => (
   </svg>
 )
 
-function Avatar() {
+/** The avatar — a mini pressed record with the listener's initial as label. */
+function Avatar({ initial }: { initial: string }) {
   return (
-    <span
-      aria-hidden
-      className={css({
-        position: 'relative',
-        display: 'grid',
-        placeItems: 'center',
-        width: '64px',
-        height: '64px',
-        borderRadius: 'full',
-        flexShrink: '0',
-        boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.28), 0 8px 24px rgba(3,6,18,0.4)',
-      })}
-      style={{
-        background:
-          'radial-gradient(circle at 32% 28%, color-mix(in oklab, var(--scene-accent) 70%, white), var(--scene-accent) 60%, color-mix(in oklab, var(--scene-accent) 55%, black))',
-      }}
-    >
-      <span
-        className={css({
-          fontFamily: 'rounded',
-          fontSize: 'title1',
-          fontWeight: '700',
-          color: 'rgba(10,8,20,0.82)',
-          letterSpacing: '-0.02em',
-        })}
-      >
-        G
-      </span>
+    <span aria-hidden className={css({ display: 'block', flexShrink: '0' })}>
+      <RecordDisc state="calm" size={64} spinning="none" initial={initial} />
     </span>
   )
 }
@@ -370,11 +345,11 @@ function ProfileScreen() {
 
       {/* Identity — the on-device account when one exists, guest otherwise.
           Honest either way: no external image, no invented sync status. */}
-      <LiquidGlass variant="card" className={cx(css({ mb: '5' }), cardAnim)}>
+      <Card className={cx(css({ mb: '5' }), cardAnim)}>
         <div className={css({ display: 'flex', alignItems: 'center', gap: '4', px: '6', py: '6' })}>
-          <Avatar />
+          <Avatar initial={(account?.name.trim().charAt(0) || 'S').toUpperCase()} />
           <div className={css({ display: 'flex', flexDirection: 'column', gap: '1', minW: '0' })}>
-            <span className={css({ fontFamily: 'display', fontSize: 'title3', fontWeight: '600', color: 'text', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' })}>
+            <span className={css({ fontFamily: 'display', fontSize: 'headingSm', fontWeight: '400', color: 'text', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' })}>
               {account ? account.name : 'Guest'}
             </span>
             <span className={css({ fontSize: 'footnote', color: 'faint', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' })}>
@@ -385,17 +360,17 @@ function ProfileScreen() {
             </span>
           </div>
         </div>
-      </LiquidGlass>
+      </Card>
 
       {/* Membership. */}
-      <LiquidGlass variant="card" className={cx(css({ mb: '5' }), cardAnim)} style={{ animationDelay: '60ms' }}>
+      <Card className={cx(css({ mb: '5' }), cardAnim)} style={{ animationDelay: '60ms' }}>
         <div className={css({ px: '6', py: '6' })}>
           <div className={css({ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', mb: '1' })}>
             <div>
-              <p className={css({ m: '0', fontSize: 'caption', fontWeight: '600', letterSpacing: '0.05em', textTransform: 'uppercase', color: 'faint' })}>
+              <p className={css({ m: '0', fontSize: 'caption', fontWeight: '500', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'silver' })}>
                 Current plan
               </p>
-              <h2 className={css({ m: '0', mt: '0.5', fontFamily: 'display', fontSize: 'title2', fontWeight: '700', color: 'text' })}>
+              <h2 className={css({ m: '0', mt: '0.5', fontFamily: 'display', fontSize: 'headingSm', fontWeight: '400', color: 'text' })}>
                 {PLAN_LABEL[usage.plan] ?? 'Free'}
               </h2>
             </div>
@@ -442,7 +417,7 @@ function ProfileScreen() {
 
           <div className={css({ height: '1px', bg: 'hairline', my: '5' })} />
 
-          <h3 className={css({ m: '0', mb: '3', fontFamily: 'display', fontSize: 'headline', fontWeight: '600', color: 'text' })}>
+          <h3 className={css({ m: '0', mb: '3', fontFamily: 'display', fontSize: 'headline', fontWeight: '400', color: 'text' })}>
             Go deeper with Pro
           </h3>
           <ul className={css({ listStyle: 'none', m: '0', mb: '5', p: '0', display: 'flex', flexDirection: 'column', gap: '2.5' })}>
@@ -456,31 +431,46 @@ function ProfileScreen() {
             ))}
           </ul>
 
-          <LiquidGlass
-            as="button"
-            variant="control"
-            tint="var(--signal)"
+          {/* THE primary pill — Mercury Blue, Pure White text, pill radius. */}
+          <button
+            type="button"
             onClick={() => {
               playClick('primary')
               void navigate({ to: '/app/paywall' })
             }}
-            className={css({ display: 'block', width: 'full', textAlign: 'center', border: 'none', font: 'inherit' })}
+            className={css({
+              display: 'block',
+              width: 'full',
+              px: '6',
+              py: '3',
+              border: 'none',
+              borderRadius: 'pill',
+              background: 'mercuryBlue',
+              font: 'inherit',
+              fontSize: 'bodyMd',
+              fontWeight: '500',
+              color: 'white',
+              textAlign: 'center',
+              cursor: 'pointer',
+              WebkitTapHighlightColor: 'transparent',
+              transition: 'filter 300ms ease',
+              _hover: { filter: 'brightness(1.1)' },
+              _focusVisible: { outline: '2px solid token(colors.ghostBlue)', outlineOffset: '2px' },
+            })}
           >
-            <span
-              className={css({ display: 'block', px: '5', py: '3', fontSize: 'subhead', fontWeight: '600' })}
-              style={{ color: 'var(--signal)' }}
-            >
-              See plans
-            </span>
-          </LiquidGlass>
+            See plans
+          </button>
+
+          {/* Transparency — plain words, no asterisks. */}
+          <p className={css({ m: '0', mt: '4', fontSize: 'caption', lineHeight: '1.5', color: 'faint' })}>
+            Free: <span className="tabular">20</span> min/day, counted before you press play. Pro: one
+            tap to cancel, no charges during trial.
+          </p>
         </div>
-      </LiquidGlass>
+      </Card>
 
-      {/* Settings — grouped, honest disclosures in place of dead-end navigation. */}
-      <SettingsGroup title="Appearance">
-        <ThemeToggle />
-      </SettingsGroup>
-
+      {/* Settings — grouped, honest disclosures in place of dead-end
+          navigation. One dark world: no theme toggle (design.md). */}
       <SettingsGroup title="Sound">
         <SoundRow />
       </SettingsGroup>

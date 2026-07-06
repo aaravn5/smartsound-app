@@ -20,7 +20,7 @@ import { clearSessionStartedAt, recordSessionStartedAt } from '~/lib/session-met
 import { arousalToLch, lchToCss } from '~/design/signal'
 import { TARGET_STATES } from '~/engine/audio/profiles'
 import { BAND_LABEL, SOUNDSCAPES } from '~/lib/catalog'
-import { useDailyUsage } from '~/lib/entitlements'
+import { useDailyUsage, FREE_DAILY_MIN } from '~/lib/entitlements'
 import type { TargetState } from '~/engine/audio/types'
 
 /**
@@ -35,6 +35,8 @@ const VALID_STATES: readonly TargetState[] = ['focus', 'flow', 'calm', 'winddown
 
 interface PlayerSearch {
   state?: TargetState
+  /** Preset session length in minutes (e.g. Wind-down · 15, Pomodoro · 25). */
+  minutes?: number
 }
 
 function isTargetState(value: unknown): value is TargetState {
@@ -44,6 +46,10 @@ function isTargetState(value: unknown): value is TargetState {
 export const Route = createFileRoute('/app/player')({
   validateSearch: (search: Record<string, unknown>): PlayerSearch => ({
     state: isTargetState(search.state) ? search.state : undefined,
+    minutes:
+      typeof search.minutes === 'number' && Number.isFinite(search.minutes) && search.minutes > 0
+        ? Math.round(search.minutes)
+        : undefined,
   }),
   component: PlayerScreen,
 })
@@ -186,7 +192,7 @@ function PlayerScreen() {
   const navigate = useNavigate()
   const reduceMotion = useReducedMotion()
   const playClick = useClickSound()
-  const { plan, capReached, addMinutes, recordSessionStart } = useDailyUsage()
+  const { plan, capReached, minutesToday, addMinutes, recordSessionStart } = useDailyUsage()
   const {
     status, profile, params, arousal, reading, bioStatus,
     start, stop, selectState, setNeuralIntensity, startAttune, stopAttune,
@@ -217,10 +223,11 @@ function PlayerScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // Elapsed session timer.
+  // Elapsed session timer. A ?minutes= search param presets the length —
+  // the deduped Wind-down record's "15 min" target lands here.
   const [elapsedMs, setElapsedMs] = useState(0)
   const startedAt = useRef<number | null>(null)
-  const [length, setLength] = useState<number | null>(null)
+  const [length, setLength] = useState<number | null>(search.minutes ?? null)
 
   useEffect(() => {
     if (!running) {
@@ -275,6 +282,13 @@ function PlayerScreen() {
     const next = TARGET_STATES[(idx + dir + TARGET_STATES.length) % TARGET_STATES.length]
     selectState(next.key)
   }
+
+  // A preset length outside the standard chips (e.g. Wind-down's 15) gets
+  // its own chip so the selection stays visible.
+  const lengthOptions =
+    search.minutes != null && !LENGTH_OPTIONS.some((o) => o.minutes === search.minutes)
+      ? [{ label: String(search.minutes), minutes: search.minutes }, ...LENGTH_OPTIONS]
+      : LENGTH_OPTIONS
 
   const attuneOn = bioStatus === 'active' || bioStatus === 'requesting'
   const handleAttuneToggle = () => {
@@ -338,9 +352,9 @@ function PlayerScreen() {
           zIndex: '1',
           // Mirror app.tsx's tab-bar-safe `<main>` clipping: the Scene
           // above stays full-bleed, but this scrollable content layer stops
-          // short of the floating tab bar's footprint so controls can never
-          // render behind it on first paint (not just after scrolling).
-          bottom: 'calc(env(safe-area-inset-bottom) + 96px)',
+          // at the fixed bottom nav's top edge, so the timer chips and
+          // transport can never render behind the bar at any viewport.
+          bottom: 'calc(env(safe-area-inset-bottom) + 58px)',
           overflowY: 'auto',
           // The 400px signal halo is wider than small phones — clip it so it
           // can never widen the scrollport into a horizontal scroll.
@@ -357,7 +371,7 @@ function PlayerScreen() {
             mx: 'auto',
             px: '5',
             pt: 'calc(env(safe-area-inset-top) + 18px)',
-            pb: 'calc(env(safe-area-inset-bottom) + 140px)',
+            pb: '10',
             flex: '1',
             display: 'flex',
             flexDirection: 'column',
@@ -414,7 +428,7 @@ function PlayerScreen() {
                 m: '0',
                 fontFamily: 'display',
                 fontSize: 'title1',
-                fontWeight: '700',
+                fontWeight: '400',
                 letterSpacing: '-0.01em',
                 color: 'text',
                 textShadow: 'var(--ss-text-glow)',
@@ -560,7 +574,6 @@ function PlayerScreen() {
             className={css({
               m: '0',
               mt: '3',
-              mb: '7',
               textAlign: 'center',
               fontSize: 'caption',
               fontWeight: '500',
@@ -572,6 +585,27 @@ function PlayerScreen() {
           >
             {ringStatusLabel(status, bioActive, capped)}
           </p>
+
+          {/* Free-tier honesty (acceptance #9): remaining minutes shown near
+              the play control BEFORE playback starts. Display only — the
+              entitlements stub stays the single source of truth. */}
+          {plan === 'free' && !running && (
+            <p
+              data-testid="free-minutes-left"
+              className={`tabular ${css({
+                m: '0',
+                mt: '1.5',
+                textAlign: 'center',
+                fontSize: 'caption',
+                letterSpacing: '0.06em',
+                color: 'var(--ss-ink-strong)',
+                textShadow: 'var(--ss-text-glow)',
+              })}`}
+            >
+              {Math.max(0, Math.floor(FREE_DAILY_MIN - minutesToday))} min left today
+            </p>
+          )}
+          <div className={css({ mb: '6' })} />
 
           {/* Timer + session length. */}
           <div className={css({ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '3', mb: '6' })}>
@@ -587,8 +621,8 @@ function PlayerScreen() {
             >
               {formatElapsed(elapsedMs)}
             </span>
-            <div className={css({ display: 'flex', gap: '2' })}>
-              {LENGTH_OPTIONS.map((opt) => {
+            <div className={css({ display: 'flex', gap: '2', flexWrap: 'wrap', justifyContent: 'center' })}>
+              {lengthOptions.map((opt) => {
                 const selected = opt.minutes === length
                 return (
                   <LiquidGlass
@@ -614,6 +648,7 @@ function PlayerScreen() {
                         px: '2',
                         fontSize: 'footnote',
                         fontWeight: '600',
+                        whiteSpace: 'nowrap',
                       })}`}
                       style={{ color: selected ? 'var(--signal)' : 'var(--colors-text)' }}
                     >

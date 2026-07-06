@@ -1,6 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { css } from 'styled-system/css'
 import { InfoPage } from '~/landing/InfoPage'
+import { usePageTitle } from '~/lib/page-title'
 import { SciencePanel } from '~/components/SciencePanel'
 
 /**
@@ -13,6 +14,7 @@ export const Route = createFileRoute('/science')({
 })
 
 function SciencePage() {
+  usePageTitle('The Science — SmartSound')
   return (
     <InfoPage scene="ocean" eyebrow="How it works" title="The science, honestly">
       <p

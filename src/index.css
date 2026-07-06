@@ -23,10 +23,11 @@
  * originals by default so dark stays byte-identical, and flip to deep-slate /
  * dark-on-light equivalents under Daylight. */
 :root {
-  --ss-ink-strong: rgba(235, 235, 248, 0.84);
-  --ss-ink-body: rgba(235, 235, 248, 0.72);
-  --ss-ink-soft: rgba(235, 235, 248, 0.62);
-  --ss-ink-dim: rgba(235, 235, 248, 0.52);
+  /* Pressed at Night ink — Starlight/Silver hierarchy (design.md). */
+  --ss-ink-strong: rgba(237, 237, 243, 0.92);
+  --ss-ink-body: rgba(195, 195, 204, 0.88);
+  --ss-ink-soft: rgba(195, 195, 204, 0.66);
+  --ss-ink-dim: rgba(195, 195, 204, 0.55);
   --ss-control-track: rgba(255, 255, 255, 0.14);
   --ss-control-track-soft: rgba(255, 255, 255, 0.06);
   --ss-line-strong: rgba(255, 255, 255, 0.3);
@@ -178,6 +179,28 @@
 }
 @media (prefers-reduced-motion: reduce) {
   .vinyl-spin {
+    animation: none;
+  }
+}
+
+/* RecordDisc spin (design.md): idle 8–12s/rev (default 10s, override via
+ * --rec-spin), playing ~1.8s/rev (33⅓ feel). Reduced motion = static disc. */
+@keyframes record-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.record-spin-idle {
+  animation: record-spin var(--rec-spin, 10s) linear infinite;
+  will-change: transform;
+}
+.record-spin-playing {
+  animation: record-spin 1.8s linear infinite;
+  will-change: transform;
+}
+@media (prefers-reduced-motion: reduce) {
+  .record-spin-idle,
+  .record-spin-playing {
     animation: none;
   }
 }

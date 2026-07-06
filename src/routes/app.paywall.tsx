@@ -2,7 +2,6 @@ import { useState } from 'react'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { css, cx } from 'styled-system/css'
 import { LiquidGlass } from '~/design/LiquidGlass'
-import { LivingScene } from '~/design/LivingScene'
 import { SettingsGroup, SettingsRow } from '~/components/SettingsList'
 import { useClickSound } from '~/lib/click-sound'
 import { FREE_DAILY_MIN, FREE_DAILY_SESSIONS } from '~/lib/entitlements'
@@ -220,7 +219,16 @@ function PaywallScreen() {
           }),
         )}
       >
-        <LivingScene variant="dusk" />
+        {/* Generative Deep Space wash — no photographic backgrounds in /app. */}
+        <div
+          aria-hidden
+          className={css({
+            position: 'absolute',
+            inset: '0',
+            background:
+              'radial-gradient(ellipse 90% 70% at 20% 0%, rgba(82, 102, 235, 0.18) 0%, transparent 60%), linear-gradient(172deg, #272735 0%, #1e1e2a 55%, #171721 100%)',
+          })}
+        />
         <div
           className={css({
             position: 'relative',

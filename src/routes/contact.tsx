@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
 import { css, cx } from 'styled-system/css'
 import { InfoPage } from '~/landing/InfoPage'
+import { usePageTitle } from '~/lib/page-title'
 import { useClickSound } from '~/lib/click-sound'
 
 /**
@@ -45,6 +46,7 @@ const inputCss = css({
 })
 
 function ContactPage() {
+  usePageTitle('Contact — SmartSound')
   const playClick = useClickSound()
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')

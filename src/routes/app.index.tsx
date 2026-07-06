@@ -1,37 +1,25 @@
-import { useRef, useState } from 'react'
-import { createFileRoute, useNavigate } from '@tanstack/react-router'
-import { motion, useReducedMotion, useTransform } from 'motion/react'
+import { useMemo, useState } from 'react'
+import { createFileRoute } from '@tanstack/react-router'
 import { css, cx } from 'styled-system/css'
-import { LiquidGlass } from '~/design/LiquidGlass'
-import { LivingScene } from '~/design/LivingScene'
-import { SmartSoundRings } from '~/design/SmartSoundRings'
+import { chipCss, chipActiveCss } from '~/components/Card'
+import { Rail } from '~/components/SessionCard'
+import { RecordDisc, capText } from '~/components/vinyl/RecordDisc'
+import { RecordSleeve } from '~/components/vinyl/RecordSleeve'
 import { useClickSound } from '~/lib/click-sound'
-import { useContainerScrollProgress } from '~/lib/scroll-context'
-import { ModeShelf } from '~/components/ModeShelf'
-import { Rail, SessionCard, STATE_SCENE } from '~/components/SessionCard'
-import { suggestFor, suggestedBlockMinutes } from '~/engine/circadian/model'
-import { BAND_LABEL, SOUNDSCAPES, SCENARIOS } from '~/lib/catalog'
+import { useGatedPlay } from '~/lib/gated-play'
+import { suggestFor } from '~/engine/circadian/model'
+import { SOUNDSCAPES, SCENARIOS } from '~/lib/catalog'
 import { readRecents } from '~/lib/recents'
-import {
-  ATTUNE_GOAL,
-  MINUTES_GOAL,
-  STREAK_GOAL,
-  streakDays,
-  todayMinutes,
-  todaySessions,
-} from '~/lib/sample-stats'
 import type { TargetState } from '~/engine/audio/types'
 
 /**
- * /app — the app now opens on the cinematic 3D mode shelf (ModeShelf): a
- * near-black stage, giant serif wordmark, and the raked shelf of every
- * playable mode and scenario, filtered by the bottom pills. Scrolling past
- * the stage continues into the Today section — the Calm-style editorial
- * home: time-based greeting, the daily hero card (circadian recommendation),
- * the rhythm rings, and horizontal shelves of visible-photo content cards.
- * Nothing was deleted in the revamp, only re-hierarchized: shelf first,
- * editorial second. The hero keeps its gentle sticky parallax (plain static
- * block under reduced motion).
+ * /app — Today, "Pressed at Night". ONE featured pressing — a large,
+ * slowly revolving RecordDisc chosen by time of day (suggestFor) under a
+ * caps-label badge ("THIS MORNING'S PRESS · DEEP FOCUS") — and below it a
+ * single horizontal shelf of the remaining records as sleeves, filtered by
+ * the All/Focus/Calm/Sleep chips. The two Wind-down entries are merged into
+ * ONE record whose sleeve offers a 15 min | Open-ended duration selector.
+ * Record clicks keep the listen gate: signed-out → onboarding auth intent.
  */
 export const Route = createFileRoute('/app/')({
   component: TodayScreen,
@@ -61,485 +49,313 @@ function todayCaption(): string {
   }).format(new Date())
 }
 
-function dayPart(hour: number): string {
-  if (hour < 5) return 'Night'
-  if (hour < 12) return 'Morning'
-  if (hour < 18) return 'Afternoon'
-  return 'Evening'
+/** "THIS MORNING'S PRESS" — the badge's daypart half. */
+function pressLabel(hour: number): string {
+  if (hour >= 22 || hour < 5) return "TONIGHT'S PRESS"
+  if (hour < 12) return "THIS MORNING'S PRESS"
+  if (hour < 18) return "THIS AFTERNOON'S PRESS"
+  return "THIS EVENING'S PRESS"
 }
 
-const ArrowIcon = () => (
-  <svg
-    width="16"
-    height="16"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2.1"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    aria-hidden
-  >
-    <path d="M5 12h13M13 6l6 6-6 6" />
-  </svg>
-)
+// ── the record crate — every playable pressing, deduped ────────────────────
 
-const ChevronIcon = () => (
-  <svg
-    width="17"
-    height="17"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    aria-hidden
-  >
-    <path d="M9 5l7 7-7 7" />
-  </svg>
-)
+type Group = 'focus' | 'calm' | 'sleep'
+type Filter = 'all' | Group
 
-// Scroll-linked reveal — a short, calm rise-and-fade as a section enters
-// view. Disabled entirely under reduced motion (sections just render still).
-const CALM_EASE = [0.16, 1, 0.3, 1] as const
-
-// ── shelf content — real catalog entries, grouped Calm-style ────────────────
-
-interface ShelfItem {
+interface Pressing {
   id: string
   state: TargetState
   title: string
-  meta: string
+  /** null = open-ended. */
+  minutes: number | null
+  group: Group
+  /** The merged Wind-down record — carries the 15 min | Open-ended selector. */
+  windDown?: boolean
 }
 
-const soundscapeItem = (id: string): ShelfItem => {
+const soundscape = (id: string, group: Group, extra?: Partial<Pressing>): Pressing => {
   const s = SOUNDSCAPES.find((x) => x.id === id)!
-  return { id: s.id, state: s.state, title: s.title, meta: `${s.band} · Open-ended` }
+  return { id: s.id, state: s.state, title: s.title, minutes: null, group, ...extra }
 }
 
-const scenarioItem = (id: string): ShelfItem => {
+const scenario = (id: string, group: Group): Pressing => {
   const s = SCENARIOS.find((x) => x.id === id)!
-  return { id: s.id, state: s.state, title: s.title.split(' · ')[0], meta: `${s.band} · ${s.minutes} min` }
+  return { id: s.id, state: s.state, title: s.title.split(' · ')[0], minutes: s.minutes, group }
 }
 
-interface Shelf {
-  id: string
-  title: string
-  items: ShelfItem[]
-}
-
-const SHELVES: Shelf[] = [
-  {
-    id: 'focus',
-    title: 'Focus',
-    items: [
-      soundscapeItem('deep-focus'),
-      scenarioItem('pomodoro-25'),
-      scenarioItem('deep-work-50'),
-      soundscapeItem('open-flow'),
-    ],
-  },
-  {
-    id: 'calm',
-    title: 'Calm',
-    items: [
-      soundscapeItem('still'),
-      scenarioItem('unwind-15'),
-      soundscapeItem('wind-down'),
-    ],
-  },
-  {
-    id: 'sleep',
-    title: 'Sleep',
-    items: [
-      soundscapeItem('delta-sleep'),
-      scenarioItem('sleep-30'),
-      soundscapeItem('wind-down'),
-    ],
-  },
+/** The full crate. Audit 1.5: the Wind-down soundscape (open-ended) and the
+ * Wind-down · 15 scenario are ONE record here — the duration selector on its
+ * sleeve routes to the correct play target. */
+const PRESSINGS: Pressing[] = [
+  soundscape('deep-focus', 'focus'),
+  scenario('pomodoro-25', 'focus'),
+  scenario('deep-work-50', 'focus'),
+  soundscape('open-flow', 'focus'),
+  soundscape('still', 'calm'),
+  soundscape('wind-down', 'calm', { windDown: true }),
+  soundscape('delta-sleep', 'sleep'),
+  scenario('sleep-30', 'sleep'),
 ]
 
-/** Recently played — real history only (recorded when a session actually starts). */
-function recentShelf(): Shelf | null {
-  const states = readRecents()
-  if (states.length === 0) return null
-  const items = states.map((state) => {
-    const s = SOUNDSCAPES.find((x) => x.state === state) ?? SOUNDSCAPES[0]
-    return { id: `recent-${state}`, state, title: s.title, meta: `${BAND_LABEL[state]} · Open-ended` }
-  })
-  return { id: 'recent', title: 'Recently played', items }
+const FILTERS: { id: Filter; label: string }[] = [
+  { id: 'all', label: 'All' },
+  { id: 'focus', label: 'Focus' },
+  { id: 'calm', label: 'Calm' },
+  { id: 'sleep', label: 'Sleep' },
+]
+
+function pressingMeta(p: Pressing): string {
+  const duration = p.windDown ? '15 MIN | OPEN' : p.minutes ? `${p.minutes} MIN` : 'OPEN-ENDED'
+  return `${capText(p.state)} · ${duration}`
 }
 
-const shelfTitleCss = css({
+const capsLabelCss = css({
   m: '0',
-  mb: '3',
-  fontFamily: 'display',
-  fontSize: 'title3',
-  fontWeight: '600',
-  letterSpacing: '-0.01em',
-  color: 'text',
-  textShadow: 'var(--ss-text-glow)',
+  fontFamily: 'mono',
+  fontSize: '0.75rem',
+  fontWeight: '400',
+  letterSpacing: '0.1em',
+  textTransform: 'uppercase',
+  color: 'silver',
 })
 
-const CARD_W = '176px'
-const CARD_H = '220px'
+const fadeUpCss = css({
+  animation: 'fadeUp token(durations.calm) token(easings.enter) both',
+  '@media (prefers-reduced-motion: reduce)': { animation: 'none' },
+})
 
-function ShelfRow({
-  shelf,
-  reveal,
-  reduceMotion,
-  delay,
-}: {
-  shelf: Shelf
-  reveal: object | undefined
-  reduceMotion: boolean | null
-  delay: number
-}) {
+/** 15 min | Open-ended — the merged Wind-down record's duration selector. */
+function WindDownSelector({ onPick }: { onPick: (minutes: number | null) => void }) {
   return (
-    <motion.section
-      {...(reveal ?? {})}
-      transition={reduceMotion ? undefined : { duration: 0.7, ease: CALM_EASE, delay: 0.05 }}
-      className={css({ mb: '7' })}
-    >
-      <h2 className={shelfTitleCss}>{shelf.title}</h2>
-      <Rail>
-        {shelf.items.map((item, i) => (
-          <div key={item.id} className={css({ flexShrink: '0' })} style={{ width: CARD_W }}>
-            <SessionCard
-              state={item.state}
-              title={item.title}
-              meta={item.meta}
-              height={CARD_H}
-              delayMs={reduceMotion ? 0 : delay + i * 60}
-            />
-          </div>
-        ))}
-      </Rail>
-    </motion.section>
+    <div className={css({ display: 'flex', gap: '1.5', mt: '2' })} aria-label="Wind-down duration">
+      <button
+        type="button"
+        onClick={() => onPick(15)}
+        className={cx(chipCss, css({ px: '2.5', py: '1', fontSize: '0.6875rem' }))}
+      >
+        15 min
+      </button>
+      <button
+        type="button"
+        onClick={() => onPick(null)}
+        className={cx(chipCss, css({ px: '2.5', py: '1', fontSize: '0.6875rem' }))}
+      >
+        Open-ended
+      </button>
+    </div>
   )
 }
 
 function TodayScreen() {
-  const navigate = useNavigate()
   const playClick = useClickSound()
-  const reduceMotion = useReducedMotion()
-
-  const stageRef = useRef<HTMLDivElement>(null)
-  // Hand-rolled container scroll progress — motion@11's useScroll(container)
-  // freezes under StrictMode double-mounting (see scroll-context.tsx).
-  const scrollYProgress = useContainerScrollProgress(stageRef)
-  // Gentle parallax: the pinned scene drifts a little slower than the
-  // content sliding over it, dims, and breathes outward — never a hard cut.
-  const sceneY = useTransform(scrollYProgress, [0, 1], [0, 28])
-  const sceneScale = useTransform(scrollYProgress, [0, 1], [1, 1.06])
-  const sceneOpacity = useTransform(scrollYProgress, [0, 0.7, 1], [1, 0.6, 0.32])
-  const overlayOpacity = useTransform(scrollYProgress, [0, 0.6], [1, 0])
+  const gatedPlay = useGatedPlay()
+  const [filter, setFilter] = useState<Filter>('all')
 
   const now = new Date()
   const suggestion = suggestFor(now)
-  const daily = SOUNDSCAPES.find((s) => s.state === suggestion.state) ?? SOUNDSCAPES[0]
-  const dailyMinutes = suggestedBlockMinutes(suggestion.state)
+  const featured =
+    PRESSINGS.find((p) => p.state === suggestion.state && p.minutes === null) ?? PRESSINGS[0]
 
-  // Recently played — read once per mount (localStorage, real history only).
-  const [recents] = useState(recentShelf)
+  const shelf = useMemo(
+    () =>
+      PRESSINGS.filter(
+        (p) => p.id !== featured.id && (filter === 'all' || p.group === filter),
+      ),
+    [featured.id, filter],
+  )
 
-  const reveal = reduceMotion
-    ? undefined
-    : {
-        initial: { opacity: 0, y: 26 },
-        whileInView: { opacity: 1, y: 0 },
-        viewport: { once: true, margin: '0px 0px -80px 0px' },
-        transition: { duration: 0.7, ease: CALM_EASE },
-      }
+  // Recently played — real history only; renders nothing until a session ran.
+  const [recents] = useState<TargetState[]>(() => readRecents())
+  const recentPressings = useMemo(
+    () =>
+      recents
+        .map((state) => PRESSINGS.find((p) => p.state === state && p.minutes === null))
+        .filter((p): p is Pressing => p != null)
+        .filter((p) => p.id !== featured.id),
+    [recents, featured.id],
+  )
+
+  const play = (p: Pressing, minutes?: number | null) => {
+    playClick('primary')
+    gatedPlay(p.state, minutes === null ? undefined : minutes ?? p.minutes ?? undefined)
+  }
 
   return (
-    // ss-scene-dark on the WHOLE page: Today's content sits directly over the
-    // always-dark ambient photo in BOTH themes, so its ink must stay light —
-    // without this, Daylight flips the greeting/shelf titles to slate-on-dark.
-    <div className="ss-scene-dark">
-      {/* The cinematic 3D mode shelf — the app opens here. Full-bleed stage,
-          exactly one screen tall; everything below is the editorial scroll. */}
-      <ModeShelf />
-
-      <div className={css({ pt: '12' })}>
-      {/* Centered, time-based greeting over the scene — Calm's home opening. */}
-      <header
+    <div>
+      {/* Wordmark — normal header scale, never clipped. */}
+      <p
         className={css({
-          mb: '6',
-          pt: '2',
+          m: '0',
+          mb: '7',
           textAlign: 'center',
-          animation: 'fadeUp token(durations.calm) token(easings.enter) both',
-          '@media (prefers-reduced-motion: reduce)': { animation: 'none' },
+          fontFamily: 'display',
+          fontWeight: '400',
+          fontSize: 'headingSm',
+          letterSpacing: '-0.01em',
+          color: 'starlight',
         })}
       >
-        <p
-          className={css({
-            m: '0',
-            mb: '1.5',
-            fontSize: 'footnote',
-            fontWeight: '600',
-            letterSpacing: '0.08em',
-            textTransform: 'uppercase',
-            color: 'var(--ss-ink-soft)',
-            textShadow: 'var(--ss-text-glow)',
-          })}
-        >
-          {todayCaption()}
-        </p>
+        SmartSound
+      </p>
+
+      {/* Time-based greeting — Fraunces 400. */}
+      <header className={cx(css({ mb: '9', textAlign: 'center' }), fadeUpCss)}>
+        <p className={cx('tabular', capsLabelCss, css({ mb: '2' }))}>{todayCaption()}</p>
         <h1
           className={css({
             m: '0',
             fontFamily: 'display',
-            fontSize: 'title1',
-            fontWeight: '700',
-            letterSpacing: '-0.015em',
-            lineHeight: '1.12',
-            color: 'text',
-            textShadow: 'var(--ss-text-glow)',
+            fontWeight: '400',
+            fontSize: 'heading',
+            letterSpacing: '-0.01em',
+            lineHeight: '1.1',
+            color: 'starlight',
           })}
         >
           {greeting()}
         </h1>
-        <p
-          className={css({
-            m: '0',
-            mt: '1.5',
-            fontSize: 'subhead',
-            lineHeight: '1.4',
-            color: 'var(--ss-ink-body)',
-            textShadow: 'var(--ss-text-glow)',
-          })}
-        >
+        <p className={css({ m: '0', mt: '2', fontSize: 'bodySm', color: 'silver' })}>
           {greetingLine()}
         </p>
       </header>
 
-      {/* Sticky stage — the daily hero pins while the shelves glide over it.
-          Reduced motion collapses this back to a plain, non-sticky block. */}
-      <div
-        ref={stageRef}
-        className={css({ position: 'relative', mb: '8' })}
-        style={reduceMotion ? undefined : { height: 'calc(52vh + 200px)', minHeight: '540px' }}
-      >
-        <div
-          className={cx(
-            'ss-scene-dark',
-            css({
-              borderRadius: 'card',
-              overflow: 'hidden',
-              boxShadow: '0 18px 48px rgba(3, 6, 18, 0.4)',
-            }),
-          )}
-          style={
-            reduceMotion
-              ? { height: '392px' }
-              : {
-                  position: 'sticky',
-                  top: 'calc(env(safe-area-inset-top) + 8px)',
-                  height: '52vh',
-                  minHeight: '360px',
-                  maxHeight: '560px',
-                }
-          }
-        >
-          <motion.div
-            aria-hidden
-            className={css({ position: 'absolute', inset: '0' })}
-            style={reduceMotion ? undefined : { y: sceneY, scale: sceneScale, opacity: sceneOpacity }}
-          >
-            <LivingScene variant={STATE_SCENE[suggestion.state]} />
-          </motion.div>
-
-          <motion.div
-            className={css({
-              position: 'relative',
-              zIndex: '1',
-              height: '100%',
-              display: 'flex',
-              flexDirection: 'column',
-              justifyContent: 'flex-end',
-              p: '5',
-            })}
-            style={reduceMotion ? undefined : { opacity: overlayOpacity }}
-          >
-            <p
-              className={css({
-                m: '0',
-                mb: '2',
-                fontSize: 'footnote',
-                fontWeight: '600',
-                letterSpacing: '0.08em',
-                textTransform: 'uppercase',
-                color: 'var(--ss-ink-body)',
-              })}
-            >
-              {dayPart(now.getHours())} · Daily session
-            </p>
-            <h2
-              className={css({
-                m: '0',
-                fontFamily: 'display',
-                fontSize: 'title1',
-                fontWeight: '700',
-                letterSpacing: '-0.01em',
-                lineHeight: '1.15',
-                color: 'text',
-              })}
-            >
-              {daily.title}
-            </h2>
-            <p
-              className={css({
-                m: '0',
-                mt: '2',
-                maxW: '32ch',
-                fontSize: 'subhead',
-                lineHeight: '1.5',
-                color: 'var(--ss-ink-strong)',
-              })}
-            >
-              {daily.blurb}
-            </p>
-            <div className={css({ display: 'flex', alignItems: 'center', gap: '4', mt: '5' })}>
-              <LiquidGlass
-                as="button"
-                variant="control"
-                staticSheen
-                onClick={() => {
-                  playClick('primary')
-                  void navigate({ to: '/app/player', search: { state: suggestion.state } })
-                }}
-                className={css({ border: 'none', font: 'inherit', color: 'text' })}
-              >
-                <span
-                  className={css({
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '1.5',
-                    px: '5',
-                    py: '2.5',
-                    fontSize: 'callout',
-                    fontWeight: '600',
-                  })}
-                >
-                  Begin
-                  <ArrowIcon />
-                </span>
-              </LiquidGlass>
-              <span
-                className={`tabular ${css({
-                  fontSize: 'caption',
-                  fontWeight: '500',
-                  letterSpacing: '0.02em',
-                  color: 'var(--ss-ink-soft)',
-                })}`}
-              >
-                {daily.band} · {dailyMinutes} min
-              </span>
-            </div>
-          </motion.div>
-        </div>
-      </div>
-
-      {/* The shelf — rings + content rows glide up over the pinned scene. */}
-      <motion.section {...(reveal ?? {})}>
-        <LiquidGlass
-          as="button"
-          variant="card"
-          onClick={() => void navigate({ to: '/app/progress' })}
+      {/* Today's Pressing — ONE featured record, large, slowly revolving. */}
+      <section className={cx(css({ mb: '12', textAlign: 'center' }), fadeUpCss)}>
+        <p className={cx(capsLabelCss, css({ mb: '6' }))}>
+          {pressLabel(now.getHours())} · {featured.title.toUpperCase()}
+        </p>
+        <button
+          type="button"
+          onClick={() => play(featured, null)}
+          aria-label={`Play ${featured.title} — ${pressingMeta(featured)}`}
           className={css({
-            display: 'block',
-            width: '100%',
+            display: 'inline-block',
+            p: '0',
+            m: '0',
             border: 'none',
-            font: 'inherit',
-            color: 'inherit',
-            textAlign: 'left',
+            background: 'transparent',
             cursor: 'pointer',
-            mb: '8',
+            borderRadius: 'full',
+            WebkitTapHighlightColor: 'transparent',
+            transition: 'filter 300ms ease',
+            _hover: { filter: 'brightness(1.12)' },
+            _focusVisible: { outline: '2px solid token(colors.ghostBlue)', outlineOffset: '6px' },
           })}
         >
-          <div className={css({ display: 'flex', alignItems: 'center', gap: '5', px: '5', py: '5' })}>
-            <SmartSoundRings
-              variant="compact"
-              size={92}
-              attune={{ progress: todaySessions / ATTUNE_GOAL, value: todaySessions, goal: ATTUNE_GOAL }}
-              minutes={{ progress: todayMinutes / MINUTES_GOAL, value: todayMinutes, goal: MINUTES_GOAL }}
-              streak={{ progress: streakDays / STREAK_GOAL, value: streakDays, goal: STREAK_GOAL }}
-            />
-            <div className={css({ flex: '1', minW: '0' })}>
-              <p className={css({ m: '0', fontSize: 'headline', fontWeight: '600', color: 'text' })}>
-                Today&rsquo;s rhythm
-              </p>
-              <p
-                className={`tabular ${css({
-                  m: '0',
-                  mt: '1',
-                  fontSize: 'footnote',
-                  color: 'muted',
-                })}`}
-              >
-                Attune {todaySessions}/{ATTUNE_GOAL} · {todayMinutes}/{MINUTES_GOAL} min · {streakDays}-day streak
-              </p>
-              <p
-                className={css({
-                  m: '0',
-                  mt: '0.5',
-                  fontSize: 'caption2',
-                  fontWeight: '500',
-                  letterSpacing: '0.03em',
-                  textTransform: 'uppercase',
-                  color: 'faint',
-                })}
-              >
-                Sample data
-              </p>
-            </div>
-            <span aria-hidden className={css({ color: 'faint', lineHeight: '0' })}>
-              <ChevronIcon />
-            </span>
+          <RecordDisc state={featured.state} size={272} spinning="idle" />
+        </button>
+        <h2
+          className={css({
+            m: '0',
+            mt: '6',
+            fontFamily: 'display',
+            fontWeight: '400',
+            fontSize: 'headingSm',
+            color: 'starlight',
+          })}
+        >
+          {featured.title}
+        </h2>
+        <p className={cx('tabular', capsLabelCss, css({ mt: '1.5' }))}>{capText(featured.state)}</p>
+        {featured.windDown && (
+          <div className={css({ display: 'flex', justifyContent: 'center' })}>
+            <WindDownSelector onPick={(m) => play(featured, m)} />
           </div>
-        </LiquidGlass>
-      </motion.section>
+        )}
+      </section>
 
-      {/* Recommended — the timed scenarios, today's suggested state first. */}
-      <motion.section
-        {...(reveal ?? {})}
-        transition={reduceMotion ? undefined : { duration: 0.7, ease: CALM_EASE, delay: 0.08 }}
-        className={css({ mb: '7' })}
-      >
-        <h2 className={shelfTitleCss}>Recommended for now</h2>
+      {/* The shelf — every other record, one horizontal row of sleeves. */}
+      <section className={fadeUpCss} style={{ animationDelay: '120ms' }}>
+        <div
+          className={css({
+            display: 'flex',
+            alignItems: 'baseline',
+            justifyContent: 'space-between',
+            gap: '3',
+            mb: '4',
+          })}
+        >
+          <h2
+            className={css({
+              m: '0',
+              fontFamily: 'display',
+              fontWeight: '400',
+              fontSize: 'headingSm',
+              color: 'starlight',
+            })}
+          >
+            The shelf
+          </h2>
+        </div>
+
+        <div role="tablist" aria-label="Filter the shelf" className={css({ display: 'flex', gap: '2', mb: '5', flexWrap: 'wrap' })}>
+          {FILTERS.map((f) => {
+            const active = f.id === filter
+            return (
+              <button
+                key={f.id}
+                type="button"
+                role="tab"
+                aria-selected={active}
+                onClick={() => {
+                  playClick('tap')
+                  setFilter(f.id)
+                }}
+                className={cx(chipCss, active && chipActiveCss)}
+              >
+                {f.label}
+              </button>
+            )
+          })}
+        </div>
+
         <Rail>
-          {[...SCENARIOS]
-            .sort((a, b) => (a.state === suggestion.state ? 0 : 1) - (b.state === suggestion.state ? 0 : 1))
-            .map((scenario, i) => (
-              <div key={scenario.id} className={css({ flexShrink: '0' })} style={{ width: CARD_W }}>
-                <SessionCard
-                  state={scenario.state}
-                  title={scenario.title.split(' · ')[0]}
-                  meta={`${scenario.band} · ${scenario.minutes} min`}
-                  height={CARD_H}
-                  delayMs={reduceMotion ? 0 : 320 + i * 70}
-                />
-              </div>
-            ))}
+          {shelf.map((p) => (
+            <RecordSleeve
+              key={p.id}
+              state={p.state}
+              title={p.title}
+              meta={pressingMeta(p)}
+              onClick={() => play(p)}
+              className={css({ width: '168px', flexShrink: '0' })}
+            >
+              {p.windDown && <WindDownSelector onPick={(m) => play(p, m)} />}
+            </RecordSleeve>
+          ))}
         </Rail>
-      </motion.section>
+      </section>
 
-      {/* Calm-style shelves — Focus · Calm · Sleep (+ real Recently played). */}
-      {SHELVES.map((shelf, si) => (
-        <ShelfRow
-          key={shelf.id}
-          shelf={shelf}
-          reveal={reveal}
-          reduceMotion={reduceMotion}
-          delay={120 + si * 60}
-        />
-      ))}
-      {recents && (
-        <ShelfRow shelf={recents} reveal={reveal} reduceMotion={reduceMotion} delay={120} />
+      {/* Recently played — honest local history only. Rendered as quiet
+          chips (not sleeves) so no record ever appears on the page twice. */}
+      {recentPressings.length > 0 && (
+        <section className={cx(css({ mt: '10' }), fadeUpCss)} style={{ animationDelay: '200ms' }}>
+          <h2
+            className={css({
+              m: '0',
+              mb: '3',
+              fontFamily: 'display',
+              fontWeight: '400',
+              fontSize: 'headingSm',
+              color: 'starlight',
+            })}
+          >
+            Recently played
+          </h2>
+          <div className={css({ display: 'flex', gap: '2', flexWrap: 'wrap' })}>
+            {recentPressings.map((p) => (
+              <button
+                key={`recent-${p.id}`}
+                type="button"
+                onClick={() => play(p)}
+                className={chipCss}
+                aria-label={`Play ${p.title} again`}
+              >
+                {p.title}
+              </button>
+            ))}
+          </div>
+        </section>
       )}
-      </div>
     </div>
   )
 }

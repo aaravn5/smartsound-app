@@ -1,86 +1,91 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
 import { css, cx } from 'styled-system/css'
-import { LiquidGlass } from '~/design/LiquidGlass'
-import { CALM_SCRIM_CARD, VARIANT_IMAGE, type SceneVariant } from '~/design/Scene'
-import { ScreenTitle } from '~/components/SereneScreen'
-import { Rail, SessionCard } from '~/components/SessionCard'
+import { Rail } from '~/components/SessionCard'
+import { capText } from '~/components/vinyl/RecordDisc'
+import { RecordSleeve } from '~/components/vinyl/RecordSleeve'
+import { chipCss } from '~/components/Card'
+import { useClickSound } from '~/lib/click-sound'
+import { useGatedPlay } from '~/lib/gated-play'
 import { suggestedBlockMinutes } from '~/engine/circadian/model'
-import { BAND_LABEL, SCENARIOS, SOUNDSCAPES } from '~/lib/catalog'
+import { SCENARIOS, SOUNDSCAPES } from '~/lib/catalog'
 import type { TargetState } from '~/engine/audio/types'
 
 /**
- * Explore — the Calm-style browse. Large category tiles with visible nature
- * imagery up top (each scrolls to its section), then the library sections:
- * rails and grids of crisp-photo session cards over real engine states.
+ * The Library — crate-digging, not SaaS cards. Each category is a labeled
+ * crate: a horizontal row of RecordSleeves you flip through, a Fraunces
+ * crate header with its one-line science blurb. Every sleeve carries title,
+ * band + Hz, duration, and a tiny etched waveform of its band frequency.
+ * Search stays on top; its typewriter placeholder pauses while the field is
+ * focused and keeps its phase in a ref so re-renders never reset it mid-word.
  */
 export const Route = createFileRoute('/app/explore')({
-  component: ExploreScreen,
+  component: LibraryScreen,
 })
 
-interface LibraryItem {
+interface CrateItem {
   id: string
   title: string
   state: TargetState
-  meta: string
+  /** null = open-ended. */
+  minutes: number | null
+  /** The merged Wind-down record — 15 min | Open-ended selector. */
+  windDown?: boolean
   keywords: string
 }
 
-/** Strip a catalog title's "· N" suffix — the minute count lives in `meta` instead. */
 const baseTitle = (title: string) => title.split(' · ')[0]
 
-function fromScenario(id: string): LibraryItem {
-  const scenario = SCENARIOS.find((s) => s.id === id)
-  if (!scenario) throw new Error(`Unknown scenario: ${id}`)
+function fromScenario(id: string): CrateItem {
+  const s = SCENARIOS.find((x) => x.id === id)
+  if (!s) throw new Error(`Unknown scenario: ${id}`)
   return {
-    id: scenario.id,
-    title: baseTitle(scenario.title),
-    state: scenario.state,
-    meta: `${scenario.band} · ${scenario.minutes} min`,
-    keywords: `${scenario.title} ${scenario.state} ${scenario.band}`.toLowerCase(),
+    id: s.id,
+    title: baseTitle(s.title),
+    state: s.state,
+    minutes: s.minutes,
+    keywords: `${s.title} ${s.state} ${s.band}`.toLowerCase(),
   }
 }
 
-function fromSoundscape(id: string): LibraryItem {
-  const soundscape = SOUNDSCAPES.find((s) => s.id === id)
-  if (!soundscape) throw new Error(`Unknown soundscape: ${id}`)
+function fromSoundscape(id: string, extra?: Partial<CrateItem>): CrateItem {
+  const s = SOUNDSCAPES.find((x) => x.id === id)
+  if (!s) throw new Error(`Unknown soundscape: ${id}`)
   return {
-    id: soundscape.id,
-    title: soundscape.title,
-    state: soundscape.state,
-    meta: `${soundscape.band} · Open-ended`,
-    keywords: `${soundscape.title} ${soundscape.state} ${soundscape.band}`.toLowerCase(),
+    id: s.id,
+    title: s.title,
+    state: s.state,
+    minutes: null,
+    keywords: `${s.title} ${s.state} ${s.band}`.toLowerCase(),
+    ...extra,
   }
 }
 
-/** A short hand-authored settling session per state — the engine's real bands + minutes. */
-function meditation(title: string, state: TargetState): LibraryItem {
+function meditation(title: string, state: TargetState): CrateItem {
   const minutes = suggestedBlockMinutes(state)
   return {
     id: `meditate-${state}`,
     title,
     state,
-    meta: `${BAND_LABEL[state]} · ${minutes} min`,
+    minutes,
     keywords: `${title} ${state} meditate meditation`.toLowerCase(),
   }
 }
 
-interface Category {
+interface Crate {
   id: string
   title: string
-  subtitle: string
-  scene: SceneVariant
-  layout: 'rail' | 'grid'
-  items: LibraryItem[]
+  blurb: string
+  items: CrateItem[]
 }
 
-const CATEGORIES: Category[] = [
+/** The crates. Wind-down exists ONCE in the whole library (audit 1.5) — in
+ * the Sleep crate, merged, with its duration selector. */
+const CRATES: Crate[] = [
   {
     id: 'focus',
     title: 'Focus',
-    subtitle: 'Beta and alpha-beta modulation for single-thread work',
-    scene: 'ocean',
-    layout: 'rail',
+    blurb: 'Beta and alpha-beta modulation for single-thread work',
     items: [
       fromSoundscape('deep-focus'),
       fromSoundscape('open-flow'),
@@ -91,41 +96,104 @@ const CATEGORIES: Category[] = [
   {
     id: 'relax',
     title: 'Relax',
-    subtitle: 'Alpha-paced, unhurried — for a settled mind',
-    scene: 'forest',
-    layout: 'grid',
+    blurb: 'Alpha-paced, unhurried — for a settled mind',
     items: [fromSoundscape('still')],
   },
   {
     id: 'sleep',
     title: 'Sleep',
-    subtitle: 'Descending toward delta-modulated noise',
-    scene: 'aurora',
-    layout: 'rail',
-    items: [fromSoundscape('wind-down'), fromScenario('sleep-30'), fromSoundscape('delta-sleep')],
+    blurb: 'Descending toward delta-modulated noise',
+    items: [
+      fromSoundscape('wind-down', { windDown: true }),
+      fromScenario('sleep-30'),
+      fromSoundscape('delta-sleep'),
+    ],
   },
   {
     id: 'meditate',
     title: 'Meditate',
-    subtitle: 'A short breath, a short settle',
-    scene: 'dawn',
-    layout: 'grid',
+    blurb: 'A short breath, a short settle',
     items: [meditation('Breathe', 'calm'), meditation('Settle', 'winddown')],
   },
   {
     id: 'soundscapes',
     title: 'Soundscapes',
-    subtitle: 'The five states, endless and open',
-    scene: 'dusk',
-    layout: 'rail',
-    items: SOUNDSCAPES.map((s) => fromSoundscape(s.id)),
+    blurb: 'The states, endless and open',
+    items: [
+      fromSoundscape('deep-focus'),
+      fromSoundscape('open-flow'),
+      fromSoundscape('still'),
+      fromSoundscape('delta-sleep'),
+    ],
   },
 ]
 
+function itemMeta(item: CrateItem): string {
+  const duration = item.windDown ? '15 MIN | OPEN' : item.minutes ? `${item.minutes} MIN` : 'OPEN-ENDED'
+  return `${capText(item.state)} · ${duration}`
+}
+
+// ── the self-typing placeholder — paused on focus, phase in a ref ───────────
+
+const LINES = [
+  'Want to focus? Try Deep Focus.',
+  'Racing mind? Still it in 10 minutes.',
+  'Sleep deeper tonight.',
+  'Find your calm.',
+]
+
+const TYPE_MS = 46
+const DELETE_MS = 22
+const HOLD_MS = 1700
+const GAP_MS = 420
+
+/**
+ * Audit 1.5 fix: the whole typing phase (line index, character position,
+ * direction) lives in a ref, so re-renders never reset it mid-word; and the
+ * loop simply stops while `paused` (field focused / query present / reduced
+ * motion), resuming exactly where it left off.
+ */
+function useTypewriterPlaceholder(paused: boolean): string {
+  const phase = useRef({ line: 0, pos: 0, dir: 1 as 1 | -1 })
+  const [text, setText] = useState(() => LINES[0].slice(0, 0))
+
+  useEffect(() => {
+    if (paused) return
+    let disposed = false
+    let timer = 0
+
+    const step = () => {
+      if (disposed) return
+      const p = phase.current
+      const line = LINES[p.line]
+      p.pos = Math.max(0, p.pos + p.dir)
+      setText(line.slice(0, p.pos))
+      let delay = p.dir === 1 ? TYPE_MS : DELETE_MS
+      if (p.dir === 1 && p.pos >= line.length) {
+        p.dir = -1
+        delay = HOLD_MS
+      } else if (p.dir === -1 && p.pos <= 0) {
+        p.dir = 1
+        p.line = (p.line + 1) % LINES.length
+        delay = GAP_MS
+      }
+      timer = window.setTimeout(step, delay)
+    }
+
+    timer = window.setTimeout(step, 500)
+    return () => {
+      disposed = true
+      window.clearTimeout(timer)
+    }
+  }, [paused])
+
+  return text
+}
+
 const SearchIcon = () => (
   <svg
-    width="18"
-    height="18"
+    width="17"
+    height="17"
     viewBox="0 0 24 24"
     fill="none"
     stroke="currentColor"
@@ -139,286 +207,174 @@ const SearchIcon = () => (
   </svg>
 )
 
-// ── Category tile — a large visible-imagery browse tile (Calm's browse). ────
-
-const tileShell = css({
-  position: 'relative',
-  display: 'block',
-  width: '100%',
-  height: '104px',
-  borderRadius: 'card',
-  overflow: 'hidden',
-  border: 'none',
-  p: '0',
+const crateTitleCss = css({
   m: '0',
-  font: 'inherit',
-  textAlign: 'left',
-  cursor: 'pointer',
-  WebkitTapHighlightColor: 'transparent',
-  background: 'rgba(10, 18, 38, 1)',
-  boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.09), 0 10px 30px rgba(3, 6, 18, 0.3)',
-  animation: 'fadeUp token(durations.calm) token(easings.enter) both',
-  transition: 'transform token(durations.quick) token(easings.calm)',
-  _active: { transform: 'scale(0.975)' },
-  '@media (prefers-reduced-motion: reduce)': {
-    animation: 'none',
-    transition: 'none',
-    _active: { transform: 'none' },
-  },
+  fontFamily: 'display',
+  fontWeight: '400',
+  fontSize: 'headingSm',
+  letterSpacing: '-0.01em',
+  color: 'starlight',
 })
 
-function CategoryTile({
-  category,
-  delayMs,
-  onSelect,
-}: {
-  category: Category
-  delayMs: number
-  onSelect: (id: string) => void
-}) {
+const fadeUpCss = css({
+  animation: 'fadeUp token(durations.calm) token(easings.enter) both',
+  '@media (prefers-reduced-motion: reduce)': { animation: 'none' },
+})
+
+function WindDownSelector({ onPick }: { onPick: (minutes: number | null) => void }) {
   return (
-    <button
-      type="button"
-      onClick={() => onSelect(category.id)}
-      aria-label={`Browse ${category.title}`}
-      className={cx('ss-scene-dark', tileShell)}
-      style={{ animationDelay: `${delayMs}ms` }}
-    >
-      <img
-        aria-hidden
-        alt=""
-        loading="lazy"
-        decoding="async"
-        src={VARIANT_IMAGE[category.scene]}
-        className={css({
-          position: 'absolute',
-          inset: '0',
-          width: '100%',
-          height: '100%',
-          objectFit: 'cover',
-          pointerEvents: 'none',
-        })}
-      />
-      <div
-        aria-hidden
-        className={css({ position: 'absolute', inset: '0', pointerEvents: 'none' })}
-        style={{ background: CALM_SCRIM_CARD }}
-      />
-      <div className={css({ position: 'absolute', insetX: '0', bottom: '0', px: '3.5', pb: '2.5', pt: '6' })}>
-        <p
-          className={css({
-            m: '0',
-            fontSize: 'headline',
-            fontWeight: '700',
-            letterSpacing: '-0.01em',
-            color: 'rgba(255, 255, 255, 0.98)',
-          })}
-        >
-          {category.title}
-        </p>
-        <p
-          className={`tabular ${css({
-            m: '0',
-            mt: '0.5',
-            fontSize: 'caption2',
-            fontWeight: '500',
-            letterSpacing: '0.02em',
-            color: 'rgba(235, 240, 252, 0.78)',
-          })}`}
-        >
-          {category.items.length} {category.items.length === 1 ? 'session' : 'sessions'}
-        </p>
-      </div>
-    </button>
+    <div className={css({ display: 'flex', gap: '1.5', mt: '2' })} aria-label="Wind-down duration">
+      <button
+        type="button"
+        onClick={() => onPick(15)}
+        className={cx(chipCss, css({ px: '2.5', py: '1', fontSize: '0.6875rem' }))}
+      >
+        15 min
+      </button>
+      <button
+        type="button"
+        onClick={() => onPick(null)}
+        className={cx(chipCss, css({ px: '2.5', py: '1', fontSize: '0.6875rem' }))}
+      >
+        Open-ended
+      </button>
+    </div>
   )
 }
 
-function ExploreScreen() {
+function LibraryScreen() {
+  const playClick = useClickSound()
+  const gatedPlay = useGatedPlay()
   const [query, setQuery] = useState('')
+  const [focused, setFocused] = useState(false)
   const q = query.trim().toLowerCase()
 
+  const reduceMotion =
+    typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  const typed = useTypewriterPlaceholder(focused || query.length > 0 || reduceMotion)
+  const placeholder = reduceMotion ? 'Search the library' : typed || ' '
+
   const filtered = useMemo(() => {
-    if (!q) return CATEGORIES
-    return CATEGORIES.map((category) => ({
-      ...category,
-      items: category.items.filter((item) => item.keywords.includes(q)),
-    })).filter((category) => category.items.length > 0)
+    if (!q) return CRATES
+    return CRATES.map((crate) => ({
+      ...crate,
+      items: crate.items.filter((item) => item.keywords.includes(q)),
+    })).filter((crate) => crate.items.length > 0)
   }, [q])
 
-  const scrollToCategory = (id: string) => {
-    const el = document.getElementById(`category-${id}`)
-    if (!el) return
-    const smooth = !window.matchMedia('(prefers-reduced-motion: reduce)').matches
-    el.scrollIntoView({ behavior: smooth ? 'smooth' : 'auto', block: 'start' })
+  const play = (item: CrateItem, minutes?: number | null) => {
+    playClick('primary')
+    gatedPlay(item.state, minutes === null ? undefined : minutes ?? item.minutes ?? undefined)
   }
 
-  let cardIndex = 0
-
   return (
-    // ss-scene-dark: Explore sits directly over the always-dark ambient scene
-    // in both themes (same reasoning as Today) — page ink must stay light.
-    <div className="ss-scene-dark">
-      <ScreenTitle caption="Library" title="Explore" />
+    <div>
+      <header className={cx(css({ mb: '7' }), fadeUpCss)}>
+        <p
+          className={css({
+            m: '0',
+            mb: '1.5',
+            fontFamily: 'mono',
+            fontSize: '0.75rem',
+            letterSpacing: '0.1em',
+            textTransform: 'uppercase',
+            color: 'silver',
+          })}
+        >
+          Crate-digging
+        </p>
+        <h1
+          className={css({
+            m: '0',
+            fontFamily: 'display',
+            fontWeight: '400',
+            fontSize: 'heading',
+            letterSpacing: '-0.01em',
+            lineHeight: '1.1',
+            color: 'starlight',
+          })}
+        >
+          The Library
+        </h1>
+      </header>
 
-      <div
-        className={css({
-          mb: '6',
-          animation: 'fadeUp token(durations.calm) token(easings.enter) both',
-          '@media (prefers-reduced-motion: reduce)': { animation: 'none' },
-        })}
-      >
-        <LiquidGlass variant="control" as="label" className={css({ display: 'block', width: 'full' })}>
-          <div className={css({ display: 'flex', alignItems: 'center', gap: '2.5', px: '4', py: '2.5' })}>
-            <span aria-hidden className={css({ color: 'faint', lineHeight: '0' })}>
-              <SearchIcon />
-            </span>
-            <input
-              type="search"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search focus, sleep, meditate…"
-              aria-label="Search sessions"
-              className={css({
-                flex: '1',
-                minW: '0',
-                bg: 'transparent',
-                border: 'none',
-                outline: 'none',
-                borderRadius: 'control',
-                font: 'inherit',
-                fontSize: 'subhead',
-                color: 'text',
-                '&::placeholder': { color: 'faint' },
-                _focusVisible: {
-                  outline: '2px solid token(colors.accent)',
-                  outlineOffset: '2px',
-                },
-              })}
-            />
-          </div>
-        </LiquidGlass>
+      {/* Search — transparent bg, 1px Lead border, pill radius (design.md). */}
+      <div className={cx(css({ mb: '8' }), fadeUpCss)}>
+        <label
+          className={css({
+            display: 'flex',
+            alignItems: 'center',
+            gap: '2.5',
+            px: '4',
+            height: '48px',
+            borderRadius: 'pill',
+            border: '1px solid',
+            borderColor: 'lead',
+            background: 'transparent',
+            cursor: 'text',
+            transition: 'border-color 300ms ease',
+            _focusWithin: { borderColor: 'ghostBlue' },
+          })}
+        >
+          <span aria-hidden className={css({ color: 'silver', lineHeight: '0' })}>
+            <SearchIcon />
+          </span>
+          <input
+            type="search"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            onFocus={() => setFocused(true)}
+            onBlur={() => setFocused(false)}
+            placeholder={placeholder}
+            aria-label="Search the library"
+            autoComplete="off"
+            spellCheck={false}
+            className={css({
+              flex: '1',
+              minW: '0',
+              bg: 'transparent',
+              border: 'none',
+              outline: 'none',
+              font: 'inherit',
+              fontSize: 'bodySm',
+              color: 'starlight',
+              '&::placeholder': { color: 'silver', opacity: '0.75' },
+              '&::-webkit-search-cancel-button': { display: 'none' },
+            })}
+          />
+        </label>
       </div>
 
-      {/* Browse — large visible-imagery category tiles, Calm-style. Hidden
-          while searching (the filtered sections below are the results). */}
-      {!q && (
-        <div
-          className={css({
-            display: 'grid',
-            gridTemplateColumns: '1fr 1fr',
-            gap: '3',
-            mb: '8',
-          })}
-        >
-          {CATEGORIES.map((category, i) => (
-            <CategoryTile
-              key={category.id}
-              category={category}
-              delayMs={60 + i * 50}
-              onSelect={scrollToCategory}
-            />
-          ))}
-        </div>
-      )}
-
       {filtered.length === 0 && (
-        <LiquidGlass
-          variant="card"
-          className={css({
-            animation: 'fadeUp token(durations.calm) token(easings.enter) both',
-            '@media (prefers-reduced-motion: reduce)': { animation: 'none' },
-          })}
-        >
-          <div className={css({ px: '7', py: '10', textAlign: 'center' })}>
-            <p className={css({ m: '0', fontSize: 'subhead', color: 'muted' })}>
-              Nothing matches &ldquo;{query}&rdquo; — try focus, relax, sleep, or meditate.
-            </p>
-          </div>
-        </LiquidGlass>
+        <p className={cx(css({ m: '0', py: '10', textAlign: 'center', fontSize: 'bodySm', color: 'silver' }), fadeUpCss)}>
+          Nothing matches &ldquo;{query}&rdquo; — try focus, relax, sleep, or meditate.
+        </p>
       )}
 
-      {filtered.map((category, ci) => {
-        const startIndex = cardIndex
-        cardIndex += category.items.length
-        const delayBase = 80 + ci * 90
-
-        return (
-          <section
-            key={category.id}
-            id={`category-${category.id}`}
-            className={css({ mb: '8', scrollMarginTop: '16px' })}
-          >
-            <header
-              className={css({
-                mb: '3',
-                animation: 'fadeUp token(durations.calm) token(easings.enter) both',
-                '@media (prefers-reduced-motion: reduce)': { animation: 'none' },
-              })}
-              style={{ animationDelay: `${delayBase}ms` }}
-            >
-              <h2
-                className={css({
-                  m: '0',
-                  fontFamily: 'display',
-                  fontSize: 'title3',
-                  fontWeight: '600',
-                  letterSpacing: '-0.01em',
-                  color: 'text',
-                  textShadow: 'var(--ss-text-glow)',
-                })}
+      {/* The crates. */}
+      {filtered.map((crate, ci) => (
+        <section key={crate.id} className={cx(css({ mb: '10' }), fadeUpCss)} style={{ animationDelay: `${80 + ci * 70}ms` }}>
+          <header className={css({ mb: '4' })}>
+            <h2 className={crateTitleCss}>{crate.title}</h2>
+            <p className={css({ m: '0', mt: '1', fontSize: 'bodySm', color: 'silver' })}>{crate.blurb}</p>
+          </header>
+          <Rail>
+            {crate.items.map((item) => (
+              <RecordSleeve
+                key={`${crate.id}-${item.id}`}
+                state={item.state}
+                title={item.title}
+                meta={itemMeta(item)}
+                waveform
+                onClick={() => play(item)}
+                className={css({ width: '168px', flexShrink: '0' })}
               >
-                {category.title}
-              </h2>
-              <p
-                className={css({
-                  m: '0',
-                  mt: '0.5',
-                  fontSize: 'footnote',
-                  color: 'var(--ss-ink-body)',
-                  textShadow: 'var(--ss-text-glow)',
-                })}
-              >
-                {category.subtitle}
-              </p>
-            </header>
-
-            {category.layout === 'rail' ? (
-              <Rail>
-                {category.items.map((item, i) => (
-                  <div key={item.id} className={css({ width: '176px', flexShrink: '0' })}>
-                    <SessionCard
-                      state={item.state}
-                      title={item.title}
-                      meta={item.meta}
-                      height="220px"
-                      delayMs={delayBase + 60 + (startIndex + i) * 50}
-                    />
-                  </div>
-                ))}
-              </Rail>
-            ) : (
-              <div
-                className={css({
-                  display: 'grid',
-                  gridTemplateColumns: category.items.length > 1 ? '1fr 1fr' : '1fr',
-                  gap: '3',
-                })}
-              >
-                {category.items.map((item, i) => (
-                  <SessionCard
-                    key={item.id}
-                    state={item.state}
-                    title={item.title}
-                    meta={item.meta}
-                    height={category.items.length > 1 ? '170px' : '210px'}
-                    delayMs={delayBase + 60 + (startIndex + i) * 50}
-                  />
-                ))}
-              </div>
-            )}
-          </section>
-        )
-      })}
+                {item.windDown && <WindDownSelector onPick={(m) => play(item, m)} />}
+              </RecordSleeve>
+            ))}
+          </Rail>
+        </section>
+      ))}
     </div>
   )
 }

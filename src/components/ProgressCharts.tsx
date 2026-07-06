@@ -90,10 +90,10 @@ export function WeeklyMinutesChart({ data }: { data: WeeklyDatum[] }) {
                 title={`${d.label} — ${d.minutes} min`}
                 className={bar}
                 style={{
+                  // Monochrome, Pressed-at-Night: today in Starlight, the
+                  // rest as faint Lead grooves. No accent in data ink.
                   height: `${pct}%`,
-                  background: isToday
-                    ? 'linear-gradient(180deg, var(--scene-accent), color-mix(in oklab, var(--scene-accent) 62%, black))'
-                    : 'color-mix(in oklab, var(--scene-accent) 32%, rgba(255,255,255,0.05))',
+                  background: isToday ? 'rgba(237, 237, 243, 0.88)' : 'rgba(112, 112, 125, 0.30)',
                 }}
               />
             </div>
@@ -206,8 +206,8 @@ export function ArousalCurveChart({ samples, target }: { samples: ArousalSample[
       >
         <defs>
           <linearGradient id="calmCurveFill" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="var(--scene-accent)" stopOpacity="0.26" />
-            <stop offset="100%" stopColor="var(--scene-accent)" stopOpacity="0" />
+            <stop offset="0%" stopColor="#ededf3" stopOpacity="0.16" />
+            <stop offset="100%" stopColor="#ededf3" stopOpacity="0" />
           </linearGradient>
         </defs>
 
@@ -220,18 +220,18 @@ export function ArousalCurveChart({ samples, target }: { samples: ArousalSample[
           Target · {Math.round(target * 100)}%
         </text>
 
+        {/* 1px Starlight trace; the stylus dot is the single Mercury mark. */}
         <path d={areaPath} fill="url(#calmCurveFill)" stroke="none" />
-        <path d={linePath} fill="none" stroke="var(--scene-accent)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+        <path d={linePath} fill="none" stroke="rgba(237, 237, 243, 0.85)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
 
-        {/* direct last-point label */}
-        <circle cx={x(last.t)} cy={y(last.a)} r="3.5" fill="var(--scene-accent)" />
+        {/* direct last-point label — the stylus */}
+        <circle cx={x(last.t)} cy={y(last.a)} r="3.5" fill="#5266eb" />
         <text
           x={x(last.t) + 7}
           y={y(last.a) + 3.5}
           fontSize="10"
-          fontWeight="700"
-          fill="var(--scene-accent)"
-          style={{ fontVariantNumeric: 'tabular-nums' }}
+          fill="rgba(237, 237, 243, 0.9)"
+          style={{ fontVariantNumeric: 'tabular-nums', fontFamily: '"JetBrains Mono", ui-monospace, monospace' }}
         >
           {Math.round(last.a * 100)}%
         </text>
