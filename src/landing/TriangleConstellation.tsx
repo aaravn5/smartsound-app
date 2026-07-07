@@ -24,23 +24,35 @@ import { useReducedMotion } from 'motion/react'
  * transitions, but scroll-driven morphs (user-initiated) still land.
  */
 
-export type ShapeName = 'brain' | 'note' | 'waveform' | 'network' | 'sphere'
+export type ShapeName =
+  | 'brain'
+  | 'note'
+  | 'waveform'
+  | 'network'
+  | 'sphere'
+  | 'dome'
+  | 'dust'
+  | 'bulb'
+  | 'globe'
+  | 'ribbon'
 
 const HOVER_COLOR = new THREE.Color('#ffd24a')
 const HOVER_RADIUS = 1.45
 
-// Blue/green signal spectrum; yellow stays reserved for the pointer.
+// The signature spectrum — violet-dominant with amber sparks, silver ink and
+// deep teal; yellow warmth stays reserved for the pointer.
 const DEFAULT_PALETTE = [
-  '#4aa8ff', '#4aa8ff',
-  '#5c7cff', '#3b82f6',
-  '#37c2a0', '#37c2a0',
-  '#2fb89b', '#63e0c2',
-  '#7bd4ff', '#25a08a',
+  '#8052ff', '#8052ff', '#8052ff',
+  '#9a7bff', '#b689ff', '#6a4bd6',
+  '#ffb829', '#ffcf6b',
+  '#e8e6f2', '#cfcbe4',
+  '#15846e', '#2fb89b',
 ]
 
 type HoverRef = MutableRefObject<{ x: number; y: number; active: boolean }>
 
-/** Soft triangle sprite so each particle reads as a glyph, not a dot. */
+/** Outlined triangle sprite — each particle reads as a small open glyph with
+ * a faint interior glow, the way the reference renders its swarm. */
 function useTriangleTexture(): THREE.Texture {
   return useMemo(() => {
     const S = 64
@@ -48,13 +60,23 @@ function useTriangleTexture(): THREE.Texture {
     c.width = c.height = S
     const ctx = c.getContext('2d')!
     ctx.clearRect(0, 0, S, S)
-    ctx.beginPath()
-    ctx.moveTo(S * 0.5, S * 0.12)
-    ctx.lineTo(S * 0.88, S * 0.82)
-    ctx.lineTo(S * 0.12, S * 0.82)
-    ctx.closePath()
-    ctx.fillStyle = 'rgba(255,255,255,0.95)'
+    const path = () => {
+      ctx.beginPath()
+      ctx.moveTo(S * 0.5, S * 0.14)
+      ctx.lineTo(S * 0.86, S * 0.8)
+      ctx.lineTo(S * 0.14, S * 0.8)
+      ctx.closePath()
+    }
+    // Faint fill so tiny/distant sprites still read...
+    path()
+    ctx.fillStyle = 'rgba(255,255,255,0.16)'
     ctx.fill()
+    // ...under a bright outline stroke.
+    path()
+    ctx.lineWidth = S * 0.09
+    ctx.lineJoin = 'round'
+    ctx.strokeStyle = 'rgba(255,255,255,0.95)'
+    ctx.stroke()
     const tex = new THREE.CanvasTexture(c)
     tex.colorSpace = THREE.SRGBColorSpace
     return tex
@@ -244,12 +266,142 @@ function sampleSphere(n: number): Sampled {
   return { pos, region }
 }
 
+function sampleDome(n: number): Sampled {
+  // A rolling terrain dome filling the lower frame — the swarm as landscape.
+  const pos = new Float32Array(n * 3)
+  const region = new Float32Array(n)
+  for (let i = 0; i < n; i++) {
+    const x = (Math.random() * 2 - 1) * 4.4
+    const z = (Math.random() * 2 - 1) * 2.6
+    const hill =
+      2.5 * Math.exp(-((x * x) / 6.5 + (z * z) / 3.2)) +
+      0.5 * Math.sin(x * 2.1) * Math.cos(z * 2.6) * Math.exp(-Math.abs(x) * 0.25)
+    const y = -1.7 + hill + Math.random() * 0.14
+    pos[i * 3] = x
+    pos[i * 3 + 1] = y
+    pos[i * 3 + 2] = z
+    region[i] = Math.min(1, Math.max(0, hill / 2.6))
+  }
+  return { pos, region }
+}
+
+function sampleDust(n: number): Sampled {
+  // A weightless starfield — the swarm at rest between statements.
+  const pos = new Float32Array(n * 3)
+  const region = new Float32Array(n)
+  for (let i = 0; i < n; i++) {
+    pos[i * 3] = (Math.random() * 2 - 1) * 5.2
+    pos[i * 3 + 1] = (Math.random() * 2 - 1) * 3.2
+    pos[i * 3 + 2] = (Math.random() * 2 - 1) * 3
+    region[i] = Math.random()
+  }
+  return { pos, region }
+}
+
+function sampleBulb(n: number): Sampled {
+  // A lightbulb, staged left of center: glass sphere, neck, screw base.
+  const pos = new Float32Array(n * 3)
+  const region = new Float32Array(n)
+  const X = -1.7
+  for (let i = 0; i < n; i++) {
+    const kind = Math.random()
+    let x = 0
+    let y = 0
+    let z = 0
+    if (kind < 0.72) {
+      // glass — a sphere shell, slightly pear-stretched downward
+      const u = Math.random() * Math.PI * 2
+      const v = Math.acos(2 * Math.random() - 1)
+      const r = 1.35 * (0.97 + 0.03 * Math.random())
+      x = r * Math.sin(v) * Math.cos(u)
+      y = r * Math.sin(v) * Math.sin(u) * 1.12 + 0.75
+      z = r * Math.cos(v)
+      if (y < 0.2) x *= 0.82
+      region[i] = 0
+    } else if (kind < 0.9) {
+      // neck — tapering into the base
+      const t = Math.random()
+      const a = Math.random() * Math.PI * 2
+      const rad = (0.62 - t * 0.18) * Math.sqrt(Math.random() * 0.35 + 0.65)
+      x = Math.cos(a) * rad
+      y = -0.75 - t * 0.55
+      z = Math.sin(a) * rad
+      region[i] = 0.5
+    } else {
+      // screw threads — stacked rings
+      const ring = (Math.random() * 3) | 0
+      const a = Math.random() * Math.PI * 2
+      x = Math.cos(a) * 0.44
+      y = -1.42 - ring * 0.22
+      z = Math.sin(a) * 0.44
+      region[i] = 1
+    }
+    pos[i * 3] = x + X
+    pos[i * 3 + 1] = y
+    pos[i * 3 + 2] = z
+  }
+  return { pos, region }
+}
+
+function sampleGlobe(n: number): Sampled {
+  // A planet, staged right of center — patchy landmass density over a faint
+  // full shell, so continents read without any real geography.
+  const pos = new Float32Array(n * 3)
+  const region = new Float32Array(n)
+  const X = 1.55
+  const R = 2.15
+  let i = 0
+  let guard = 0
+  while (i < n && guard < n * 30) {
+    guard++
+    const u = Math.random() * Math.PI * 2
+    const v = Math.acos(2 * Math.random() - 1)
+    const x = Math.sin(v) * Math.cos(u)
+    const y = Math.sin(v) * Math.sin(u)
+    const z = Math.cos(v)
+    // Low-frequency lat/lon noise → landmass patches.
+    const land =
+      Math.sin(u * 2.2 + 0.8) * Math.sin(v * 3.1) +
+      0.6 * Math.sin(u * 4.7 + 2.1) * Math.sin(v * 1.7 + 0.4)
+    const isLand = land > 0.15
+    // Keep all land samples; keep only a sparse shell elsewhere.
+    if (!isLand && Math.random() > 0.18) continue
+    pos[i * 3] = x * R + X
+    pos[i * 3 + 1] = y * R
+    pos[i * 3 + 2] = z * R
+    region[i] = isLand ? (land > 0.8 ? 1 : 0.5) : 0
+    i++
+  }
+  return { pos, region }
+}
+
+function sampleRibbon(n: number): Sampled {
+  // The closing form — a loose helical ribbon breathing behind the sign-off.
+  const pos = new Float32Array(n * 3)
+  const region = new Float32Array(n)
+  for (let i = 0; i < n; i++) {
+    const t = Math.random() * 2 - 1
+    const a = t * Math.PI * 2.4
+    const spread = 0.55 + Math.abs(t) * 0.35
+    pos[i * 3] = Math.cos(a) * 1.9 + (Math.random() - 0.5) * spread
+    pos[i * 3 + 1] = t * 2.4 + (Math.random() - 0.5) * spread * 0.8
+    pos[i * 3 + 2] = Math.sin(a) * 1.4 + (Math.random() - 0.5) * spread
+    region[i] = (t + 1) / 2
+  }
+  return { pos, region }
+}
+
 const SAMPLERS: Record<ShapeName, (n: number) => Sampled> = {
   brain: sampleBrain,
   note: sampleNote,
   waveform: sampleWaveform,
   network: sampleNetwork,
   sphere: sampleSphere,
+  dome: sampleDome,
+  dust: sampleDust,
+  bulb: sampleBulb,
+  globe: sampleGlobe,
+  ribbon: sampleRibbon,
 }
 
 export interface TriangleConstellationProps {
@@ -269,6 +421,10 @@ export interface TriangleConstellationProps {
   paletteOverride?: string[]
   cameraZ?: number
   particleOpacity?: number
+  /** Lateral (x) staging per shape — e.g. { brain: 1.7 } parks the brain right of center. */
+  stageOffsets?: Partial<Record<ShapeName, number>>
+  /** Count of larger, always-present loner triangles drifting across the frame. */
+  ambient?: number
 }
 
 function Cloud({
@@ -277,6 +433,7 @@ function Cloud({
   progressRef,
   pulseRef,
   getPulse,
+  stageOffsets,
   count,
   size,
   holdSeconds,
@@ -297,12 +454,18 @@ function Cloud({
   palette: string[]
   animate: boolean
   hoverRef: HoverRef
+  stageOffsets?: Partial<Record<ShapeName, number>>
 }) {
   const points = useRef<THREE.Points>(null)
   const tex = useTriangleTexture()
 
   const { geometry, targets, current, base, colors } = useMemo(() => {
-    const sampled = shapes.map((s) => SAMPLERS[s](count))
+    const sampled = shapes.map((s) => {
+      const smp = SAMPLERS[s](count)
+      const off = stageOffsets?.[s] ?? 0
+      if (off) for (let k = 0; k < count; k++) smp.pos[k * 3] += off
+      return smp
+    })
     const targets = sampled.map((s) => s.pos)
     const current = Float32Array.from(targets[0])
     const base = new Float32Array(count * 3)
@@ -324,7 +487,7 @@ function Cloud({
     geometry.setAttribute('position', new THREE.BufferAttribute(current, 3))
     geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3))
     return { geometry, targets, current, base, colors }
-  }, [shapes, count, palette])
+  }, [shapes, count, palette, stageOffsets])
 
   const st8 = useRef({ idx: 0, hold: 0 })
   const hoverPoint = useMemo(() => new THREE.Vector3(), [])
@@ -438,6 +601,8 @@ export function TriangleConstellation({
   paletteOverride,
   cameraZ = 7.2,
   particleOpacity = 0.95,
+  stageOffsets,
+  ambient = 0,
 }: TriangleConstellationProps) {
   const reduce = useReducedMotion()
   const hover = useRef({ x: 0, y: 0, active: false })
@@ -476,9 +641,69 @@ export function TriangleConstellation({
             particleOpacity={particleOpacity}
             animate={!reduce}
             hoverRef={hover}
+            stageOffsets={stageOffsets}
           />
+          {ambient > 0 && (
+            <AmbientDust count={ambient} palette={paletteOverride ?? DEFAULT_PALETTE} animate={!reduce} />
+          )}
         </Suspense>
       </Canvas>
     </div>
+  )
+}
+
+/** Larger loner triangles drifting across the whole frame — always present,
+ * never part of the morph, giving the void its depth. */
+function AmbientDust({
+  count,
+  palette,
+  animate,
+}: {
+  count: number
+  palette: string[]
+  animate: boolean
+}) {
+  const points = useRef<THREE.Points>(null)
+  const tex = useTriangleTexture()
+  const geometry = useMemo(() => {
+    const pos = new Float32Array(count * 3)
+    const colors = new Float32Array(count * 3)
+    const col = new THREE.Color()
+    for (let i = 0; i < count; i++) {
+      pos[i * 3] = (Math.random() * 2 - 1) * 6.5
+      pos[i * 3 + 1] = (Math.random() * 2 - 1) * 4
+      pos[i * 3 + 2] = (Math.random() * 2 - 1) * 3.5
+      col.set(palette[(Math.random() * palette.length) | 0])
+      colors[i * 3] = col.r
+      colors[i * 3 + 1] = col.g
+      colors[i * 3 + 2] = col.b
+    }
+    const g = new THREE.BufferGeometry()
+    g.setAttribute('position', new THREE.BufferAttribute(pos, 3))
+    g.setAttribute('color', new THREE.BufferAttribute(colors, 3))
+    return g
+  }, [count, palette])
+
+  useFrame((st) => {
+    const pts = points.current
+    if (!pts || !animate) return
+    const t = st.clock.elapsedTime
+    pts.rotation.z = Math.sin(t * 0.05) * 0.12
+    pts.rotation.y = t * 0.02
+  })
+
+  return (
+    <points ref={points} geometry={geometry}>
+      <pointsMaterial
+        map={tex}
+        size={0.34}
+        sizeAttenuation
+        vertexColors
+        transparent
+        depthWrite={false}
+        blending={THREE.AdditiveBlending}
+        opacity={0.5}
+      />
+    </points>
   )
 }
