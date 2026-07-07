@@ -349,7 +349,7 @@ function ProfileScreen() {
         <div className={css({ display: 'flex', alignItems: 'center', gap: '4', px: '6', py: '6' })}>
           <Avatar initial={(account?.name.trim().charAt(0) || 'S').toUpperCase()} />
           <div className={css({ display: 'flex', flexDirection: 'column', gap: '1', minW: '0' })}>
-            <span className={css({ fontFamily: 'display', fontSize: 'headingSm', fontWeight: '400', color: 'text', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' })}>
+            <span className={css({ fontSize: 'headingSm', fontWeight: '600', letterSpacing: '-0.01em', color: 'text', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' })}>
               {account ? account.name : 'Guest'}
             </span>
             <span className={css({ fontSize: 'footnote', color: 'faint', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' })}>
@@ -370,7 +370,7 @@ function ProfileScreen() {
               <p className={css({ m: '0', fontSize: 'caption', fontWeight: '500', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'silver' })}>
                 Current plan
               </p>
-              <h2 className={css({ m: '0', mt: '0.5', fontFamily: 'display', fontSize: 'headingSm', fontWeight: '400', color: 'text' })}>
+              <h2 className={css({ m: '0', mt: '0.5', fontSize: 'headingSm', fontWeight: '600', letterSpacing: '-0.01em', color: 'text' })}>
                 {PLAN_LABEL[usage.plan] ?? 'Free'}
               </h2>
             </div>
@@ -397,13 +397,13 @@ function ProfileScreen() {
 
           {paidPlan ? (
             <p className={css({ m: '0', mb: '1.5', fontSize: 'footnote', color: 'muted' })}>
-              <span className={`tabular ${css({ fontWeight: '700', color: 'text' })}`}>{Math.round(usage.minutesToday)}</span>{' '}
+              <span className={`tabular ${css({ color: 'text' })}`}>{Math.round(usage.minutesToday)}</span>{' '}
               minutes today · no daily cap
             </p>
           ) : (
             <>
               <p className={css({ m: '0', mb: '1.5', fontSize: 'footnote', color: 'muted' })}>
-                <span className={`tabular ${css({ fontWeight: '700', color: 'text' })}`}>{Math.round(usage.minutesToday)}</span> of{' '}
+                <span className={`tabular ${css({ color: 'text' })}`}>{Math.round(usage.minutesToday)}</span> of{' '}
                 <span className="tabular">{FREE_DAILY_MIN}</span> minutes used today
               </p>
               <div className={css({ height: '4px', borderRadius: 'full', bg: 'hairline', overflow: 'hidden' })}>
@@ -417,7 +417,7 @@ function ProfileScreen() {
 
           <div className={css({ height: '1px', bg: 'hairline', my: '5' })} />
 
-          <h3 className={css({ m: '0', mb: '3', fontFamily: 'display', fontSize: 'headline', fontWeight: '400', color: 'text' })}>
+          <h3 className={css({ m: '0', mb: '3', fontSize: 'headline', fontWeight: '600', letterSpacing: '-0.01em', color: 'text' })}>
             Go deeper with Pro
           </h3>
           <ul className={css({ listStyle: 'none', m: '0', mb: '5', p: '0', display: 'flex', flexDirection: 'column', gap: '2.5' })}>

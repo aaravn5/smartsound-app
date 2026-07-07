@@ -37,10 +37,10 @@ export function ScreenTitle({ title, caption }: { title: string; caption?: strin
         className={css({
           m: '0',
           fontFamily: 'display',
-          fontSize: 'heading',
+          fontSize: 'clamp(2.25rem, 6.5vw, 2.75rem)',
           fontWeight: '400',
-          letterSpacing: '-0.01em',
-          lineHeight: '1.1',
+          letterSpacing: '-0.015em',
+          lineHeight: '1.08',
           color: 'starlight',
         })}
       >
@@ -97,7 +97,6 @@ export function GlassEmptyState({
         <h2
           className={css({
             m: '0',
-            fontFamily: 'display',
             fontSize: 'title3',
             fontWeight: '600',
             letterSpacing: '-0.01em',

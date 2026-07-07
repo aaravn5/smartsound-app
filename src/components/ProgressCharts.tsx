@@ -36,7 +36,7 @@ const barValueToday = css({
   height: '15px',
   mb: '1',
   fontSize: 'caption2',
-  fontWeight: '700',
+  fontWeight: '600',
   color: 'text',
   lineHeight: '15px',
 })
@@ -53,7 +53,7 @@ const dayLabelToday = css({
   flex: '1',
   textAlign: 'center',
   fontSize: 'caption2',
-  fontWeight: '700',
+  fontWeight: '600',
   color: 'text',
 })
 

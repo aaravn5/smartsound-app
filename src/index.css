@@ -86,6 +86,28 @@
  * The ::before is the gradient-border trick: a 1px padding box whose two
  * stacked masks are composited with `exclude`, leaving ONLY the 1px border
  * ring painted by the gradient — a lit rim no plain border can draw. */
+/* ── Frosted glass blur utilities (Pressed-at-Night materials) ────────────────
+ *
+ * Panda's css() typings don't carry -webkit-backdrop-filter, so the blur pair
+ * lives here (unlayered). Composed by glassCss (components/Card.tsx), the
+ * bottom nav, and the player's floating controls. Reduced transparency turns
+ * the blur off — the composed fills fall back to near-opaque slate. */
+.ss-frost {
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+  backdrop-filter: saturate(180%) blur(20px);
+}
+.ss-frost-light {
+  -webkit-backdrop-filter: saturate(160%) blur(12px);
+  backdrop-filter: saturate(160%) blur(12px);
+}
+@media (prefers-reduced-transparency: reduce) {
+  .ss-frost,
+  .ss-frost-light {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
+
 .liquid-glass {
   position: relative;
   isolation: isolate;

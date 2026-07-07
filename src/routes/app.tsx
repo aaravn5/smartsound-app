@@ -2,16 +2,18 @@ import { createFileRoute, Link, Outlet, useRouterState } from '@tanstack/react-r
 import { useEffect, useRef } from 'react'
 import type { ReactNode } from 'react'
 import { css } from 'styled-system/css'
+import { AuroraBackdrop } from '~/components/Card'
 import { useClickSound } from '~/lib/click-sound'
 import { ensureDevPlan } from '~/lib/dev-access'
 import { MainScrollContext } from '~/lib/scroll-context'
 
 /**
  * AppShell — the "Pressed at Night" frame. ONE dark world: a Deep Space
- * canvas (no photographic page backgrounds), content scrolling above it,
- * and a Midnight Slate bottom nav with a Lead hairline. One accent for all
- * five tabs — the active item turns Starlight and carries a 4px Mercury
- * Blue dot. No per-tab scene accents, no glass, no shadows.
+ * canvas with two barely-there aurora blooms drifting beneath the content
+ * (Calm/Endel — never photographic), content scrolling above it, and a
+ * frosted-glass bottom nav (Apple material: frost fill + backdrop blur +
+ * 0.5px starlight hairline). One accent for all five tabs — the active item
+ * turns Starlight and carries a 4px Mercury Blue dot.
  */
 export const Route = createFileRoute('/app')({
   component: AppShell,
@@ -120,15 +122,14 @@ function AppShell() {
         bg: 'bgDeep',
       })}
     >
+      {/* Soft ethereal glow — beneath everything, ignorable, reduced-motion safe. */}
+      <AuroraBackdrop />
       <main
         ref={mainRef}
         className={css({
           position: 'absolute',
           inset: '0',
           zIndex: '1',
-          // The scrollable viewport stops at the nav bar's top edge, so
-          // content can never render behind the bar.
-          bottom: 'calc(env(safe-area-inset-bottom) + 58px)',
           overflowY: 'auto',
           WebkitOverflowScrolling: 'touch',
         })}
@@ -139,7 +140,9 @@ function AppShell() {
             mx: 'auto',
             px: '5',
             pt: 'calc(env(safe-area-inset-top) + 28px)',
-            pb: '10',
+            // Content scrolls BENEATH the frosted nav (that's what makes the
+            // glass read as glass); the padding keeps the last element clear.
+            pb: 'calc(env(safe-area-inset-bottom) + 58px + 40px)',
           })}
         >
           <MainScrollContext.Provider value={mainRef}>
@@ -158,17 +161,25 @@ function TabBar({ pathname }: { pathname: string }) {
   return (
     <nav
       aria-label="Primary"
-      className={css({
+      // .ss-frost carries the backdrop blur pair (index.css).
+      className={`ss-frost ${css({
         position: 'fixed',
         left: '0',
         right: '0',
         bottom: '0',
         zIndex: '20',
-        background: 'midnightSlate',
-        borderTop: '1px solid',
-        borderColor: 'hairline',
+        // Frosted glass — the nav floats over content, Apple-material style.
+        background: 'frost.fill',
+        borderTop: '0.5px solid',
+        borderColor: 'frost.stroke',
         paddingBottom: 'env(safe-area-inset-bottom)',
-      })}
+        '@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px)))': {
+          background: 'frost.fallback',
+        },
+        '@media (prefers-reduced-transparency: reduce)': {
+          background: 'frost.fallback',
+        },
+      })}`}
     >
       <div className={css({ display: 'flex', maxW: '520px', mx: 'auto', px: '2' })}>
         {TABS.map((tab) => {

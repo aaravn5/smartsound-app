@@ -145,14 +145,15 @@ const caption = css({
   color: 'faint',
 })
 
+// Instrument Serif 400 — the serif is never bold; airy at this size.
 const title = css({
   m: '0',
   mt: '2',
   fontFamily: 'display',
-  fontSize: 'clamp(1.9rem, 7vw, 2.6rem)',
-  fontWeight: '700',
+  fontSize: 'clamp(2.1rem, 7vw, 2.75rem)',
+  fontWeight: '400',
   letterSpacing: '-0.015em',
-  lineHeight: '1.12',
+  lineHeight: '1.1',
   color: 'text',
   textAlign: 'center',
 })
@@ -674,7 +675,7 @@ function AuthStep({
           />
           <LiquidGlass variant="sheet" className={css({ position: 'relative', w: 'full', maxW: '380px' })}>
             <div className={css({ px: '6', py: '6', textAlign: 'center' })}>
-              <p className={css({ m: '0', fontSize: 'title3', fontWeight: '700', color: 'text' })}>
+              <p className={css({ m: '0', fontSize: 'title3', fontWeight: '600', letterSpacing: '-0.01em', color: 'text' })}>
                 {sheet === 'google' ? 'Google sign-in' : 'Apple sign-in'}
               </p>
               <p className={css({ m: '0', mt: '3', fontSize: 'subhead', lineHeight: '1.55', color: 'muted' })}>
@@ -789,7 +790,7 @@ function GoalStep({ reveal }: { reveal: Reveal }) {
                 <span
                   className={css({
                     fontSize: 'headline',
-                    fontWeight: '700',
+                    fontWeight: '600',
                     letterSpacing: '-0.01em',
                     color: 'text',
                     mb: '1',
@@ -835,7 +836,7 @@ function WhenStep({ reveal }: { reveal: Reveal }) {
                 mb: '5',
                 textAlign: 'center',
                 fontSize: 'title2',
-                fontWeight: '700',
+                fontWeight: '600',
                 letterSpacing: '-0.01em',
                 color: 'text',
               })}

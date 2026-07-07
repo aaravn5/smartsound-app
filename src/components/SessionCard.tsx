@@ -117,7 +117,7 @@ export function SessionCard({
           className={css({
             m: '0',
             fontSize: 'headline',
-            fontWeight: '700',
+            fontWeight: '600',
             letterSpacing: '-0.01em',
             lineHeight: '1.2',
             color: 'rgba(255, 255, 255, 0.98)',
@@ -160,6 +160,9 @@ export function Rail({ children }: { children: ReactNode }) {
         overflowY: 'hidden',
         WebkitOverflowScrolling: 'touch',
         scrollSnapType: 'x proximity',
+        // Snap against the padded edge, not the bleed edge — keeps the first
+        // sleeve aligned with the page column whenever the rail snaps.
+        scrollPaddingInline: '5',
         pb: '1',
         mx: '-5',
         px: '5',

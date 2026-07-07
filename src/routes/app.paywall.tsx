@@ -255,7 +255,17 @@ function PaywallScreen() {
               Today’s free session is used
             </p>
           )}
-          <h1 className={css({ m: '0', fontFamily: 'display', fontSize: 'title1', fontWeight: '700', color: 'text' })}>
+          <h1
+            className={css({
+              m: '0',
+              fontFamily: 'display',
+              fontSize: '2.125rem',
+              fontWeight: '400',
+              letterSpacing: '-0.01em',
+              lineHeight: '1.1',
+              color: 'text',
+            })}
+          >
             SmartSound Pro
           </h1>
           <p className={css({ m: '0', mt: '1.5', maxW: '34ch', fontSize: 'subhead', lineHeight: '1.4', color: 'var(--ss-ink-strong)' })}>
@@ -299,14 +309,14 @@ function PaywallScreen() {
           <LiquidGlass key={tier.id} variant="card" tint={tier.featured ? 'var(--signal)' : undefined}>
             <div className={css({ px: '6', py: '6' })}>
               <div className={css({ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', mb: '1' })}>
-                <h2 className={css({ m: '0', fontFamily: 'display', fontSize: 'title2', fontWeight: '700', color: 'text' })}>
+                <h2 className={css({ m: '0', fontSize: 'title2', fontWeight: '600', letterSpacing: '-0.01em', color: 'text' })}>
                   {tier.name}
                 </h2>
                 {tier.featured && (
                   <span
                     className={css({
                       fontSize: 'caption2',
-                      fontWeight: '700',
+                      fontWeight: '600',
                       letterSpacing: '0.04em',
                       textTransform: 'uppercase',
                       color: 'accent',
@@ -323,7 +333,7 @@ function PaywallScreen() {
               <p className={css({ m: '0', mb: '4', fontSize: 'subhead', color: 'muted' })}>{tier.tagline}</p>
 
               <div className={css({ display: 'flex', alignItems: 'baseline', gap: '1.5' })}>
-                <span className={`tabular ${css({ fontFamily: 'rounded', fontSize: 'title1', fontWeight: '700', color: 'text' })}`}>
+                <span className={`tabular ${css({ fontFamily: 'rounded', fontSize: 'title1', color: 'text' })}`}>
                   {formatPrice(tier, billingInterval)}
                 </span>
                 <span className={css({ fontSize: 'footnote', color: 'faint' })}>{billingInterval === 'month' ? '/ month' : '/ year'}</span>
@@ -353,7 +363,7 @@ function PaywallScreen() {
                 className={css({ display: 'block', width: 'full', textAlign: 'center', border: 'none', font: 'inherit' })}
               >
                 <span
-                  className={css({ display: 'block', px: '5', py: '3', fontSize: 'subhead', fontWeight: '700', color: 'text' })}
+                  className={css({ display: 'block', px: '5', py: '3', fontSize: 'subhead', fontWeight: '600', color: 'text' })}
                 >
                   Start 7-day free trial
                 </span>
@@ -371,7 +381,7 @@ function PaywallScreen() {
       <LiquidGlass variant="card" className={css({ mb: '6' })}>
         <div className={css({ px: '6', py: '5' })}>
           <div className={css({ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between' })}>
-            <h3 className={css({ m: '0', fontFamily: 'display', fontSize: 'headline', fontWeight: '600', color: 'text' })}>
+            <h3 className={css({ m: '0', fontSize: 'headline', fontWeight: '600', letterSpacing: '-0.01em', color: 'text' })}>
               Free
             </h3>
             <span className={`tabular ${css({ fontSize: 'footnote', fontWeight: '600', color: 'faint' })}`}>$0</span>
@@ -405,7 +415,6 @@ function PaywallScreen() {
         className={css({
           m: '0',
           mb: '3',
-          fontFamily: 'display',
           fontSize: 'title3',
           fontWeight: '600',
           letterSpacing: '-0.01em',
@@ -425,7 +434,7 @@ function PaywallScreen() {
                 <th className={css({ textAlign: 'center', fontSize: 'caption', fontWeight: '600', color: 'faint', px: '3', py: '3' })}>
                   Free
                 </th>
-                <th className={css({ textAlign: 'center', fontSize: 'caption', fontWeight: '700', color: 'accent', px: '3', py: '3' })}>
+                <th className={css({ textAlign: 'center', fontSize: 'caption', fontWeight: '600', color: 'accent', px: '3', py: '3' })}>
                   Pro
                 </th>
                 <th className={css({ textAlign: 'center', fontSize: 'caption', fontWeight: '600', color: 'faint', px: '3', py: '3' })}>

@@ -50,7 +50,7 @@ const pillCss = css({
   minH: '40px',
   px: '4.5',
   borderRadius: 'pill',
-  border: '1px solid transparent',
+  border: '0.5px solid transparent',
   font: 'inherit',
   fontSize: 'bodySm',
   fontWeight: '500',
@@ -58,9 +58,11 @@ const pillCss = css({
   color: 'starlight',
   cursor: 'pointer',
   WebkitTapHighlightColor: 'transparent',
-  transition: 'background 300ms ease, border-color 300ms ease',
+  transition:
+    'background 300ms ease, border-color 300ms ease, transform 150ms cubic-bezier(0.34, 1.56, 0.64, 1)',
   _hover: { background: 'rgba(205, 221, 255, 0.24)' },
-  '@media (prefers-reduced-motion: reduce)': { transition: 'none' },
+  _active: { transform: 'scale(0.96)' },
+  '@media (prefers-reduced-motion: reduce)': { transition: 'none', _active: { transform: 'none' } },
 })
 
 export interface PulseFlowProps {
@@ -191,7 +193,7 @@ export function PulseFlow({ state, bioStatus, reading, getPulse, startAttune, st
       </button>
 
       {open && (
-        <Card className={css({ w: 'full', maxW: '430px' })}>
+        <Card glass className={css({ w: 'full', maxW: '430px' })}>
           <div className={css({ px: '4', py: '4' })}>
             {degraded ? (
               <>

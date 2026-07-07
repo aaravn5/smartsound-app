@@ -7,11 +7,11 @@ import { Scene, type SceneVariant } from '~/design/Scene'
 /**
  * InfoPage — the shared editorial stage for /privacy, /terms, /contact and
  * /science: a scene-dark landscape with the page scrim, a glass back
- * control, a Fraunces title, and a readable measure. These pages scroll
- * normally (they're documents, not the hero).
+ * control, an Instrument Serif title (400 — never bold), and a readable
+ * measure. These pages scroll normally (they're documents, not the hero).
  */
 
-const FRAUNCES = '"Fraunces", Georgia, "Times New Roman", serif'
+const DISPLAY_SERIF = '"Instrument Serif", Georgia, "Times New Roman", serif'
 
 export function InfoPage({
   scene,
@@ -86,14 +86,14 @@ export function InfoPage({
           className={css({
             m: '0',
             mt: '2',
-            fontSize: 'clamp(2.1rem, 6vw, 3rem)',
-            fontWeight: '500',
-            letterSpacing: '-0.025em',
+            fontSize: 'clamp(2.25rem, 6vw, 3.25rem)',
+            fontWeight: '400',
+            letterSpacing: '-0.02em',
             lineHeight: '1.08',
             color: 'text',
             textShadow: 'var(--ss-text-glow)',
           })}
-          style={{ fontFamily: FRAUNCES }}
+          style={{ fontFamily: DISPLAY_SERIF }}
         >
           {title}
         </h1>

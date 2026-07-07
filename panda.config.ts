@@ -67,6 +67,15 @@ export default defineConfig({
             streakFrom: { value: '#FDE68A' },
             streakTo: { value: '#FB923C' },
           },
+          // Frosted glass — the Pressed-at-Night material for floating chrome
+          // (bottom nav, overlays, toasts, sticky headers). Midnight-slate
+          // tinted, paired with backdrop-filter saturate(180%) blur(20px)
+          // and a 0.5px starlight hairline (see glassCss in components/Card).
+          frost: {
+            fill: { value: 'rgba(30, 30, 42, 0.72)' },
+            stroke: { value: 'rgba(237, 237, 243, 0.10)' },
+            fallback: { value: 'rgba(30, 30, 42, 0.97)' },
+          },
           // Liquid Glass — translucent fills over the scene, per apple-design-materials.
           glass: {
             fill: { value: 'rgba(22, 26, 44, 0.40)' },
@@ -98,14 +107,17 @@ export default defineConfig({
           },
         },
         fonts: {
-          // Fraunces — ALL display & headlines (weight 400 at large sizes is the
-          // signature; never 700). Loaded via @fontsource in main.tsx.
+          // Instrument Serif — LARGE display only (≥ ~30px): headlines, record
+          // titles, greetings. Weight 400 is the whole family — never bold.
+          // Small headings (≤ ~22px) use Hanken Grotesk 600 instead, so they
+          // stay crisp (Instrument is a light, high-contrast display face).
           display: {
-            value: '"Fraunces", Georgia, "Times New Roman", serif',
+            value: '"Instrument Serif", Georgia, "Times New Roman", serif',
           },
-          // Inter — UI, body, labels, nav, forms. Replaces every -apple-system fallback.
+          // Hanken Grotesk — UI, body, labels, nav, forms (400/500/600).
           text: {
-            value: '"Inter", system-ui, "Helvetica Neue", Arial, sans-serif',
+            value:
+              '"Hanken Grotesk Variable", "Hanken Grotesk", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif',
           },
           // JetBrains Mono — every number: Hz, min, %, BPM, dates, timers.
           mono: {
@@ -140,15 +152,23 @@ export default defineConfig({
         },
         radii: {
           control: { value: '14px' },
-          // Cards & record sleeves are square-cornered like real jackets (design.md).
-          card: { value: '4px' },
+          // Cards & elevated surfaces — continuous/squircle feel (Apple).
+          // Record SLEEVES stay 4px (real jackets); records stay circles.
+          card: { value: '16px' },
+          sleeve: { value: '4px' },
           sheet: { value: '32px' },
           capsule: { value: '9999px' },
           // Buttons & inputs — pill.
           pill: { value: '9999px' },
         },
+        shadows: {
+          // Apple/Calm SOFT depth — subtle, low-opacity, never harsh. Prefer
+          // "brighten on hover"; these are for elevated cards & overlays only.
+          soft: { value: '0 1px 2px rgba(0, 0, 0, 0.30), 0 8px 30px rgba(0, 0, 0, 0.22)' },
+          overlay: { value: '0 2px 6px rgba(0, 0, 0, 0.32), 0 16px 48px rgba(0, 0, 0, 0.34)' },
+        },
         durations: {
-          quick: { value: '160ms' },
+          quick: { value: '150ms' },
           gentle: { value: '420ms' },
           calm: { value: '700ms' },
           slow: { value: '1200ms' },
@@ -158,14 +178,27 @@ export default defineConfig({
           calm: { value: 'cubic-bezier(0.32, 0.72, 0, 1)' },
           // Long gentle glide for reveals.
           glide: { value: 'cubic-bezier(0.22, 1, 0.36, 1)' },
-          // Entrances (fade-up).
+          // Default UI ease — entrances, transitions (fade-up).
           enter: { value: 'cubic-bezier(0.16, 1, 0.3, 1)' },
+          // Tactile press/hover micro-interactions — a gentle spring overshoot.
+          spring: { value: 'cubic-bezier(0.34, 1.56, 0.64, 1)' },
         },
       },
       keyframes: {
         fadeUp: {
           from: { opacity: '0', transform: 'translateY(14px)' },
           to: { opacity: '1', transform: 'translateY(0)' },
+        },
+        // Aurora blooms — two very slow, very subtle radial glows drifting in
+        // page backgrounds (Calm/Endel). Transform + opacity only, GPU-cheap,
+        // frozen entirely under prefers-reduced-motion.
+        auroraDriftA: {
+          '0%, 100%': { transform: 'translate3d(0, 0, 0) scale(1)', opacity: '0.7' },
+          '50%': { transform: 'translate3d(4%, 3%, 0) scale(1.12)', opacity: '1' },
+        },
+        auroraDriftB: {
+          '0%, 100%': { transform: 'translate3d(0, 0, 0) scale(1.06)', opacity: '0.6' },
+          '50%': { transform: 'translate3d(-4%, -2%, 0) scale(1)', opacity: '1' },
         },
         sceneDriftA: {
           '0%': { transform: 'translate3d(0, 0, 0) scale(1)' },

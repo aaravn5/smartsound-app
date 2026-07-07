@@ -1,5 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { css, cx } from 'styled-system/css'
+import { glassCss } from '~/components/Card'
 import { InfoPage } from '~/landing/InfoPage'
 import { MechanismDiagram } from '~/components/MechanismDiagram'
 import { usePageTitle } from '~/lib/page-title'
@@ -153,11 +154,12 @@ const CONFIDENCE_STYLE: Record<Confidence, string> = {
   Early: css({ color: 'silver', borderColor: 'hairline' }),
 }
 
+// Small section headings — Hanken 600 for crispness; the serif carries the
+// page title above (large display only).
 const sectionTitleCss = css({
   m: '0',
   mb: '2',
-  fontFamily: 'display',
-  fontWeight: '400',
+  fontWeight: '600',
   fontSize: 'headingSm',
   letterSpacing: '-0.01em',
   color: 'starlight',
@@ -206,15 +208,10 @@ function SciencePage() {
           device.
         </p>
         <div
-          className={css({
-            display: 'flex',
-            justifyContent: 'center',
-            p: '5',
-            borderRadius: '4px',
-            border: '1px solid',
-            borderColor: 'hairline',
-            background: 'midnightSlate',
-          })}
+          className={cx(
+            glassCss,
+            css({ display: 'flex', justifyContent: 'center', p: '6', borderRadius: 'card' }),
+          )}
         >
           <MechanismDiagram />
         </div>
@@ -443,16 +440,7 @@ function SciencePage() {
           area: accuracy depends on lighting, motion, and skin tone, and it is not a substitute
           for a clinical heart-rate monitor.
         </p>
-        <div
-          className={css({
-            mt: '4',
-            p: '4',
-            borderRadius: '4px',
-            border: '1px solid',
-            borderColor: 'hairline',
-            background: 'midnightSlate',
-          })}
-        >
+        <div className={cx(glassCss, css({ mt: '4', p: '5', borderRadius: 'card' }))}>
           <p className={css({ m: '0', fontSize: 'caption', lineHeight: '1.55', color: 'silver' })}>
             SmartSound is a wellness tool, not a medical device. It doesn&rsquo;t diagnose, treat,
             or cure any condition, and it isn&rsquo;t a substitute for professional medical advice.

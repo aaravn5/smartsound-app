@@ -5,7 +5,7 @@ import { css, cx } from 'styled-system/css'
 import { BandField } from '~/design/BandField'
 import { WaveformRing } from '~/design/WaveformRing'
 import { PulseFlow } from '~/components/PulseFlow'
-import { Card, chipCss, chipActiveCss } from '~/components/Card'
+import { Card, chipCss, chipActiveCss, glassCss } from '~/components/Card'
 import { RecordDisc } from '~/components/vinyl/RecordDisc'
 import { useClickSound } from '~/lib/click-sound'
 import { useEngine } from '~/lib/engine-context'
@@ -120,22 +120,29 @@ function ringStatusLabel(status: 'idle' | 'running', bioActive: boolean, capped:
   return bioActive ? 'Live audio + pulse' : 'Live audio'
 }
 
-const quietRoundBtnCss = css({
+// Quiet round controls floating over the band field — lightly frosted
+// (.ss-frost-light in index.css carries the backdrop blur pair).
+const quietRoundBtnCss = cx(
+  'ss-frost-light',
+  css({
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
-  border: '1px solid',
-  borderColor: 'hairline',
+  border: '0.5px solid',
+  borderColor: 'frost.stroke',
   borderRadius: 'pill',
-  background: 'graphite',
+  background: 'rgba(30, 30, 42, 0.55)',
   color: 'silver',
   font: 'inherit',
   cursor: 'pointer',
   WebkitTapHighlightColor: 'transparent',
-  transition: 'background 300ms ease, color 300ms ease',
-  _hover: { background: '#2d2d3d', color: 'starlight' },
-  '@media (prefers-reduced-motion: reduce)': { transition: 'none' },
-})
+  transition:
+    'background 300ms ease, color 300ms ease, transform 150ms cubic-bezier(0.34, 1.56, 0.64, 1)',
+  _hover: { background: 'rgba(45, 45, 61, 0.65)', color: 'starlight' },
+  _active: { transform: 'scale(0.94)' },
+  '@media (prefers-reduced-motion: reduce)': { transition: 'none', _active: { transform: 'none' } },
+  }),
+)
 
 function PlayerScreen() {
   const search = Route.useSearch()
@@ -250,9 +257,6 @@ function PlayerScreen() {
           position: 'absolute',
           inset: '0',
           zIndex: '1',
-          // The scrollable content layer stops at the fixed bottom nav's top
-          // edge so nothing ever renders behind the bar.
-          bottom: 'calc(env(safe-area-inset-bottom) + 58px)',
           overflowY: 'auto',
           overflowX: 'hidden',
           WebkitOverflowScrolling: 'touch',
@@ -267,7 +271,8 @@ function PlayerScreen() {
             mx: 'auto',
             px: '5',
             pt: 'calc(env(safe-area-inset-top) + 18px)',
-            pb: '10',
+            // Content scrolls beneath the frosted nav; keep the tail clear of it.
+            pb: 'calc(env(safe-area-inset-bottom) + 58px + 32px)',
             flex: '1',
             display: 'flex',
             flexDirection: 'column',
@@ -369,25 +374,33 @@ function PlayerScreen() {
             >
               {/* plain label — the player issues ZERO photo requests. */}
               <RecordDisc state={state} size={DISC_SIZE} plain spinning={running ? 'playing' : 'idle'} />
-              {/* Center glyph on the hub — recedes while running. */}
+              {/* Center glyph on the hub — a soft frosted circular play
+                  control with a gentle glow ring (Calm/Brain.fm signature);
+                  recedes while running. */}
               <span
                 aria-hidden
-                className={css({
-                  position: 'absolute',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  w: '64px',
-                  h: '64px',
-                  borderRadius: 'full',
-                  color: 'starlight',
-                  background: 'rgba(39, 39, 53, 0.85)',
-                  boxShadow: 'inset 0 0 0 1px rgba(112, 112, 125, 0.4)',
-                  pointerEvents: 'none',
-                  transition: 'opacity 420ms ease',
-                  '@media (prefers-reduced-motion: reduce)': { transition: 'none' },
-                })}
-                style={{ opacity: running ? 0.28 : 0.96 }}
+                className={cx(
+                  'ss-frost',
+                  css({
+                    position: 'absolute',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    w: '68px',
+                    h: '68px',
+                    borderRadius: 'full',
+                    color: 'starlight',
+                    background: 'rgba(30, 30, 42, 0.72)',
+                    // 0.5px rim + a soft mercury glow — the ONE accent, on the
+                    // ONE primary action.
+                    boxShadow:
+                      'inset 0 0 0 0.5px rgba(237, 237, 243, 0.16), 0 0 0 0.5px rgba(237, 237, 243, 0.08), 0 0 32px rgba(82, 102, 235, 0.28), 0 2px 12px rgba(0, 0, 0, 0.35)',
+                    pointerEvents: 'none',
+                    transition: 'opacity 420ms ease, box-shadow 420ms ease',
+                    '@media (prefers-reduced-motion: reduce)': { transition: 'none' },
+                  }),
+                )}
+                style={{ opacity: running ? 0.28 : 0.98 }}
               >
                 {running ? <CenterPauseIcon /> : <CenterPlayIcon />}
               </span>
@@ -533,8 +546,8 @@ function PlayerScreen() {
             No skipping. Records play through — that&rsquo;s the point.
           </p>
 
-          {/* Neural depth. */}
-          <Card className={css({ mb: '4' })}>
+          {/* Neural depth — frosted, floating over the band field. */}
+          <Card glass className={css({ mb: '4' })}>
             <div className={css({ px: '5', py: '4' })}>
               <div className={css({ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: '3' })}>
                 <span className={css({ fontSize: 'bodySm', fontWeight: '500', color: 'starlight' })}>
@@ -598,22 +611,22 @@ function PlayerScreen() {
           {/* The science — the full evidence ledger lives on /science. */}
           <Link
             to="/science"
-            className={css({
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              gap: '3',
-              px: '5',
-              py: '4',
-              borderRadius: '4px',
-              border: '1px solid',
-              borderColor: 'hairline',
-              background: 'midnightSlate',
-              textDecoration: 'none',
-              transition: 'background 300ms ease',
-              _hover: { background: 'graphite' },
-              '@media (prefers-reduced-motion: reduce)': { transition: 'none' },
-            })}
+            className={cx(
+              glassCss,
+              css({
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: '3',
+                px: '5',
+                py: '4',
+                borderRadius: 'card',
+                textDecoration: 'none',
+                transition: 'background 300ms ease',
+                _hover: { background: 'rgba(45, 45, 61, 0.72)' },
+                '@media (prefers-reduced-motion: reduce)': { transition: 'none' },
+              }),
+            )}
           >
             <span>
               <span className={css({ display: 'block', fontSize: 'bodySm', fontWeight: '500', color: 'starlight' })}>

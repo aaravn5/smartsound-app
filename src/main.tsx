@@ -3,14 +3,13 @@ import { createRoot } from 'react-dom/client'
 import { RouterProvider, createRouter } from '@tanstack/react-router'
 import { routeTree } from './routeTree.gen'
 import { EngineProvider } from '~/lib/engine-context'
-// Self-hosted faces via @fontsource (no CDN). Fraunces: all display &
-// headlines (400 is the signature). Inter: UI/body — replaces every
-// -apple-system fallback. JetBrains Mono: every number (Hz, min, %, BPM).
-import '@fontsource/fraunces/400.css'
-import '@fontsource/fraunces/400-italic.css'
-import '@fontsource/fraunces/600.css'
-import '@fontsource/inter/400.css'
-import '@fontsource/inter/500.css'
+// Self-hosted faces via @fontsource (no CDN). Instrument Serif: large
+// display & record titles only (400 is the whole family — never bold; italic
+// for the poetic register). Hanken Grotesk (variable): UI/body/labels at
+// 400/500/600. JetBrains Mono: every number (Hz, min, %, BPM).
+import '@fontsource/instrument-serif/400.css'
+import '@fontsource/instrument-serif/400-italic.css'
+import '@fontsource-variable/hanken-grotesk'
 import '@fontsource/jetbrains-mono/400.css'
 import './index.css'
 

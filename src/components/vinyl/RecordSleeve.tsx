@@ -96,13 +96,14 @@ const artImgCss = css({
 
 const overlayCss = css({ position: 'absolute', inset: '0', pointerEvents: 'none' })
 
+// Sleeve titles sit at ~16px — below the serif's display floor, so they wear
+// Hanken 600 (crisp); the serif carries the featured/player record titles.
 const titleCss = css({
   m: '0',
   mt: '2.5',
-  fontFamily: 'display',
-  fontWeight: '400',
-  fontSize: '1.0625rem',
-  lineHeight: '1.25',
+  fontWeight: '600',
+  fontSize: '1rem',
+  lineHeight: '1.3',
   letterSpacing: '-0.01em',
   color: 'starlight',
   overflow: 'hidden',

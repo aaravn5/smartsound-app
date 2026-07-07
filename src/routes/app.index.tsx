@@ -105,7 +105,7 @@ const FILTERS: { id: Filter; label: string }[] = [
 ]
 
 function pressingMeta(p: Pressing): string {
-  const duration = p.windDown ? '15 MIN | OPEN' : p.minutes ? `${p.minutes} MIN` : 'OPEN-ENDED'
+  const duration = p.windDown ? '15 MIN | OPEN' : p.minutes ? `${p.minutes} MIN` : 'OPEN'
   return `${capText(p.state)} · ${duration}`
 }
 
@@ -198,7 +198,7 @@ function TodayScreen() {
         SmartSound
       </p>
 
-      {/* Time-based greeting — Fraunces 400. */}
+      {/* Time-based greeting — Instrument Serif 400, huge and airy. */}
       <header className={cx(css({ mb: '9', textAlign: 'center' }), fadeUpCss)}>
         <p className={cx('tabular', capsLabelCss, css({ mb: '2' }))}>{todayCaption()}</p>
         <h1
@@ -206,15 +206,27 @@ function TodayScreen() {
             m: '0',
             fontFamily: 'display',
             fontWeight: '400',
-            fontSize: 'heading',
-            letterSpacing: '-0.01em',
-            lineHeight: '1.1',
+            fontSize: 'clamp(2.375rem, 7vw, 2.75rem)',
+            letterSpacing: '-0.015em',
+            lineHeight: '1.08',
             color: 'starlight',
           })}
         >
           {greeting()}
         </h1>
-        <p className={css({ m: '0', mt: '2', fontSize: 'bodySm', color: 'silver' })}>
+        {/* The poetic register — Instrument Serif italic. */}
+        <p
+          className={css({
+            m: '0',
+            mt: '2',
+            fontFamily: 'display',
+            fontStyle: 'italic',
+            fontWeight: '400',
+            fontSize: '1.125rem',
+            letterSpacing: '0.01em',
+            color: 'silver',
+          })}
+        >
           {greetingLine()}
         </p>
       </header>
@@ -250,7 +262,9 @@ function TodayScreen() {
             mt: '6',
             fontFamily: 'display',
             fontWeight: '400',
-            fontSize: 'headingSm',
+            fontSize: '1.875rem',
+            letterSpacing: '-0.01em',
+            lineHeight: '1.1',
             color: 'starlight',
           })}
         >
@@ -275,12 +289,13 @@ function TodayScreen() {
             mb: '4',
           })}
         >
+          {/* Small section heading — Hanken 600, not the serif (crispness rule). */}
           <h2
             className={css({
               m: '0',
-              fontFamily: 'display',
-              fontWeight: '400',
-              fontSize: 'headingSm',
+              fontWeight: '600',
+              fontSize: '1.0625rem',
+              letterSpacing: '-0.01em',
               color: 'starlight',
             })}
           >
@@ -333,9 +348,9 @@ function TodayScreen() {
             className={css({
               m: '0',
               mb: '3',
-              fontFamily: 'display',
-              fontWeight: '400',
-              fontSize: 'headingSm',
+              fontWeight: '600',
+              fontSize: '1.0625rem',
+              letterSpacing: '-0.01em',
               color: 'starlight',
             })}
           >

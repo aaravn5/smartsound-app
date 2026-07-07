@@ -130,7 +130,7 @@ const CRATES: Crate[] = [
 ]
 
 function itemMeta(item: CrateItem): string {
-  const duration = item.windDown ? '15 MIN | OPEN' : item.minutes ? `${item.minutes} MIN` : 'OPEN-ENDED'
+  const duration = item.windDown ? '15 MIN | OPEN' : item.minutes ? `${item.minutes} MIN` : 'OPEN'
   return `${capText(item.state)} · ${duration}`
 }
 
@@ -151,11 +151,12 @@ const SearchIcon = () => (
   </svg>
 )
 
+// Crate headers are small section headings (≤22px) — Hanken 600, not the
+// serif, so they stay crisp (the serif is reserved for large display).
 const crateTitleCss = css({
   m: '0',
-  fontFamily: 'display',
-  fontWeight: '400',
-  fontSize: 'headingSm',
+  fontWeight: '600',
+  fontSize: '1.0625rem',
   letterSpacing: '-0.01em',
   color: 'starlight',
 })
@@ -232,9 +233,9 @@ function LibraryScreen() {
             m: '0',
             fontFamily: 'display',
             fontWeight: '400',
-            fontSize: 'heading',
-            letterSpacing: '-0.01em',
-            lineHeight: '1.1',
+            fontSize: 'clamp(2.25rem, 6.5vw, 2.75rem)',
+            letterSpacing: '-0.015em',
+            lineHeight: '1.08',
             color: 'starlight',
           })}
         >
@@ -252,12 +253,12 @@ function LibraryScreen() {
             px: '4',
             height: '48px',
             borderRadius: 'pill',
-            border: '1px solid',
+            border: '0.5px solid',
             borderColor: 'lead',
-            background: 'transparent',
+            background: 'rgba(39, 39, 53, 0.35)',
             cursor: 'text',
-            transition: 'border-color 300ms ease',
-            _focusWithin: { borderColor: 'ghostBlue' },
+            transition: 'border-color 300ms ease, background 300ms ease',
+            _focusWithin: { borderColor: 'ghostBlue', background: 'rgba(39, 39, 53, 0.55)' },
           })}
         >
           <span aria-hidden className={css({ color: 'silver', lineHeight: '0' })}>

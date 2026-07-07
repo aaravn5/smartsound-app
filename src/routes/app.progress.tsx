@@ -30,11 +30,11 @@ const fadeUpCss = css({
   '@media (prefers-reduced-motion: reduce)': { animation: 'none' },
 })
 
+// Small section headings — Hanken 600 (the serif is for large display only).
 const sectionTitleCss = css({
   m: '0',
-  fontFamily: 'display',
-  fontWeight: '400',
-  fontSize: 'headingSm',
+  fontWeight: '600',
+  fontSize: '1.0625rem',
   letterSpacing: '-0.01em',
   color: 'starlight',
 })
@@ -193,9 +193,9 @@ function ProgressScreen() {
             m: '0',
             fontFamily: 'display',
             fontWeight: '400',
-            fontSize: 'heading',
-            letterSpacing: '-0.01em',
-            lineHeight: '1.1',
+            fontSize: 'clamp(2.25rem, 6.5vw, 2.75rem)',
+            letterSpacing: '-0.015em',
+            lineHeight: '1.08',
             color: 'starlight',
           })}
         >
