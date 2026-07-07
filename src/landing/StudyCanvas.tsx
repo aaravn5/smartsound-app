@@ -8,28 +8,28 @@ import {
 } from '~/landing/hero-math'
 
 /**
- * StudyCanvas — the landing hero's real-time generative scene. No video, no
- * photos: a 2D canvas drawing (Act I) a dark study — desk in near-silhouette,
- * a glowing computer screen as the only bright object (Starlight at low
- * opacity with a #5266eb cast), neural-drift particles joined by hairline
- * synapse lines pulsing at ~1 Hz, and a barely-visible EEG waveform crossing
- * the lower third — then (Act II) a camera push INTO the screen across three
- * parallax particle depths, and (Act III) the inside-the-computer particle
- * field tinted by the focused record's band.
+ * StudyCanvas — the landing hero's AMBIENT layer. No video, no photos: a 2D
+ * canvas drawing (Act I) the deep-space room around the machine — neural-
+ * drift particles joined by hairline synapse lines pulsing at ~1 Hz, a
+ * barely-visible EEG waveform crossing the lower third, and a soft mercury
+ * screen-glow halo behind the viewport's center — then (Act II) a camera
+ * push with three parallax particle depths (streaks along the zoom), and
+ * (Act III) the inside-the-computer particle field tinted by the focused
+ * record's band.
  *
- * Architecture: one canvas, one rAF. The camera is a zoom about the screen's
- * center; room geometry rides a ctx transform at depth 1.0 while particles
- * are projected per-point at depths 0.72 / 1.0 / 1.38 (the parallax). All
- * particle state lives in preallocated Float32Arrays — no per-frame
- * allocations beyond two cached gradients rebuilt only on resize.
+ * The machine itself (the hyperrealistic MacBook) is DOM — MacBookHero.tsx —
+ * layered above this canvas; the canvas only supplies atmosphere.
+ *
+ * Architecture: one canvas, one rAF. The camera is a zoom about the screen
+ * center; particles are projected per-point at depths 0.72 / 1.0 / 1.38
+ * (the parallax). All particle state lives in preallocated Float32Arrays —
+ * no per-frame allocations beyond one cached gradient rebuilt on resize.
  *
  * `reduced` (prefers-reduced-motion) draws ONE static Act-I composition
  * (no particles, no animation) and only redraws on resize.
  */
 
 const DEEP_SPACE = '#171721'
-const MIDNIGHT = '#1e1e2a'
-const GRAPHITE = '#272735'
 const STARLIGHT_RGB = '237, 237, 243'
 const MERCURY_RGB = '82, 102, 235'
 
@@ -71,14 +71,13 @@ export function StudyCanvas({ getProgress, getTint, reduced }: StudyCanvasProps)
     let raf = 0
     let disposed = false
 
-    // Screen (the monitor) geometry in world px — set on resize.
+    // The (DOM) MacBook screen's approximate world geometry — the halo sits
+    // behind it and the parallax camera pushes toward it. Set on resize.
     let sw = 0
     let sh = 0
     let fx = 0
     let fy = 0
-    let deskY = 0
     let zoomNeeded = 5
-    let screenGrad: CanvasGradient | null = null
     let haloGrad: CanvasGradient | null = null
 
     // ── particles — preallocated, normalized world coords (fractions of W/H) ──
@@ -124,101 +123,30 @@ export function StudyCanvas({ getProgress, getTint, reduced }: StudyCanvasProps)
       canvas.width = Math.round(W * dpr)
       canvas.height = Math.round(H * dpr)
 
-      sw = Math.max(150, 0.24 * W)
-      sh = 0.62 * sw
+      // Roughly track the DOM MacBook's glass (min(88vw, 56vh) × 0.938 wide,
+      // centered slightly below middle) so halo + camera stay coherent.
+      sw = Math.max(150, Math.min(0.83 * W, 0.53 * H * 1.548))
+      sh = sw / 1.548
       fx = 0.5 * W
-      fy = 0.44 * H
-      deskY = fy + sh / 2 + 0.055 * H
+      fy = 0.53 * H
       zoomNeeded = 1.15 * Math.max(W / sw, H / sh)
       drawCount = Math.max(44, Math.min(MAX_PARTICLES, Math.round((W * H) / 16000)))
 
-      // World-space gradients — cached; the ctx transform scales them.
-      screenGrad = ctx.createLinearGradient(0, fy - sh / 2, 0, fy + sh / 2)
-      screenGrad.addColorStop(0, `rgba(${STARLIGHT_RGB}, 0.82)`)
-      screenGrad.addColorStop(0.55, `rgba(205, 221, 255, 0.62)`)
-      screenGrad.addColorStop(1, `rgba(${MERCURY_RGB}, 0.38)`)
+      // World-space gradient — cached; the ctx transform scales it.
       haloGrad = ctx.createRadialGradient(fx, fy, sw * 0.12, fx, fy, sw * 1.5)
-      haloGrad.addColorStop(0, `rgba(${MERCURY_RGB}, 0.20)`)
-      haloGrad.addColorStop(0.5, `rgba(${MERCURY_RGB}, 0.07)`)
+      haloGrad.addColorStop(0, `rgba(${MERCURY_RGB}, 0.16)`)
+      haloGrad.addColorStop(0.5, `rgba(${MERCURY_RGB}, 0.06)`)
       haloGrad.addColorStop(1, 'rgba(82, 102, 235, 0)')
     }
 
-    /** The study — room, desk, monitor — drawn in world px under a camera transform. */
-    const drawRoom = (z: number, camX: number, camY: number, alpha: number, t: number) => {
-      if (alpha <= 0.002) return
+    /** The soft screen-glow halo behind the (DOM) machine. */
+    const drawGlow = (z: number, camX: number, camY: number, alpha: number) => {
+      if (alpha <= 0.002 || !haloGrad) return
       ctx.save()
       ctx.setTransform(dpr * z, 0, 0, dpr * z, dpr * (W / 2 - camX * z), dpr * (H / 2 - camY * z))
       ctx.globalAlpha = alpha
-
-      // Wall wash — barely-there vertical grade so the room reads as a room.
-      ctx.fillStyle = MIDNIGHT
-      ctx.globalAlpha = alpha * 0.32
-      ctx.fillRect(-0.3 * W, deskY, 1.6 * W, H)
-      ctx.globalAlpha = alpha
-
-      // Light spill from the screen — the only bright thing in the study.
-      if (haloGrad) {
-        ctx.fillStyle = haloGrad
-        ctx.fillRect(fx - sw * 1.6, fy - sw * 1.6, sw * 3.2, sw * 3.2)
-      }
-
-      // Desk slab + legs — near-silhouette geometry.
-      ctx.fillStyle = MIDNIGHT
-      ctx.fillRect(0.16 * W, deskY, 0.68 * W, Math.max(6, 0.012 * H))
-      ctx.fillStyle = '#1a1a26'
-      ctx.fillRect(0.2 * W, deskY, Math.max(4, 0.008 * W), 0.3 * H)
-      ctx.fillRect(0.78 * W, deskY, Math.max(4, 0.008 * W), 0.3 * H)
-
-      // A leaning record sleeve and a mug — the pressing studio at rest.
-      ctx.fillStyle = GRAPHITE
-      const slv = sw * 0.34
-      ctx.save()
-      ctx.translate(fx - sw * 0.92, deskY)
-      ctx.rotate(-0.09)
-      ctx.fillRect(-slv / 2, -slv, slv, slv)
-      ctx.restore()
-      const mugW = sw * 0.09
-      ctx.fillRect(fx + sw * 0.78, deskY - mugW * 1.2, mugW, mugW * 1.2)
-      ctx.strokeStyle = GRAPHITE
-      ctx.lineWidth = Math.max(1.5, sw * 0.014)
-      ctx.beginPath()
-      ctx.arc(fx + sw * 0.78 + mugW, deskY - mugW * 0.62, mugW * 0.42, -Math.PI / 2, Math.PI / 2)
-      ctx.stroke()
-
-      // Monitor — stand, bezel, then the glowing screen.
-      ctx.fillStyle = '#20202c'
-      ctx.fillRect(fx - sw * 0.05, fy + sh / 2, sw * 0.1, deskY - (fy + sh / 2))
-      ctx.fillRect(fx - sw * 0.16, deskY - Math.max(3, 0.006 * H), sw * 0.32, Math.max(3, 0.006 * H))
-      const bez = Math.max(4, sw * 0.035)
-      ctx.fillStyle = '#0d0d15'
-      ctx.beginPath()
-      ctx.roundRect(fx - sw / 2 - bez, fy - sh / 2 - bez, sw + bez * 2, sh + bez * 2, bez * 1.6)
-      ctx.fill()
-      ctx.strokeStyle = GRAPHITE
-      ctx.lineWidth = Math.max(1, sw * 0.008)
-      ctx.stroke()
-
-      if (screenGrad) {
-        ctx.fillStyle = screenGrad
-        ctx.fillRect(fx - sw / 2, fy - sh / 2, sw, sh)
-      }
-      // On the screen: a session in progress — a dark disc + a level line.
-      ctx.fillStyle = 'rgba(23, 23, 33, 0.66)'
-      ctx.beginPath()
-      ctx.arc(fx - sw * 0.24, fy, sh * 0.26, 0, Math.PI * 2)
-      ctx.fill()
-      ctx.strokeStyle = 'rgba(23, 23, 33, 0.55)'
-      ctx.lineWidth = Math.max(1, sh * 0.02)
-      ctx.beginPath()
-      const wx0 = fx - sw * 0.02
-      for (let k = 0; k <= 24; k++) {
-        const wx = wx0 + (k / 24) * sw * 0.42
-        const wy = fy + Math.sin(k * 0.9 + t * 0.0012) * sh * 0.1
-        if (k === 0) ctx.moveTo(wx, wy)
-        else ctx.lineTo(wx, wy)
-      }
-      ctx.stroke()
-
+      ctx.fillStyle = haloGrad
+      ctx.fillRect(fx - sw * 1.6, fy - sw * 1.6, sw * 3.2, sw * 3.2)
       ctx.restore()
     }
 
@@ -278,7 +206,7 @@ export function StudyCanvas({ getProgress, getTint, reduced }: StudyCanvasProps)
       ctx.fillRect(0, 0, W, H)
 
       drawEeg(z, camX, camY, room, t)
-      drawRoom(z, camX, camY, room, t)
+      drawGlow(z, camX, camY, room)
 
       // ── particles: drift, project, streak, link ─────────────────────────
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
@@ -388,7 +316,7 @@ export function StudyCanvas({ getProgress, getTint, reduced }: StudyCanvasProps)
       ctx.fillStyle = DEEP_SPACE
       ctx.fillRect(0, 0, W, H)
       drawEeg(1, W / 2, H / 2, 1, 0)
-      drawRoom(1, W / 2, H / 2, 1, 0)
+      drawGlow(1, W / 2, H / 2, 1)
       ctx.globalAlpha = 1
     }
 

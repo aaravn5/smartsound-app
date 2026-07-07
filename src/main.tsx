@@ -12,6 +12,8 @@ import '@fontsource/instrument-serif/400-italic.css'
 import '@fontsource-variable/hanken-grotesk'
 import '@fontsource/jetbrains-mono/400.css'
 import './index.css'
+// The landing's hyperrealistic CSS MacBook — unlayered material styles.
+import './landing/macbook.css'
 
 const router = createRouter({ routeTree, defaultPreload: 'intent' })
 

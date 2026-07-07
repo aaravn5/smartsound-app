@@ -6,13 +6,16 @@ import { LandingHeader } from '~/landing/LandingHeader'
 import { LandingSearch } from '~/landing/LandingSearch'
 import { NowPlayingWidget } from '~/landing/NowPlayingWidget'
 import { StudyCanvas } from '~/landing/StudyCanvas'
+import { MacBookHero } from '~/landing/MacBookHero'
 import { PressingCarousel, PRESSINGS, pressingTint } from '~/landing/PressingCarousel'
 import { RecordDisc } from '~/components/vinyl/RecordDisc'
 import {
   HERO_SCROLL_VH,
   heroProgress,
+  heroZoomT,
   headlineOpacity,
   cueOpacity,
+  roomOpacity,
   act3Opacity,
   clamp01,
 } from '~/landing/hero-math'
@@ -23,15 +26,16 @@ import { suggestFor } from '~/engine/circadian/model'
 import type { TargetState } from '~/engine/audio/types'
 
 /**
- * `/` — the three-act scroll-zoom hero. No video, no photos: a real-time
- * generative canvas. The page scrolls through a ~320vh container with a
- * position:sticky stage; scroll progress drives the camera timeline
- * (hero-math.ts):
+ * `/` — the three-act scroll-zoom hero. No video, no photos: an ambient
+ * generative canvas UNDER a hyperrealistic CSS/DOM MacBook (MacBookHero).
+ * The page scrolls through a ~320vh container with a position:sticky stage;
+ * scroll progress drives the camera timeline (hero-math.ts):
  *
- *   Act I  — The Study: a dark room, desk in near-silhouette, one glowing
- *            screen, neural-drift particles, a whisper of EEG. Headline.
- *   Act II — The Zoom: the camera pushes INTO the screen across three
- *            parallax particle depths; the bezel becomes the viewport.
+ *   Act I  — The Study: deep space, neural-drift particles, a whisper of
+ *            EEG — and the MacBook, lid open, running SmartSound. Headline.
+ *   Act II — The Zoom: the camera pushes INTO the MacBook's screen (the
+ *            wrapper scales about the glass's center until the glass fills
+ *            the viewport; the aluminum dissolves at the edges).
  *   Act III— The Pressings: inside the computer, the revolving rack of
  *            records (tonearm drop on play), CTAs, search, the pulse line.
  *
@@ -193,30 +197,66 @@ function Landing() {
   }
 
   if (reduce) {
-    return <ReducedLanding gatedPlay={gatedPlay} onStart={startListening} onBrowse={() => playClick('primary')} />
+    return (
+      <ReducedLanding
+        gatedPlay={gatedPlay}
+        onStart={startListening}
+        onBrowse={() => playClick('primary')}
+        heroState={suggestion.state}
+      />
+    )
   }
-  return <ScrollLanding gatedPlay={gatedPlay} onStart={startListening} onBrowse={() => playClick('primary')} />
+  return (
+    <ScrollLanding
+      gatedPlay={gatedPlay}
+      onStart={startListening}
+      onBrowse={() => playClick('primary')}
+      heroState={suggestion.state}
+    />
+  )
 }
 
 interface LandingBodyProps {
   gatedPlay: (state: TargetState, minutes?: number) => void
   onStart: () => void
   onBrowse: () => void
+  /** Circadian suggestion — the record spinning on the MacBook's screen. */
+  heroState: TargetState
 }
 
 // ── the moving hero — sticky stage + scroll-progress camera ────────────────
 
-function ScrollLanding({ gatedPlay, onStart, onBrowse }: LandingBodyProps) {
+function ScrollLanding({ gatedPlay, onStart, onBrowse, heroState }: LandingBodyProps) {
   const heroRef = useRef<HTMLDivElement>(null)
   const headlineRef = useRef<HTMLDivElement>(null)
   const cueRef = useRef<HTMLDivElement>(null)
   const act3Ref = useRef<HTMLDivElement>(null)
+  const macRef = useRef<HTMLDivElement | null>(null)
+  const macScreenRef = useRef<HTMLDivElement | null>(null)
   const progressRef = useRef(0)
   const tintRef = useRef('#6f7ff0')
 
   useEffect(() => {
     let raf = 0
     let disposed = false
+
+    // ── the MacBook camera — measured, not assumed ──────────────────────────
+    // S is the scale at which the GLASS exactly overfills the viewport
+    // (zt=1); yPct is the glass's visual center as a fraction of the machine,
+    // which doubles as translate offset and transform-origin so the screen
+    // center rides the exact viewport center at every zoom. restDy drops the
+    // machine slightly below center at rest (composition under the headline)
+    // and glides to 0 across the dive. Re-measured only when the viewport
+    // changes — gBCR ratios are invariant under the uniform scale transform,
+    // and offsetWidth/Height are layout px, untouched by transforms.
+    let macS = 0
+    let macYPct = 30.6
+    let restDy = 0
+    let lastVw = 0
+    let lastVh = 0
+    let chromeEls: HTMLElement[] | null = null
+    let uiFadeEls: HTMLElement[] | null = null
+
     const loop = () => {
       if (disposed) return
       raf = requestAnimationFrame(loop)
@@ -226,6 +266,41 @@ function ScrollLanding({ gatedPlay, onStart, onBrowse }: LandingBodyProps) {
       const vh = window.innerHeight
       const p = heroProgress(-rect.top, 0, rect.height, vh)
       progressRef.current = p
+
+      const mac = macRef.current
+      const scr = macScreenRef.current
+      if (mac && scr) {
+        const vw = window.innerWidth
+        if (vw !== lastVw || vh !== lastVh) {
+          lastVw = vw
+          lastVh = vh
+          const rootR = mac.getBoundingClientRect()
+          const scrR = scr.getBoundingClientRect()
+          if (rootR.height > 0 && scr.offsetWidth > 0) {
+            macYPct = ((scrR.top + scrR.height / 2 - rootR.top) / rootR.height) * 100
+            macS = 1.06 * Math.max(vw / scr.offsetWidth, vh / scr.offsetHeight)
+            restDy = 0.1 * vh
+            mac.style.transformOrigin = `50% ${macYPct.toFixed(3)}%`
+          }
+        }
+        if (!chromeEls) chromeEls = Array.from(mac.querySelectorAll<HTMLElement>('[data-mac-chrome]'))
+        if (!uiFadeEls) uiFadeEls = Array.from(mac.querySelectorAll<HTMLElement>('[data-mac-uifade]'))
+        if (macS > 1) {
+          const zt = heroZoomT(p)
+          const s = 1 + zt * (macS - 1)
+          mac.style.transform = `translate(-50%, -${macYPct.toFixed(3)}%) translateY(${(restDy * (1 - zt)).toFixed(2)}px) scale(${s.toFixed(4)})`
+          // Once the zoom pins, release the layer hint so the browser
+          // re-rasterizes the on-screen UI crisp at the final scale.
+          mac.style.willChange = zt >= 0.999 ? 'auto' : 'transform'
+          // The aluminum dissolves as the glass swallows the frame…
+          const chrome = roomOpacity(p).toFixed(3)
+          for (const el of chromeEls) el.style.opacity = chrome
+          // …and the mini-home's text hands off to the Act III content
+          // (the record keeps turning underneath — one continuous world).
+          const uiFade = clamp01(1 - act3Opacity(p) * 2).toFixed(3)
+          for (const el of uiFadeEls) el.style.opacity = uiFade
+        }
+      }
 
       const headline = headlineRef.current
       if (headline) {
@@ -273,6 +348,9 @@ function ScrollLanding({ gatedPlay, onStart, onBrowse }: LandingBodyProps) {
             reduced={false}
           />
 
+          {/* The machine — the hyperrealistic MacBook the scroll dives into. */}
+          <MacBookHero state={heroState} rootRef={macRef} screenRef={macScreenRef} />
+
           {/* Act I — headline over the study. */}
           <div
             ref={headlineRef}
@@ -309,12 +387,23 @@ function ScrollLanding({ gatedPlay, onStart, onBrowse }: LandingBodyProps) {
               pointerEvents: 'none',
             })}
           >
-            <span className={cx('ss-cue-pulse', css({ display: 'block', width: '1px', height: '44px', background: 'starlight' }))} />
+            <span
+              className={cx(
+                'ss-cue-pulse',
+                css({
+                  display: 'block',
+                  width: '1px',
+                  height: '34px',
+                  // a whisper that fades in from the dark — never a hard seam over the deck
+                  background: 'linear-gradient(to bottom, transparent, rgba(237,237,243,0.5))',
+                }),
+              )}
+            />
             <span
               className={cx(
                 'ss-cue-pulse',
                 'tabular',
-                css({ fontSize: 'caption', letterSpacing: '0.14em', textTransform: 'uppercase', color: 'silver' }),
+                css({ fontSize: 'caption', letterSpacing: '0.14em', textTransform: 'uppercase', color: 'silver', opacity: '0.8' }),
               )}
             >
               scroll
@@ -394,12 +483,12 @@ function ScrollLanding({ gatedPlay, onStart, onBrowse }: LandingBodyProps) {
 
 // ── reduced motion — a static composed study, normal flow, no tricks ───────
 
-function ReducedLanding({ gatedPlay, onStart, onBrowse }: LandingBodyProps) {
+function ReducedLanding({ gatedPlay, onStart, onBrowse, heroState }: LandingBodyProps) {
   return (
     <div className={css({ position: 'relative', bg: 'deepSpace', color: 'starlight' })}>
       <LandingHeader />
 
-      {/* The study as a still + the headline. */}
+      {/* The study as a still — headline over the resting machine. */}
       <section
         className={css({
           position: 'relative',
@@ -409,6 +498,7 @@ function ReducedLanding({ gatedPlay, onStart, onBrowse }: LandingBodyProps) {
           alignItems: 'center',
           justifyContent: 'center',
           overflow: 'hidden',
+          pb: '10',
         })}
       >
         <div aria-hidden className={css({ position: 'absolute', inset: '0' })}>
@@ -428,6 +518,10 @@ function ReducedLanding({ gatedPlay, onStart, onBrowse }: LandingBodyProps) {
         >
           <Headline />
           <p className={sublineCss}>{SUBLINE}</p>
+        </div>
+        {/* The MacBook at rest — full and detailed, nothing moving. */}
+        <div className={css({ position: 'relative', w: 'full', mt: '10' })}>
+          <MacBookHero state={heroState} reduced />
         </div>
       </section>
 
