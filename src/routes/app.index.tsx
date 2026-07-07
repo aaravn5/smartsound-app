@@ -189,9 +189,9 @@ function TodayScreen() {
           mb: '7',
           textAlign: 'center',
           fontFamily: 'display',
-          fontWeight: '400',
+          fontWeight: '700',
           fontSize: 'headingSm',
-          letterSpacing: '-0.01em',
+          letterSpacing: '-0.02em',
           color: 'starlight',
         })}
       >
@@ -205,9 +205,9 @@ function TodayScreen() {
           className={css({
             m: '0',
             fontFamily: 'display',
-            fontWeight: '400',
+            fontWeight: '800',
             fontSize: 'clamp(2.375rem, 7vw, 2.75rem)',
-            letterSpacing: '-0.015em',
+            letterSpacing: '-0.03em',
             lineHeight: '1.08',
             color: 'starlight',
           })}
@@ -261,9 +261,9 @@ function TodayScreen() {
             m: '0',
             mt: '6',
             fontFamily: 'display',
-            fontWeight: '400',
+            fontWeight: '800',
             fontSize: '1.875rem',
-            letterSpacing: '-0.01em',
+            letterSpacing: '-0.02em',
             lineHeight: '1.1',
             color: 'starlight',
           })}

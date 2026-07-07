@@ -131,14 +131,14 @@ const quietRoundBtnCss = cx(
   border: '0.5px solid',
   borderColor: 'frost.stroke',
   borderRadius: 'pill',
-  background: 'rgba(30, 30, 42, 0.55)',
+  background: 'rgba(255, 255, 255, 0.62)',
   color: 'silver',
   font: 'inherit',
   cursor: 'pointer',
   WebkitTapHighlightColor: 'transparent',
   transition:
     'background 300ms ease, color 300ms ease, transform 150ms cubic-bezier(0.34, 1.56, 0.64, 1)',
-  _hover: { background: 'rgba(45, 45, 61, 0.65)', color: 'starlight' },
+  _hover: { background: 'rgba(255, 255, 255, 0.85)', color: 'starlight' },
   _active: { transform: 'scale(0.94)' },
   '@media (prefers-reduced-motion: reduce)': { transition: 'none', _active: { transform: 'none' } },
   }),
@@ -242,12 +242,10 @@ function PlayerScreen() {
   const warnLowTime = shouldWarnLowTime(plan, running, remaining)
 
   return (
-    // ss-scene-dark: the immersive player stays dark — ONE dark world.
+    // The player lives on the same flat calming-grey canvas as the rest of
+    // the app (Desktop.fm) — the band field drifts in a whisper of blue.
     <div
-      className={cx(
-        'ss-scene-dark',
-        css({ position: 'fixed', inset: '0', zIndex: '0', overflow: 'hidden', bg: 'deepSpace' }),
-      )}
+      className={css({ position: 'fixed', inset: '0', zIndex: '0', overflow: 'hidden', bg: 'bgDeep' })}
     >
       {/* The generative band field — the only background this route has. */}
       <BandField state={state} />
@@ -311,9 +309,9 @@ function PlayerScreen() {
               className={css({
                 m: '0',
                 fontFamily: 'display',
-                fontWeight: '400',
+                fontWeight: '800',
                 fontSize: 'heading',
-                letterSpacing: '-0.01em',
+                letterSpacing: '-0.02em',
                 color: 'starlight',
               })}
             >
@@ -364,7 +362,7 @@ function PlayerScreen() {
                 transition: 'transform 160ms ease',
                 _active: { transform: 'scale(0.97)' },
                 _focusVisible: {
-                  outline: '2px solid token(colors.ghostBlue)',
+                  outline: '2px solid token(colors.accent)',
                   outlineOffset: '8px',
                   borderRadius: 'full',
                 },
@@ -390,11 +388,11 @@ function PlayerScreen() {
                     h: '68px',
                     borderRadius: 'full',
                     color: 'starlight',
-                    background: 'rgba(30, 30, 42, 0.72)',
-                    // 0.5px rim + a soft mercury glow — the ONE accent, on the
+                    background: 'rgba(255, 255, 255, 0.82)',
+                    // 0.5px rim + a soft blue glow — the ONE accent, on the
                     // ONE primary action.
                     boxShadow:
-                      'inset 0 0 0 0.5px rgba(237, 237, 243, 0.16), 0 0 0 0.5px rgba(237, 237, 243, 0.08), 0 0 32px rgba(82, 102, 235, 0.28), 0 2px 12px rgba(0, 0, 0, 0.35)',
+                      'inset 0 0 0 0.5px rgba(17, 17, 17, 0.10), 0 0 0 0.5px rgba(17, 17, 17, 0.06), 0 0 32px rgba(88, 114, 230, 0.30), 0 2px 12px rgba(17, 17, 17, 0.14)',
                     pointerEvents: 'none',
                     transition: 'opacity 420ms ease, box-shadow 420ms ease',
                     '@media (prefers-reduced-motion: reduce)': { transition: 'none' },
@@ -586,7 +584,7 @@ function PlayerScreen() {
                       position: 'absolute',
                       h: 'full',
                       borderRadius: 'pill',
-                      bg: 'silver',
+                      bg: 'accent',
                     })}
                   />
                 </Slider.Track>
@@ -601,7 +599,7 @@ function PlayerScreen() {
                     border: '1px solid',
                     borderColor: 'lead',
                     cursor: 'pointer',
-                    _focusVisible: { outline: '2px solid token(colors.ghostBlue)', outlineOffset: '2px' },
+                    _focusVisible: { outline: '2px solid token(colors.accent)', outlineOffset: '2px' },
                   })}
                 />
               </Slider.Root>
@@ -623,7 +621,7 @@ function PlayerScreen() {
                 borderRadius: 'card',
                 textDecoration: 'none',
                 transition: 'background 300ms ease',
-                _hover: { background: 'rgba(45, 45, 61, 0.72)' },
+                _hover: { background: 'rgba(255, 255, 255, 0.9)' },
                 '@media (prefers-reduced-motion: reduce)': { transition: 'none' },
               }),
             )}

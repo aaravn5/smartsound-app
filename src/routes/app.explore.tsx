@@ -232,9 +232,9 @@ function LibraryScreen() {
           className={css({
             m: '0',
             fontFamily: 'display',
-            fontWeight: '400',
+            fontWeight: '800',
             fontSize: 'clamp(2.25rem, 6.5vw, 2.75rem)',
-            letterSpacing: '-0.015em',
+            letterSpacing: '-0.03em',
             lineHeight: '1.08',
             color: 'starlight',
           })}
@@ -255,10 +255,10 @@ function LibraryScreen() {
             borderRadius: 'pill',
             border: '0.5px solid',
             borderColor: 'lead',
-            background: 'rgba(39, 39, 53, 0.35)',
+            background: '#f1f2f3',
             cursor: 'text',
             transition: 'border-color 300ms ease, background 300ms ease',
-            _focusWithin: { borderColor: 'ghostBlue', background: 'rgba(39, 39, 53, 0.55)' },
+            _focusWithin: { borderColor: 'ghostBlue', background: '#ffffff' },
           })}
         >
           <span aria-hidden className={css({ color: 'silver', lineHeight: '0' })}>

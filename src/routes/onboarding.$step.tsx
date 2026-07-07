@@ -145,14 +145,14 @@ const caption = css({
   color: 'faint',
 })
 
-// Instrument Serif 400 — the serif is never bold; airy at this size.
+// System display — bold and tight for the light Desktop.fm heading.
 const title = css({
   m: '0',
   mt: '2',
   fontFamily: 'display',
   fontSize: 'clamp(2.1rem, 7vw, 2.75rem)',
-  fontWeight: '400',
-  letterSpacing: '-0.015em',
+  fontWeight: '800',
+  letterSpacing: '-0.02em',
   lineHeight: '1.1',
   color: 'text',
   textAlign: 'center',
@@ -179,7 +179,7 @@ function StepDots({ current }: { current: OnboardingStep }) {
             display: 'block',
             height: '6px',
             borderRadius: 'capsule',
-            bg: i <= idx ? 'accent' : 'rgba(255,255,255,0.22)',
+            bg: i <= idx ? 'accent' : 'rgba(17,17,17,0.20)',
             transition:
               'width token(durations.gentle) token(easings.calm), background-color token(durations.gentle) ease',
             '@media (prefers-reduced-motion: reduce)': { transition: 'none' },
@@ -203,7 +203,7 @@ function PrimaryButton({
     <LiquidGlass
       as="button"
       variant="control"
-      tint="rgba(139, 108, 246, 0.6)"
+      tint="rgba(17, 17, 17, 0.9)"
       onClick={() => {
         playClick('primary')
         onClick()
@@ -215,8 +215,8 @@ function PrimaryButton({
         border: 'none',
         borderWidth: '1px',
         borderStyle: 'solid',
-        borderColor: 'rgba(196, 181, 253, 0.38)',
-        color: 'text',
+        borderColor: 'rgba(17, 17, 17, 0.5)',
+        color: 'white',
         font: 'inherit',
       })}
     >
@@ -465,15 +465,15 @@ const fieldInputCss = css({
   w: 'full',
   h: '50px',
   px: '3.5',
-  border: '1px solid rgba(255,255,255,0.16)',
+  border: '1px solid rgba(17,17,17,0.16)',
   borderRadius: 'control',
-  background: 'rgba(255,255,255,0.07)',
+  background: 'rgba(17,17,17,0.05)',
   font: 'inherit',
   fontSize: 'body',
   color: 'text',
   outline: 'none',
   transition: 'border-color token(durations.quick) ease, background token(durations.quick) ease',
-  _focus: { borderColor: 'accent', background: 'rgba(255,255,255,0.1)' },
+  _focus: { borderColor: 'accent', background: 'rgba(17,17,17,0.08)' },
   _placeholder: { color: 'ghost' },
 })
 
@@ -490,7 +490,7 @@ const errorCss = css({
   mt: '1.5',
   fontSize: 'caption',
   fontWeight: '500',
-  color: '#FCA5A5',
+  color: '#DC2626',
   textAlign: 'left',
 })
 
@@ -740,7 +740,7 @@ function GoalStep({ reveal }: { reveal: Reveal }) {
               variant="card"
               role="radio"
               aria-checked={isSelected}
-              tint={isSelected ? 'rgba(167, 139, 250, 0.5)' : undefined}
+              tint={isSelected ? 'rgba(88, 114, 230, 0.5)' : undefined}
               onClick={() => choose(option.state)}
               staticSheen
               className={cx(
@@ -759,7 +759,7 @@ function GoalStep({ reveal }: { reveal: Reveal }) {
                 }),
               )}
               style={{
-                borderColor: isSelected ? 'rgba(196, 181, 253, 0.55)' : undefined,
+                borderColor: isSelected ? 'rgba(88, 114, 230, 0.55)' : undefined,
               }}
             >
               <div className={css({ position: 'relative', px: '4', py: '4', minH: '148px', display: 'flex', flexDirection: 'column' })}>
@@ -868,7 +868,7 @@ function WhenStep({ reveal }: { reveal: Reveal }) {
                   flex: '1',
                   h: '5px',
                   borderRadius: 'capsule',
-                  bg: 'rgba(255,255,255,0.14)',
+                  bg: 'rgba(17,17,17,0.12)',
                 })}
               >
                 <Slider.Range
@@ -936,7 +936,7 @@ function ReadyStep({ reveal }: { reveal: Reveal }) {
       >
         <LiquidGlass
           variant="control"
-          tint="rgba(167, 139, 250, 0.55)"
+          tint="rgba(88, 114, 230, 0.55)"
           className={css({ width: '96px', height: '96px', borderRadius: 'full', display: 'grid', placeItems: 'center', color: 'accent' })}
         >
           <Icon />

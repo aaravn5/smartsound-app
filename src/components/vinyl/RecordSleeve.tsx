@@ -16,7 +16,7 @@ import type { TargetState } from '~/engine/audio/types'
 
 // Static band→class map (Panda: no dynamic values in css()).
 const tintLayer: Record<BandKey, string> = {
-  beta: css({ background: '#6f7ff0', mixBlendMode: 'color' }),
+  beta: css({ background: '#5872e6', mixBlendMode: 'color' }),
   alpha: css({ background: '#5fb8c9', mixBlendMode: 'color' }),
   theta: css({ background: '#b78fd6', mixBlendMode: 'color' }),
   delta: css({ background: '#4a5a8a', mixBlendMode: 'color' }),

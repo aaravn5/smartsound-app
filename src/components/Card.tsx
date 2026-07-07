@@ -78,7 +78,7 @@ export const chipCss = css({
   WebkitTapHighlightColor: 'transparent',
   transition:
     'background 300ms cubic-bezier(0.16, 1, 0.3, 1), color 300ms ease, border-color 300ms ease, transform 150ms cubic-bezier(0.34, 1.56, 0.64, 1)',
-  _hover: { background: '#2d2d3d' },
+  _hover: { background: '#e3e4e8' },
   _active: { transform: 'scale(0.96)' },
   '@media (prefers-reduced-motion: reduce)': { transition: 'none', _active: { transform: 'none' } },
 })

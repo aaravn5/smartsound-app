@@ -445,9 +445,9 @@ export function PressingCarousel({ onPlay, onFocus }: PressingCarouselProps) {
           className={css({
             m: '0',
             fontFamily: 'display',
-            fontWeight: '400',
+            fontWeight: '700',
             fontSize: 'clamp(1.1rem, 2.2vw, 1.45rem)',
-            letterSpacing: '-0.01em',
+            letterSpacing: '-0.02em',
             color: 'starlight',
           })}
         >

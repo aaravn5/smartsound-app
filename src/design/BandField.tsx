@@ -1,13 +1,14 @@
 import { useEffect, useRef } from 'react'
 import { css } from 'styled-system/css'
-import { STATE_BAND, BAND_TINT, type BandKey } from '~/components/vinyl/RecordDisc'
+import { STATE_BAND, type BandKey } from '~/components/vinyl/RecordDisc'
 import type { TargetState } from '~/engine/audio/types'
 
 /**
- * BandField — the player's generative background: a very dark Deep Space
- * base with a slow particle drift in the record's band tint. Density and
- * speed are paced by the band (Delta slowest/dimmest → Beta fastest/
- * brightest) — the motion system itself demonstrates the taxonomy.
+ * BandField — the player's generative background: a flat light Desktop.fm
+ * canvas with a whisper of slow particle drift in the one calming blue.
+ * Density and speed are still paced by the band (Delta slowest/dimmest →
+ * Beta fastest/brightest) — the motion system itself demonstrates the
+ * taxonomy — but every band shares the single accent color.
  *
  * Cheap by construction: ≤64 points in preallocated Float32Arrays, one 2D
  * canvas redrawn at ~30fps (frames are skipped, not re-timed), zero
@@ -23,18 +24,17 @@ interface FieldParams {
 }
 
 const FIELD: Record<BandKey, FieldParams> = {
-  beta: { count: 64, speed: 26, alpha: 0.5 },
-  alpha: { count: 48, speed: 15, alpha: 0.4 },
-  theta: { count: 36, speed: 8, alpha: 0.32 },
-  delta: { count: 24, speed: 4, alpha: 0.24 },
+  beta: { count: 64, speed: 26, alpha: 0.22 },
+  alpha: { count: 48, speed: 15, alpha: 0.18 },
+  theta: { count: 36, speed: 8, alpha: 0.14 },
+  delta: { count: 24, speed: 4, alpha: 0.1 },
 }
 
 const MAX_POINTS = 64
 
-function hexToRgb(hex: string): [number, number, number] {
-  const h = hex.replace('#', '')
-  return [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16)]
-}
+// Flat Desktop.fm canvas grey + the one calming blue (rgb 88,114,230).
+const LIGHT_CANVAS = '#f1f2f3'
+const SIGNAL_RGB: [number, number, number] = [88, 114, 230]
 
 export function BandField({ state }: { state: TargetState }) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
@@ -75,8 +75,8 @@ export function BandField({ state }: { state: TargetState }) {
       tw[i] = rand() * Math.PI * 2
     }
 
-    // Tint glides between bands rather than snapping.
-    let [tr, tg, tb] = hexToRgb(BAND_TINT[STATE_BAND[stateRef.current]])
+    // One calming blue across every band — no per-band tint.
+    const [pr, pg, pb] = SIGNAL_RGB
 
     const resize = () => {
       const rect = canvas.getBoundingClientRect()
@@ -90,15 +90,12 @@ export function BandField({ state }: { state: TargetState }) {
     const draw = (t: number, dtMs: number) => {
       const band = STATE_BAND[stateRef.current]
       const prm = FIELD[band]
-      const [ttr, ttg, ttb] = hexToRgb(BAND_TINT[band])
-      const mix = Math.min(1, dtMs * 0.003)
-      tr += (ttr - tr) * mix
-      tg += (ttg - tg) * mix
-      tb += (ttb - tb) * mix
 
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
-      ctx.clearRect(0, 0, W, H)
-      ctx.fillStyle = `rgb(${tr | 0}, ${tg | 0}, ${tb | 0})`
+      // Flat light canvas base, then a whisper of calming-blue drift over it.
+      ctx.fillStyle = LIGHT_CANVAS
+      ctx.fillRect(0, 0, W, H)
+      ctx.fillStyle = `rgb(${pr}, ${pg}, ${pb})`
       const dy = (prm.speed * dtMs) / 1000 / Math.max(1, H)
       for (let i = 0; i < prm.count; i++) {
         y[i] -= dy * drift[i]

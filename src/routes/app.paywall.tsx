@@ -204,10 +204,9 @@ function PaywallScreen() {
         </button>
       </div>
 
-      {/* Hero — an always-dark scene surface (crisp photo + scrim) in both themes. */}
+      {/* Hero — a light near-monochrome surface with a soft blue accent wash. */}
       <div
         className={cx(
-          'ss-scene-dark',
           css({
             position: 'relative',
             borderRadius: 'card',
@@ -226,7 +225,7 @@ function PaywallScreen() {
             position: 'absolute',
             inset: '0',
             background:
-              'radial-gradient(ellipse 90% 70% at 20% 0%, rgba(82, 102, 235, 0.18) 0%, transparent 60%), linear-gradient(172deg, #272735 0%, #1e1e2a 55%, #171721 100%)',
+              'radial-gradient(ellipse 90% 70% at 20% 0%, rgba(88, 114, 230, 0.14) 0%, transparent 60%), linear-gradient(172deg, #ffffff 0%, #f7f7f8 55%, #f1f2f3 100%)',
           })}
         />
         <div
@@ -260,8 +259,8 @@ function PaywallScreen() {
               m: '0',
               fontFamily: 'display',
               fontSize: '2.125rem',
-              fontWeight: '400',
-              letterSpacing: '-0.01em',
+              fontWeight: '800',
+              letterSpacing: '-0.02em',
               lineHeight: '1.1',
               color: 'text',
             })}

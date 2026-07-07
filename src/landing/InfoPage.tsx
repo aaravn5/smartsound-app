@@ -7,11 +7,11 @@ import { Scene, type SceneVariant } from '~/design/Scene'
 /**
  * InfoPage — the shared editorial stage for /privacy, /terms, /contact and
  * /science: a scene-dark landscape with the page scrim, a glass back
- * control, an Instrument Serif title (400 — never bold), and a readable
+ * control, a bold system display title, and a readable
  * measure. These pages scroll normally (they're documents, not the hero).
  */
 
-const DISPLAY_SERIF = '"Instrument Serif", Georgia, "Times New Roman", serif'
+const DISPLAY_SERIF = '-apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif'
 
 export function InfoPage({
   scene,
@@ -59,7 +59,7 @@ export function InfoPage({
               py: '2.5',
               fontSize: 'footnote',
               fontWeight: '600',
-              color: 'rgba(255,255,255,0.92)',
+              color: 'rgba(17,17,17,0.92)',
               textDecoration: 'none',
             }),
           )}
@@ -87,8 +87,8 @@ export function InfoPage({
             m: '0',
             mt: '2',
             fontSize: 'clamp(2.25rem, 6vw, 3.25rem)',
-            fontWeight: '400',
-            letterSpacing: '-0.02em',
+            fontWeight: '800',
+            letterSpacing: '-0.03em',
             lineHeight: '1.08',
             color: 'text',
             textShadow: 'var(--ss-text-glow)',
@@ -135,7 +135,7 @@ export function InfoSection({ title, children }: { title: string; children: Reac
           '& p': { m: '0', mb: '3' },
           '& ul': { m: '0', mb: '3', pl: '5' },
           '& li': { mb: '1.5' },
-          '& a': { color: 'rgba(196, 181, 253, 0.95)', textDecoration: 'underline' },
+          '& a': { color: 'mercuryBlue', textDecoration: 'underline' },
         })}
       >
         {children}

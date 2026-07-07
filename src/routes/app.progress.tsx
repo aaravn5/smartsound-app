@@ -85,7 +85,7 @@ function ListeningRings({ size, progress, minutes }: { size: number; progress: n
     const played = i < lit
     const t = lit > 0 ? i / Math.max(1, lit - 1) : 0
     const stroke = played
-      ? `rgba(237, 237, 243, ${(0.28 + 0.5 * (1 - t)).toFixed(2)})`
+      ? `rgba(17, 17, 17, ${(0.28 + 0.5 * (1 - t)).toFixed(2)})`
       : 'rgba(112, 112, 125, 0.22)'
     return { r, stroke, width: played ? 1.4 : 1 }
   })
@@ -115,7 +115,7 @@ function ListeningRings({ size, progress, minutes }: { size: number; progress: n
           />
         ))}
         {/* The stylus — the single Mercury Blue mark for today. */}
-        <circle cx={sx} cy={sy} r={3.5} fill="#5266eb" />
+        <circle cx={sx} cy={sy} r={3.5} fill="#5872e6" />
       </svg>
       <div
         className={css({
@@ -139,7 +139,7 @@ function ListeningRings({ size, progress, minutes }: { size: number; progress: n
 
 /** Band mix — low-saturation stacked bar in the band tints + mono legend. */
 const BAND_MIX = [
-  { band: 'Beta', pct: 61, tint: '#6f7ff0' },
+  { band: 'Beta', pct: 61, tint: '#5872e6' },
   { band: 'Theta', pct: 27, tint: '#b78fd6' },
   { band: 'Delta', pct: 12, tint: '#4a5a8a' },
 ]
@@ -192,9 +192,9 @@ function ProgressScreen() {
           className={css({
             m: '0',
             fontFamily: 'display',
-            fontWeight: '400',
+            fontWeight: '800',
             fontSize: 'clamp(2.25rem, 6.5vw, 2.75rem)',
-            letterSpacing: '-0.015em',
+            letterSpacing: '-0.03em',
             lineHeight: '1.08',
             color: 'starlight',
           })}

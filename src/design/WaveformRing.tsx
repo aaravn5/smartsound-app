@@ -59,8 +59,8 @@ export function WaveformRing({
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
       ctx.clearRect(0, 0, size, size)
 
-      // Pass 1 — the full hairline ring, Starlight.
-      ctx.strokeStyle = 'rgba(237, 237, 243, 0.34)'
+      // Pass 1 — the full hairline ring, carbon on the light canvas.
+      ctx.strokeStyle = 'rgba(17, 17, 17, 0.22)'
       ctx.lineWidth = 1
       ctx.beginPath()
       for (let i = 0; i <= N_POINTS; i++) {

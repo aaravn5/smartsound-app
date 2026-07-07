@@ -71,12 +71,13 @@ function useReducedMotionFlag(): boolean {
 
 // ── the pulse color: live --signal, parsed oklch → sRGB ─────────────────────
 
+// One calming blue for every variant — the single accent of the flat canvas.
 const ACCENT: Record<SceneVariant, string> = {
-  dusk: '#A78BFA',
-  aurora: '#5EEAD4',
-  ocean: '#7DD3FC',
-  dawn: '#FDBA74',
-  forest: '#9AD1A8',
+  dusk: '#5872e6',
+  aurora: '#5872e6',
+  ocean: '#5872e6',
+  dawn: '#5872e6',
+  forest: '#5872e6',
 }
 
 function hexToRgb(hex: string): [number, number, number] {

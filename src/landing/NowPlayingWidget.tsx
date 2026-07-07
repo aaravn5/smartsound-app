@@ -36,12 +36,12 @@ const iconBtnCss = css({
   h: '34px',
   border: 'none',
   borderRadius: 'full',
-  background: 'rgba(255,255,255,0.07)',
-  color: 'rgba(255,255,255,0.9)',
+  background: 'rgba(17,17,17,0.05)',
+  color: 'rgba(17,17,17,0.9)',
   cursor: 'pointer',
   WebkitTapHighlightColor: 'transparent',
   transition: 'background 160ms ease, transform 160ms ease',
-  _hover: { background: 'rgba(255,255,255,0.14)' },
+  _hover: { background: 'rgba(17,17,17,0.09)' },
   _active: { transform: 'scale(0.92)' },
 })
 
@@ -124,10 +124,10 @@ export function NowPlayingWidget() {
             </span>
           </span>
           <span className={css({ flex: '1', minW: '0' })}>
-            <span className={css({ display: 'block', fontSize: 'subhead', fontWeight: '600', color: 'rgba(255,255,255,0.96)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' })}>
+            <span className={css({ display: 'block', fontSize: 'subhead', fontWeight: '600', color: 'rgba(17,17,17,0.96)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' })}>
               {title}
             </span>
-            <span className={cx('tabular', css({ display: 'block', mt: '0.5', fontSize: 'caption', color: 'rgba(235,238,250,0.68)' }))}>
+            <span className={cx('tabular', css({ display: 'block', mt: '0.5', fontSize: 'caption', color: 'rgba(17,17,17,0.60)' }))}>
               {BAND_LABEL[state]} · {formatElapsed(elapsed)}
             </span>
           </span>

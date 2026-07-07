@@ -33,15 +33,15 @@ const inputCss = css({
   display: 'block',
   w: 'full',
   px: '3.5',
-  border: '1px solid rgba(255,255,255,0.16)',
+  border: '1px solid rgba(17,17,17,0.16)',
   borderRadius: 'control',
-  background: 'rgba(255,255,255,0.07)',
+  background: 'rgba(17,17,17,0.05)',
   font: 'inherit',
   fontSize: 'body',
   color: 'text',
   outline: 'none',
   transition: 'border-color 160ms ease, background 160ms ease',
-  _focus: { borderColor: 'rgba(196, 181, 253, 0.8)', background: 'rgba(255,255,255,0.1)' },
+  _focus: { borderColor: 'mercuryBlue', background: 'rgba(17,17,17,0.08)' },
   _placeholder: { color: 'ghost' },
 })
 
@@ -120,7 +120,7 @@ function ContactPage() {
               className={cx(inputCss, css({ py: '3', resize: 'vertical', minH: '120px' }))}
             />
             {error && (
-              <p className={css({ m: '0', mt: '1.5', fontSize: 'caption', fontWeight: '500', color: '#FCA5A5' })}>
+              <p className={css({ m: '0', mt: '1.5', fontSize: 'caption', fontWeight: '500', color: '#DC2626' })}>
                 {error}
               </p>
             )}
@@ -164,7 +164,7 @@ function ContactPage() {
           </p>
           <p className={css({ m: '0', mt: '2' })}>
             Didn&rsquo;t open?{' '}
-            <a href={mailtoUrl} data-contact-mailto className={css({ color: 'rgba(196, 181, 253, 0.95)', textDecoration: 'underline' })}>
+            <a href={mailtoUrl} data-contact-mailto className={css({ color: 'mercuryBlue', textDecoration: 'underline' })}>
               Try again
             </a>{' '}
             — or write to us from any mail client; the compose window carries the address.

@@ -35,7 +35,7 @@ export const STATE_BAND: Record<TargetState, BandKey> = {
 }
 
 export const BAND_TINT: Record<BandKey, string> = {
-  beta: '#6f7ff0',
+  beta: '#5872e6',
   alpha: '#5fb8c9',
   theta: '#b78fd6',
   delta: '#4a5a8a',
@@ -49,7 +49,7 @@ export function capText(state: TargetState): string {
 // Panda gotcha: dynamic values don't compile — band tints live in a static
 // band→class map, one literal css() per band.
 const tintLayer: Record<BandKey, string> = {
-  beta: css({ background: '#6f7ff0', mixBlendMode: 'color' }),
+  beta: css({ background: '#5872e6', mixBlendMode: 'color' }),
   alpha: css({ background: '#5fb8c9', mixBlendMode: 'color' }),
   theta: css({ background: '#b78fd6', mixBlendMode: 'color' }),
   delta: css({ background: '#4a5a8a', mixBlendMode: 'color' }),
@@ -61,7 +61,7 @@ const tintLayer: Record<BandKey, string> = {
 const plainLabelLayer: Record<BandKey, string> = {
   beta: css({
     background:
-      'radial-gradient(circle at 38% 34%, rgba(111, 127, 240, 0.62) 0%, rgba(111, 127, 240, 0.30) 44%, rgba(16, 16, 24, 0.92) 100%)',
+      'radial-gradient(circle at 38% 34%, rgba(88, 114, 230, 0.62) 0%, rgba(88, 114, 230, 0.30) 44%, rgba(16, 16, 24, 0.92) 100%)',
   }),
   alpha: css({
     background:
@@ -138,7 +138,7 @@ const initialCss = css({
   display: 'grid',
   placeItems: 'center',
   fontFamily: 'display',
-  fontWeight: '400',
+  fontWeight: '700',
   color: 'starlight',
   background: 'graphite',
 })

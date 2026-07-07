@@ -74,13 +74,13 @@ const primaryPillCss = css({
   font: 'inherit',
   fontSize: 'bodySm',
   fontWeight: '500',
-  background: 'mercuryBlue',
+  background: 'accent',
   color: 'white',
   textDecoration: 'none',
   cursor: 'pointer',
   WebkitTapHighlightColor: 'transparent',
   transition: 'background 300ms ease, transform 160ms ease',
-  _hover: { background: '#6377ee' },
+  _hover: { background: '#2a2a2a' },
   _active: { transform: 'scale(0.96)' },
   '@media (prefers-reduced-motion: reduce)': { transition: 'none', _active: { transform: 'none' } },
 })
@@ -179,7 +179,7 @@ export function LandingHeader() {
           textDecoration: 'none',
           fontFamily: 'display',
           fontSize: 'clamp(1.25rem, 2.2vw, 1.5rem)',
-          fontWeight: '600',
+          fontWeight: '700',
           letterSpacing: '-0.03em',
           color: 'starlight',
           whiteSpace: 'nowrap',
@@ -199,7 +199,7 @@ export function LandingHeader() {
           borderRadius: 'pill',
           border: '1px solid',
           borderColor: 'hairline',
-          background: 'rgba(30, 30, 42, 0.85)',
+          background: 'rgba(255, 255, 255, 0.72)',
           px: '2',
           py: '1',
         })}
@@ -228,12 +228,12 @@ export function LandingHeader() {
               aria-expanded={accountOpen}
               className={cx(
                 secondaryPillCss,
-                css({ background: 'graphite', _hover: { background: '#2d2d3d' } }),
+                css({ background: 'graphite', _hover: { background: '#e2e2e6' } }),
               )}
               data-greeting
             >
               <span
-                className={css({ fontFamily: 'display', fontWeight: '400', letterSpacing: '-0.01em' })}
+                className={css({ fontFamily: 'display', fontWeight: '600', letterSpacing: '-0.01em' })}
               >
                 {greeting}
               </span>
@@ -345,6 +345,7 @@ export function LandingHeader() {
                   px: '4',
                   py: '1.5',
                   fontFamily: 'display',
+                  fontWeight: '600',
                   fontSize: 'caption',
                   color: 'silver',
                 })}

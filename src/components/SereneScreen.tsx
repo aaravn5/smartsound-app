@@ -38,8 +38,8 @@ export function ScreenTitle({ title, caption }: { title: string; caption?: strin
           m: '0',
           fontFamily: 'display',
           fontSize: 'clamp(2.25rem, 6.5vw, 2.75rem)',
-          fontWeight: '400',
-          letterSpacing: '-0.015em',
+          fontWeight: '800',
+          letterSpacing: '-0.02em',
           lineHeight: '1.08',
           color: 'starlight',
         })}

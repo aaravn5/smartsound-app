@@ -1,24 +1,13 @@
-import { useEffect, useMemo, useRef } from 'react'
+import { useMemo } from 'react'
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
-import { useReducedMotion } from 'motion/react'
 import { css, cx } from 'styled-system/css'
 import { LandingHeader } from '~/landing/LandingHeader'
 import { LandingSearch } from '~/landing/LandingSearch'
 import { NowPlayingWidget } from '~/landing/NowPlayingWidget'
-import { StudyCanvas } from '~/landing/StudyCanvas'
-import { MacBookHero } from '~/landing/MacBookHero'
-import { PressingCarousel, PRESSINGS, pressingTint } from '~/landing/PressingCarousel'
+import { RecordHero } from '~/landing/RecordHero'
+import { AppWindowCard } from '~/landing/AppWindowCard'
+import { PRESSINGS, pressingTint } from '~/landing/PressingCarousel'
 import { RecordDisc } from '~/components/vinyl/RecordDisc'
-import {
-  HERO_SCROLL_VH,
-  heroProgress,
-  heroZoomT,
-  headlineOpacity,
-  cueOpacity,
-  roomOpacity,
-  act3Opacity,
-  clamp01,
-} from '~/landing/hero-math'
 import { hasAccount } from '~/lib/account'
 import { useClickSound } from '~/lib/click-sound'
 import { usePageTitle } from '~/lib/page-title'
@@ -26,74 +15,67 @@ import { suggestFor } from '~/engine/circadian/model'
 import type { TargetState } from '~/engine/audio/types'
 
 /**
- * `/` — the three-act scroll-zoom hero. No video, no photos: an ambient
- * generative canvas UNDER a hyperrealistic CSS/DOM MacBook (MacBookHero).
- * The page scrolls through a ~320vh container with a position:sticky stage;
- * scroll progress drives the camera timeline (hero-math.ts):
+ * `/` — the landing, re-cut in the Desktop.fm idiom: a single 3D-rendered
+ * object (a record) floating on the flat calming-grey canvas, with the macOS
+ * app-window card + one carbon-black CTA anchored below it. No scroll-dive, no
+ * photography, no gradients — the rendered disc and its blue laser lines are
+ * the only colour on an otherwise achromatic, Apple-restrained page. Below the
+ * hero: the statement line, the pressings as a clean record row, the offer.
  *
- *   Act I  — The Study: deep space, neural-drift particles, a whisper of
- *            EEG — and the MacBook, lid open, running SmartSound. Headline.
- *   Act II — The Zoom: the camera pushes INTO the MacBook's screen (the
- *            wrapper scales about the glass's center until the glass fills
- *            the viewport; the aluminum dissolves at the edges).
- *   Act III— The Pressings: inside the computer, the revolving rack of
- *            records (tonearm drop on play), CTAs, search, the pulse line.
- *
- * Browsing stays open (`/app` is one click away); LISTENING is the gate —
- * any play intent without an on-device account routes through
- * /onboarding/auth with the intent preserved.
- *
- * prefers-reduced-motion: no scroll-jack, no particles, no spin — a static
- * composed study + headline, then a normal-flow static record row + CTAs.
+ * Browsing stays open (`/app` is one click away); LISTENING is the gate — any
+ * play intent without an on-device account routes through /onboarding/auth
+ * with the intent preserved.
  */
 export const Route = createFileRoute('/')({
   component: Landing,
 })
 
-/** Secondary pill — Ghost Blue @20%, Starlight text. */
+/** Secondary pill — subtle, hairline-defined, carbon text. */
 const secondaryCtaCss = css({
   display: 'inline-flex',
   alignItems: 'center',
   justifyContent: 'center',
-  minH: '50px',
+  minH: '48px',
   px: '7',
   borderRadius: 'pill',
-  border: 'none',
+  border: '1px solid',
+  borderColor: 'lead',
   font: 'inherit',
   fontSize: 'bodyMd',
-  fontWeight: '500',
-  letterSpacing: '0.01em',
-  background: 'rgba(205, 221, 255, 0.20)',
-  color: 'starlight',
+  fontWeight: '700',
+  letterSpacing: '-0.01em',
+  background: 'bg',
+  color: 'text',
   textDecoration: 'none',
   cursor: 'pointer',
   WebkitTapHighlightColor: 'transparent',
   transition: 'background 300ms ease, transform 160ms ease',
-  _hover: { background: 'rgba(205, 221, 255, 0.28)' },
+  _hover: { background: 'graphite' },
   _active: { transform: 'scale(0.965)' },
   '@media (prefers-reduced-motion: reduce)': { transition: 'none', _active: { transform: 'none' } },
 })
 
-/** Primary pill — Mercury Blue bg, Pure White text. THE accent. */
+/** Primary pill — Carbon Black bg, white text. THE one filled CTA. */
 const primaryCtaCss = css({
   display: 'inline-flex',
   alignItems: 'center',
   justifyContent: 'center',
-  minH: '50px',
+  gap: '1.5',
+  minH: '48px',
   px: '7',
   borderRadius: 'pill',
   border: 'none',
   font: 'inherit',
   fontSize: 'bodyMd',
-  fontWeight: '500',
-  letterSpacing: '0.01em',
-  background: 'mercuryBlue',
-  color: 'white',
+  fontWeight: '800',
+  letterSpacing: '-0.01em',
+  background: 'accent',
+  color: 'bg',
   textDecoration: 'none',
   cursor: 'pointer',
   WebkitTapHighlightColor: 'transparent',
-  transition: 'background 300ms ease, transform 160ms ease',
-  _hover: { background: '#6377ee' },
+  transition: 'opacity 300ms ease, transform 160ms ease',
+  _hover: { opacity: '0.92' },
   _active: { transform: 'scale(0.965)' },
   '@media (prefers-reduced-motion: reduce)': { transition: 'none', _active: { transform: 'none' } },
 })
@@ -101,31 +83,33 @@ const primaryCtaCss = css({
 const footLinkCss = css({
   color: 'silver',
   textDecoration: 'none',
-  _hover: { color: 'starlight', textDecoration: 'underline' },
+  _hover: { color: 'text', textDecoration: 'underline' },
 })
 
 const headlineCss = css({
   m: '0',
   fontFamily: 'display',
-  fontWeight: '400',
-  fontSize: 'clamp(2.6rem, 6.5vw, 4rem)',
-  letterSpacing: '-0.02em',
-  lineHeight: '1.1',
-  color: 'starlight',
+  fontWeight: '800',
+  fontSize: 'clamp(2.4rem, 6vw, 3.5rem)',
+  letterSpacing: '-0.036em',
+  lineHeight: '1.05',
+  color: 'text',
 })
 
 const sublineCss = css({
   m: '0',
-  maxW: '30rem',
-  fontSize: 'clamp(0.9375rem, 1.4vw, 1.0625rem)',
-  lineHeight: '1.55',
+  maxW: '32rem',
+  fontSize: 'clamp(0.9375rem, 1.4vw, 1.125rem)',
+  fontWeight: '500',
+  lineHeight: '1.5',
+  letterSpacing: '-0.011em',
   color: 'silver',
 })
 
-/** The PROMOTED honesty line — body size, not footer whisper (audit 1.5). */
 const pulseLineCss = css({
   m: '0',
   fontSize: 'bodyMd',
+  fontWeight: '500',
   lineHeight: '1.5',
   textAlign: 'center',
   color: 'silver',
@@ -139,9 +123,7 @@ function Headline() {
   return (
     <h1 className={headlineCss}>
       <span className={css({ display: 'block' })}>records cut for</span>
-      <span className={css({ display: 'block' })}>
-        the <em className={css({ fontStyle: 'italic' })}>waking mind.</em>
-      </span>
+      <span className={css({ display: 'block' })}>the waking mind.</span>
     </h1>
   )
 }
@@ -155,6 +137,7 @@ function FooterLine() {
         py: '7',
         textAlign: 'center',
         fontSize: 'caption',
+        fontWeight: '500',
         color: 'silver',
       })}
     >
@@ -175,7 +158,6 @@ function Landing() {
   usePageTitle('SmartSound — calm, tuned to your body')
   const navigate = useNavigate()
   const playClick = useClickSound()
-  const reduce = useReducedMotion()
   const suggestion = useMemo(() => suggestFor(new Date()), [])
 
   /** THE gate — listening requires the on-device account; browsing never does. */
@@ -196,345 +178,83 @@ function Landing() {
     gatedPlay(suggestion.state)
   }
 
-  if (reduce) {
-    return (
-      <ReducedLanding
-        gatedPlay={gatedPlay}
-        onStart={startListening}
-        onBrowse={() => playClick('primary')}
-        heroState={suggestion.state}
-      />
-    )
-  }
   return (
-    <ScrollLanding
-      gatedPlay={gatedPlay}
-      onStart={startListening}
-      onBrowse={() => playClick('primary')}
-      heroState={suggestion.state}
-    />
-  )
-}
-
-interface LandingBodyProps {
-  gatedPlay: (state: TargetState, minutes?: number) => void
-  onStart: () => void
-  onBrowse: () => void
-  /** Circadian suggestion — the record spinning on the MacBook's screen. */
-  heroState: TargetState
-}
-
-// ── the moving hero — sticky stage + scroll-progress camera ────────────────
-
-function ScrollLanding({ gatedPlay, onStart, onBrowse, heroState }: LandingBodyProps) {
-  const heroRef = useRef<HTMLDivElement>(null)
-  const headlineRef = useRef<HTMLDivElement>(null)
-  const cueRef = useRef<HTMLDivElement>(null)
-  const act3Ref = useRef<HTMLDivElement>(null)
-  const macRef = useRef<HTMLDivElement | null>(null)
-  const macScreenRef = useRef<HTMLDivElement | null>(null)
-  const progressRef = useRef(0)
-  const tintRef = useRef('#6f7ff0')
-
-  useEffect(() => {
-    let raf = 0
-    let disposed = false
-
-    // ── the MacBook camera — measured, not assumed ──────────────────────────
-    // S is the scale at which the GLASS exactly overfills the viewport
-    // (zt=1); yPct is the glass's visual center as a fraction of the machine,
-    // which doubles as translate offset and transform-origin so the screen
-    // center rides the exact viewport center at every zoom. restDy drops the
-    // machine slightly below center at rest (composition under the headline)
-    // and glides to 0 across the dive. Re-measured only when the viewport
-    // changes — gBCR ratios are invariant under the uniform scale transform,
-    // and offsetWidth/Height are layout px, untouched by transforms.
-    let macS = 0
-    let macYPct = 30.6
-    let restDy = 0
-    let lastVw = 0
-    let lastVh = 0
-    let chromeEls: HTMLElement[] | null = null
-    let uiFadeEls: HTMLElement[] | null = null
-
-    const loop = () => {
-      if (disposed) return
-      raf = requestAnimationFrame(loop)
-      const hero = heroRef.current
-      if (!hero) return
-      const rect = hero.getBoundingClientRect()
-      const vh = window.innerHeight
-      const p = heroProgress(-rect.top, 0, rect.height, vh)
-      progressRef.current = p
-
-      const mac = macRef.current
-      const scr = macScreenRef.current
-      if (mac && scr) {
-        const vw = window.innerWidth
-        if (vw !== lastVw || vh !== lastVh) {
-          lastVw = vw
-          lastVh = vh
-          const rootR = mac.getBoundingClientRect()
-          const scrR = scr.getBoundingClientRect()
-          if (rootR.height > 0 && scr.offsetWidth > 0) {
-            macYPct = ((scrR.top + scrR.height / 2 - rootR.top) / rootR.height) * 100
-            macS = 1.06 * Math.max(vw / scr.offsetWidth, vh / scr.offsetHeight)
-            restDy = 0.1 * vh
-            mac.style.transformOrigin = `50% ${macYPct.toFixed(3)}%`
-          }
-        }
-        if (!chromeEls) chromeEls = Array.from(mac.querySelectorAll<HTMLElement>('[data-mac-chrome]'))
-        if (!uiFadeEls) uiFadeEls = Array.from(mac.querySelectorAll<HTMLElement>('[data-mac-uifade]'))
-        if (macS > 1) {
-          const zt = heroZoomT(p)
-          const s = 1 + zt * (macS - 1)
-          mac.style.transform = `translate(-50%, -${macYPct.toFixed(3)}%) translateY(${(restDy * (1 - zt)).toFixed(2)}px) scale(${s.toFixed(4)})`
-          // Once the zoom pins, release the layer hint so the browser
-          // re-rasterizes the on-screen UI crisp at the final scale.
-          mac.style.willChange = zt >= 0.999 ? 'auto' : 'transform'
-          // The aluminum dissolves as the glass swallows the frame…
-          const chrome = roomOpacity(p).toFixed(3)
-          for (const el of chromeEls) el.style.opacity = chrome
-          // …and the mini-home's text hands off to the Act III content
-          // (the record keeps turning underneath — one continuous world).
-          const uiFade = clamp01(1 - act3Opacity(p) * 2).toFixed(3)
-          for (const el of uiFadeEls) el.style.opacity = uiFade
-        }
-      }
-
-      const headline = headlineRef.current
-      if (headline) {
-        headline.style.opacity = headlineOpacity(p).toFixed(3)
-        headline.style.transform = `translateY(${(-90 * clamp01(p / 0.42)).toFixed(1)}px)`
-      }
-      const cue = cueRef.current
-      if (cue) cue.style.opacity = cueOpacity(p).toFixed(3)
-      const act3 = act3Ref.current
-      if (act3) {
-        const a = act3Opacity(p)
-        act3.style.opacity = a.toFixed(3)
-        const live = a > 0.15
-        act3.style.pointerEvents = live ? 'auto' : 'none'
-        // inert keeps the hidden acts out of the tab order.
-        act3.toggleAttribute('inert', !live)
-      }
-    }
-    raf = requestAnimationFrame(loop)
-    return () => {
-      disposed = true
-      cancelAnimationFrame(raf)
-    }
-  }, [])
-
-  return (
-    <div className={css({ position: 'relative', bg: 'deepSpace', color: 'starlight' })}>
+    <div className={css({ position: 'relative', bg: 'bgDeep', color: 'text' })}>
       <LandingHeader />
 
-      {/* The three-act scroll container. */}
-      <div ref={heroRef} data-hero-scroll className={css({ position: 'relative' })} style={{ height: `${HERO_SCROLL_VH}vh` }}>
-        {/* The sticky viewport stage. */}
-        <div
-          className={css({
-            position: 'sticky',
-            top: '0',
-            height: '100dvh',
-            minHeight: '480px',
-            overflow: 'hidden',
-          })}
-        >
-          <StudyCanvas
-            getProgress={() => progressRef.current}
-            getTint={() => tintRef.current}
-            reduced={false}
-          />
-
-          {/* The machine — the hyperrealistic MacBook the scroll dives into. */}
-          <MacBookHero state={heroState} rootRef={macRef} screenRef={macScreenRef} />
-
-          {/* Act I — headline over the study. */}
-          <div
-            ref={headlineRef}
-            className={css({
-              position: 'absolute',
-              inset: '0',
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              justifyContent: 'flex-start',
-              textAlign: 'center',
-              gap: '4',
-              px: '5',
-              pt: 'calc(env(safe-area-inset-top) + 16dvh)',
-              pointerEvents: 'none',
-            })}
-          >
-            <Headline />
-            <p className={sublineCss}>{SUBLINE}</p>
-          </div>
-
-          {/* Scroll cue — thin line + caption pulsing at ~1 Hz. */}
-          <div
-            ref={cueRef}
-            aria-hidden
-            className={css({
-              position: 'absolute',
-              insetX: '0',
-              bottom: 'calc(env(safe-area-inset-bottom) + 22px)',
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              gap: '2',
-              pointerEvents: 'none',
-            })}
-          >
-            <span
-              className={cx(
-                'ss-cue-pulse',
-                css({
-                  display: 'block',
-                  width: '1px',
-                  height: '34px',
-                  // a whisper that fades in from the dark — never a hard seam over the deck
-                  background: 'linear-gradient(to bottom, transparent, rgba(237,237,243,0.5))',
-                }),
-              )}
-            />
-            <span
-              className={cx(
-                'ss-cue-pulse',
-                'tabular',
-                css({ fontSize: 'caption', letterSpacing: '0.14em', textTransform: 'uppercase', color: 'silver', opacity: '0.8' }),
-              )}
-            >
-              scroll
-            </span>
-          </div>
-
-          {/* Act III — inside the computer: the pressings + the offer. */}
-          <div
-            ref={act3Ref}
-            data-act3
-            className={css({
-              position: 'absolute',
-              inset: '0',
-              display: 'flex',
-              flexDirection: 'column',
-              px: '5',
-              pt: 'calc(env(safe-area-inset-top) + 82px)',
-              pb: 'calc(env(safe-area-inset-bottom) + 18px)',
-            })}
-            style={{ opacity: 0, pointerEvents: 'none' }}
-          >
-            <p
-              className={cx(
-                'tabular',
-                css({
-                  m: '0',
-                  textAlign: 'center',
-                  fontSize: 'caption',
-                  letterSpacing: '0.12em',
-                  textTransform: 'uppercase',
-                  color: 'silver',
-                }),
-              )}
-            >
-              The pressings
-            </p>
-            <div className={css({ flex: '1', minH: '150px', mt: '2', mb: '10' })}>
-              <PressingCarousel
-                onPlay={gatedPlay}
-                onFocus={(_item, tint) => {
-                  tintRef.current = tint
-                }}
-              />
-            </div>
-
-            <div
-              className={css({
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                gap: '4',
-                maxW: '520px',
-                w: 'full',
-                mx: 'auto',
-              })}
-            >
-              <div className={css({ display: 'flex', alignItems: 'center', flexWrap: 'wrap', justifyContent: 'center', gap: '3' })}>
-                <Link to="/app" className={secondaryCtaCss} onClick={onBrowse}>
-                  Browse the library
-                </Link>
-                <button type="button" className={primaryCtaCss} onClick={onStart}>
-                  Start listening
-                </button>
-              </div>
-              <LandingSearch onPlay={gatedPlay} className={css({ maxW: '430px' })} />
-              <p className={pulseLineCss}>{PULSE_LINE}</p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <FooterLine />
-      <NowPlayingWidget />
-    </div>
-  )
-}
-
-// ── reduced motion — a static composed study, normal flow, no tricks ───────
-
-function ReducedLanding({ gatedPlay, onStart, onBrowse, heroState }: LandingBodyProps) {
-  return (
-    <div className={css({ position: 'relative', bg: 'deepSpace', color: 'starlight' })}>
-      <LandingHeader />
-
-      {/* The study as a still — headline over the resting machine. */}
+      {/* ── The hero — a record floating on the grey canvas, card below. ── */}
       <section
         className={css({
           position: 'relative',
-          minHeight: '86dvh',
+          minHeight: '92dvh',
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
           justifyContent: 'center',
           overflow: 'hidden',
+          px: '5',
+          pt: 'calc(env(safe-area-inset-top) + 40px)',
           pb: '10',
         })}
       >
-        <div aria-hidden className={css({ position: 'absolute', inset: '0' })}>
-          <StudyCanvas getProgress={() => 0} getTint={() => '#6f7ff0'} reduced />
-        </div>
-        <div
+        <RecordHero
           className={css({
-            position: 'relative',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            textAlign: 'center',
-            gap: '4',
-            px: '5',
-            pt: 'calc(env(safe-area-inset-top) + 64px)',
+            width: 'min(92vw, 560px)',
+            height: 'min(56vh, 520px)',
+            flexShrink: '0',
           })}
-        >
-          <Headline />
-          <p className={sublineCss}>{SUBLINE}</p>
-        </div>
-        {/* The MacBook at rest — full and detailed, nothing moving. */}
-        <div className={css({ position: 'relative', w: 'full', mt: '10' })}>
-          <MacBookHero state={heroState} reduced />
+        />
+        {/* 30px gap → the app-window card, anchored below the disc. */}
+        <div className={css({ mt: '30px', flexShrink: '0' })}>
+          <AppWindowCard cta="Start listening" onCta={startListening} />
         </div>
       </section>
 
-      {/* The pressings — a static row, fully reachable. */}
+      {/* ── The statement. ── */}
+      <section
+        className={css({
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          textAlign: 'center',
+          gap: '4',
+          px: '5',
+          pt: '4',
+          pb: '10',
+        })}
+      >
+        <Headline />
+        <p className={sublineCss}>{SUBLINE}</p>
+      </section>
+
+      {/* ── The pressings — every mode as a record. ── */}
       <section
         aria-label="The pressings — every mode as a record"
         role="group"
-        className={css({ maxW: '1200px', mx: 'auto', px: '5', pt: '10', pb: '4' })}
+        className={css({ maxW: '1100px', mx: 'auto', px: '5', pb: '4' })}
       >
+        <p
+          className={cx(
+            'tabular',
+            css({
+              m: '0',
+              mb: '5',
+              textAlign: 'center',
+              fontSize: 'caption',
+              fontWeight: '700',
+              letterSpacing: '0.14em',
+              textTransform: 'uppercase',
+              color: 'silver',
+            }),
+          )}
+        >
+          The pressings
+        </p>
         <div
           className={css({
             display: 'flex',
             alignItems: 'flex-start',
+            justifyContent: { base: 'flex-start', md: 'center' },
             gap: '6',
             overflowX: 'auto',
             pb: '3',
@@ -557,7 +277,10 @@ function ReducedLanding({ gatedPlay, onStart, onBrowse, heroState }: LandingBody
                   cursor: 'pointer',
                   borderRadius: 'full',
                   WebkitTapHighlightColor: 'transparent',
-                  _focusVisible: { outline: '2px solid token(colors.ghostBlue)', outlineOffset: '4px' },
+                  transition: 'transform 200ms ease',
+                  _hover: { transform: 'translateY(-3px)' },
+                  _focusVisible: { outline: '2px solid token(colors.accent)', outlineOffset: '4px' },
+                  '@media (prefers-reduced-motion: reduce)': { transition: 'none', _hover: { transform: 'none' } },
                 })}
                 style={{ color: pressingTint(item) }}
               >
@@ -566,11 +289,12 @@ function ReducedLanding({ gatedPlay, onStart, onBrowse, heroState }: LandingBody
               <p
                 className={css({
                   m: '0',
-                  mt: '2.5',
+                  mt: '3',
                   fontFamily: 'display',
-                  fontWeight: '400',
+                  fontWeight: '700',
                   fontSize: 'bodyMd',
-                  color: 'starlight',
+                  letterSpacing: '-0.02em',
+                  color: 'text',
                 })}
               >
                 {item.title}
@@ -583,7 +307,7 @@ function ReducedLanding({ gatedPlay, onStart, onBrowse, heroState }: LandingBody
         </div>
       </section>
 
-      {/* CTAs + search + the pulse line. */}
+      {/* ── The offer — CTAs, search, the pulse line. ── */}
       <section
         className={css({
           display: 'flex',
@@ -593,18 +317,22 @@ function ReducedLanding({ gatedPlay, onStart, onBrowse, heroState }: LandingBody
           maxW: '520px',
           mx: 'auto',
           px: '5',
+          pt: '6',
           pb: '12',
         })}
       >
         <div className={css({ display: 'flex', alignItems: 'center', flexWrap: 'wrap', justifyContent: 'center', gap: '3' })}>
-          <Link to="/app" className={secondaryCtaCss} onClick={onBrowse}>
+          <Link to="/app" className={secondaryCtaCss} onClick={() => playClick('primary')}>
             Browse the library
           </Link>
-          <button type="button" className={primaryCtaCss} onClick={onStart}>
+          <button type="button" className={primaryCtaCss} onClick={startListening}>
             Start listening
+            <span aria-hidden className={css({ fontWeight: '800' })}>
+              ›
+            </span>
           </button>
         </div>
-        <LandingSearch onPlay={gatedPlay} reduced className={css({ maxW: '430px' })} />
+        <LandingSearch onPlay={gatedPlay} className={css({ maxW: '430px' })} />
         <p className={pulseLineCss}>{PULSE_LINE}</p>
       </section>
 

@@ -109,7 +109,7 @@ export function LandingSearch({ onPlay, reduced, className }: LandingSearchProps
           borderRadius: 'pill',
           border: '1px solid',
           borderColor: 'lead',
-          background: 'rgba(23, 23, 33, 0.72)',
+          background: 'rgba(255, 255, 255, 0.72)',
           cursor: 'text',
           transition: 'border-color 300ms ease',
           _focusWithin: { borderColor: 'ghostBlue' },

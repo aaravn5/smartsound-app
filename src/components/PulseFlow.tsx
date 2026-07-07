@@ -130,8 +130,8 @@ export function PulseFlow({ state, bioStatus, reading, getPulse, startAttune, st
       const base = H * 0.78
       const amp = H * 0.62
 
-      // Pass 1 — the 1px Starlight polyline.
-      ctx.strokeStyle = 'rgba(237, 237, 243, 0.85)'
+      // Pass 1 — the 1px Carbon polyline.
+      ctx.strokeStyle = 'rgba(17, 17, 17, 0.85)'
       ctx.lineWidth = 1
       ctx.beginPath()
       for (let i = 0; i < filled; i++) {

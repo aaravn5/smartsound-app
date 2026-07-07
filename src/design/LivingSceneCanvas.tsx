@@ -42,57 +42,26 @@ interface PaletteSpec {
   dust: string
 }
 
+// The flat Desktop.fm canvas: one light-grey sky + the single calming blue,
+// shared by every variant. The sky gradient reads as calm light grey; the orb
+// and dust are a whisper of pale blue floating over it.
+const LIGHT_WORLD: PaletteSpec = {
+  top: '#f6f7f8',
+  mid: '#f1f2f3',
+  low: '#eaebed',
+  cloud: '#ffffff',
+  haze: '#ffffff',
+  orbA: '#aeb9f2',
+  orbB: '#5872e6',
+  dust: '#aeb9f2',
+}
+
 const PALETTES: Record<SceneVariant, PaletteSpec> = {
-  dusk: {
-    top: '#2B1E56',
-    mid: '#1E1B4B',
-    low: '#0E1230',
-    cloud: '#C4B5FD',
-    haze: '#D2C3FF',
-    orbA: '#3A2E8F',
-    orbB: '#A78BFA',
-    dust: '#C4B5FD',
-  },
-  aurora: {
-    top: '#0B2E33',
-    mid: '#0F3D3E',
-    low: '#0A1626',
-    cloud: '#6EE7B7',
-    haze: '#B4FAEB',
-    orbA: '#0F5F5C',
-    orbB: '#5EEAD4',
-    dust: '#6EE7B7',
-  },
-  ocean: {
-    top: '#0C2A4D',
-    mid: '#0B2344',
-    low: '#081226',
-    cloud: '#94C5FF',
-    haze: '#BEE1FF',
-    orbA: '#1E4E8C',
-    orbB: '#7DD3FC',
-    dust: '#94C5FF',
-  },
-  dawn: {
-    top: '#4A2B3F',
-    mid: '#3D2547',
-    low: '#121430',
-    cloud: '#FDBA74',
-    haze: '#FFD6B3',
-    orbA: '#8C5096',
-    orbB: '#FB9274',
-    dust: '#FDBA74',
-  },
-  forest: {
-    top: '#22332B',
-    mid: '#1B2E28',
-    low: '#0C1A1C',
-    cloud: '#C4D9B0',
-    haze: '#E4EAD2',
-    orbA: '#2E5B44',
-    orbB: '#9AD1A8',
-    dust: '#C4D9B0',
-  },
+  dusk: LIGHT_WORLD,
+  aurora: LIGHT_WORLD,
+  ocean: LIGHT_WORLD,
+  dawn: LIGHT_WORLD,
+  forest: LIGHT_WORLD,
 }
 
 /** Hex → THREE.Color with raw sRGB components (no color-management rewrite). */
@@ -209,10 +178,10 @@ void main() {
     }
   }
 
-  // In-shader vignette — the frame reads as lit from within.
+  // Barely-there vignette — the flat light canvas must not gain a grey frame.
   float vig = smoothstep(1.3, 0.35,
     length((uv - vec2(0.5, 0.45)) * vec2(max(uAspect * 0.7, 1.0), 1.2)));
-  col *= mix(0.74, 1.0, vig);
+  col *= mix(0.96, 1.0, vig);
 
   gl_FragColor = vec4(col, 1.0);
 }
