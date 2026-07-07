@@ -1,3 +1,281 @@
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&family=JetBrains+Mono:wght@400;500&family=Space+Grotesk:wght@400;500;600;700&display=swap');
-
 @layer reset, base, tokens, recipes, utilities;
+
+/*
+ * SmartSound theming — authored UNLAYERED on purpose.
+ *
+ * Panda emits its token defaults in @layer tokens (order: reset, base, tokens,
+ * recipes, utilities — later wins). The dark palette IS those defaults, and a
+ * light override placed in globalCss would land in @layer base and LOSE to the
+ * tokens layer. Unlayered rules beat every layer regardless of specificity, so
+ * overriding the raw `--colors-*` vars here is what actually flips the palette.
+ * SmartSound's semantic tokens reference the raw ones (--colors-bg: var(--colors-base),
+ * --colors-text: var(--colors-label), …), so overriding the raw vars cascades
+ * through the whole app — raw- and semantic-token usages alike.
+ *
+ * Dark is native and left untouched (Panda's defaults). Only "Daylight" is
+ * authored below.
+ */
+
+/* ── Theme-flipping helper vars ───────────────────────────────────────────────
+ *
+ * A handful of surfaces use hardcoded, dark-assuming rgba values inline (light
+ * ink over the scene; white control tracks). These vars carry the exact dark
+ * originals by default so dark stays byte-identical, and flip to deep-slate /
+ * dark-on-light equivalents under Daylight. */
+:root {
+  /* Desktop.fm ink — carbon-black hierarchy on the grey canvas (default/light). */
+  --ss-ink-strong: rgba(17, 17, 17, 0.92);
+  --ss-ink-body: rgba(17, 17, 17, 0.72);
+  --ss-ink-soft: rgba(17, 17, 17, 0.55);
+  --ss-ink-dim: rgba(17, 17, 17, 0.45);
+  --ss-control-track: rgba(17, 17, 17, 0.12);
+  --ss-control-track-soft: rgba(17, 17, 17, 0.06);
+  --ss-line-strong: rgba(17, 17, 17, 0.28);
+  /* No text halo on the light canvas — dark ink over grey needs none. */
+  --ss-text-glow: none;
+}
+
+/* ── Carbon Dark — the optional monochrome-dark counterpart ───────────────────
+ *
+ * Desktop.fm ships light; this is the alternate for users who toggle. Same
+ * near-monochrome system, inverted: a carbon canvas, off-white ink, the one
+ * calming-blue signal untouched. Raw neutral tokens are overridden so the
+ * semantic aliases that reference them (bg/text/…) re-resolve dark; the literal
+ * rgba semantics (faint/ghost/hairline) are set directly. */
+:root[data-theme='dark'] {
+  color-scheme: dark;
+
+  /* Neutral tokens — carbon canvas + near-black card surfaces. */
+  --colors-deep-space: #17181c; /* page canvas */
+  --colors-midnight-slate: #202127; /* card surface */
+  --colors-graphite: #2a2b32; /* interactive / hover */
+  --colors-lead: rgba(255, 255, 255, 0.14); /* hairlines, grooves */
+  --colors-starlight: #f3f3f5; /* primary text */
+  --colors-silver: #a6a6ad; /* secondary text */
+  --colors-base: #202127;
+  --colors-base-deep: #17181c;
+
+  /* Ink hierarchy — off-white, softening down the scale. */
+  --colors-label: rgba(243, 243, 245, 0.95);
+  --colors-secondary-label: rgba(240, 240, 245, 0.64);
+  --colors-tertiary-label: rgba(238, 238, 245, 0.48);
+  --colors-quaternary-label: rgba(236, 236, 245, 0.40);
+  --colors-separator: rgba(255, 255, 255, 0.10);
+
+  /* Semantic aliases whose values are literal rgba — set directly. */
+  --colors-faint: rgba(243, 243, 245, 0.55);
+  --colors-ghost: rgba(243, 243, 245, 0.40);
+  --colors-hairline: rgba(255, 255, 255, 0.12);
+
+  /* Liquid Glass — dark frosted over the carbon canvas. */
+  --colors-glass-fill: rgba(255, 255, 255, 0.06);
+  --colors-glass-fill-strong: rgba(255, 255, 255, 0.09);
+  --colors-glass-fill-soft: rgba(255, 255, 255, 0.05);
+  --colors-glass-stroke: rgba(255, 255, 255, 0.12);
+  --colors-glass-stroke-strong: rgba(255, 255, 255, 0.18);
+  --colors-glass-specular: rgba(255, 255, 255, 0.16);
+  --colors-glass-fallback: rgba(30, 31, 38, 0.94);
+  --colors-frost-fill: rgba(28, 29, 35, 0.72);
+  --colors-frost-stroke: rgba(255, 255, 255, 0.10);
+  --colors-frost-fallback: rgba(28, 29, 35, 0.97);
+
+  /* Plain-name mirror vars (inline styles / canvas that can't read tokens). */
+  --glass-fill: rgba(255, 255, 255, 0.06);
+  --glass-stroke: rgba(255, 255, 255, 0.12);
+
+  /* Helper vars — off-white ink + light-on-dark control tracks. */
+  --ss-ink-strong: rgba(243, 243, 245, 0.90);
+  --ss-ink-body: rgba(243, 243, 245, 0.70);
+  --ss-ink-soft: rgba(243, 243, 245, 0.55);
+  --ss-ink-dim: rgba(243, 243, 245, 0.45);
+  --ss-control-track: rgba(255, 255, 255, 0.14);
+  --ss-control-track-soft: rgba(255, 255, 255, 0.06);
+  --ss-line-strong: rgba(255, 255, 255, 0.28);
+  --ss-text-glow: none;
+}
+
+/* ── Liquid glass (quietpress landing material) ───────────────────────────────
+ *
+ * The landing's glass slab, authored UNLAYERED so it beats Panda's layers.
+ * The ::before is the gradient-border trick: a 1px padding box whose two
+ * stacked masks are composited with `exclude`, leaving ONLY the 1px border
+ * ring painted by the gradient — a lit rim no plain border can draw. */
+/* ── Frosted glass blur utilities (Pressed-at-Night materials) ────────────────
+ *
+ * Panda's css() typings don't carry -webkit-backdrop-filter, so the blur pair
+ * lives here (unlayered). Composed by glassCss (components/Card.tsx), the
+ * bottom nav, and the player's floating controls. Reduced transparency turns
+ * the blur off — the composed fills fall back to near-opaque slate. */
+.ss-frost {
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+  backdrop-filter: saturate(180%) blur(20px);
+}
+.ss-frost-light {
+  -webkit-backdrop-filter: saturate(160%) blur(12px);
+  backdrop-filter: saturate(160%) blur(12px);
+}
+@media (prefers-reduced-transparency: reduce) {
+  .ss-frost,
+  .ss-frost-light {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
+
+.liquid-glass {
+  position: relative;
+  isolation: isolate;
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.78) 0%,
+    rgba(255, 255, 255, 0.62) 100%
+  );
+  -webkit-backdrop-filter: blur(18px) saturate(160%);
+  backdrop-filter: blur(18px) saturate(160%);
+  box-shadow:
+    0 1px 3px rgba(17, 17, 17, 0.08),
+    0 4px 12px rgba(17, 17, 17, 0.06);
+}
+.liquid-glass::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(
+    135deg,
+    rgba(17, 17, 17, 0.10) 0%,
+    rgba(17, 17, 17, 0.04) 38%,
+    rgba(17, 17, 17, 0.03) 62%,
+    rgba(17, 17, 17, 0.08) 100%
+  );
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+  pointer-events: none;
+  z-index: -1;
+}
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .liquid-glass {
+    background: rgba(255, 255, 255, 0.94);
+  }
+}
+@media (prefers-reduced-transparency: reduce) {
+  .liquid-glass {
+    background: rgba(255, 255, 255, 0.94);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
+
+/* Fade-up entrances for the landing. fill-mode MUST be `backwards`:
+ * 'both'/'forwards' would leave a resolved transform on the element after
+ * the animation, which creates a containing block and silently breaks
+ * backdrop-filter on liquid-glass descendants. `backwards` only fills the
+ * delay period and releases the element entirely once done. */
+@keyframes lq-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(26px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.fade-up {
+  animation: lq-fade-up 0.9s cubic-bezier(0.16, 1, 0.3, 1) backwards;
+}
+.fade-up-d1 { animation-delay: 0.15s; }
+.fade-up-d2 { animation-delay: 0.3s; }
+.fade-up-d3 { animation-delay: 0.45s; }
+.fade-up-d4 { animation-delay: 0.6s; }
+.fade-up-d5 { animation-delay: 0.75s; }
+@media (prefers-reduced-motion: reduce) {
+  .fade-up {
+    animation: none;
+  }
+}
+
+/* The revolving record — 6s/rev reads as calm; `paused` play-state while the
+ * session is idle. Reduced motion stops the spin entirely. */
+@keyframes vinyl-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.vinyl-spin {
+  animation: vinyl-spin 6s linear infinite;
+  will-change: transform;
+}
+@media (prefers-reduced-motion: reduce) {
+  .vinyl-spin {
+    animation: none;
+  }
+}
+
+/* RecordDisc spin (design.md): idle 8–12s/rev (default 10s, override via
+ * --rec-spin), playing ~1.8s/rev (33⅓ feel). Reduced motion = static disc. */
+@keyframes record-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.record-spin-idle {
+  animation: record-spin var(--rec-spin, 10s) linear infinite;
+  will-change: transform;
+}
+.record-spin-playing {
+  animation: record-spin 1.8s linear infinite;
+  will-change: transform;
+}
+@media (prefers-reduced-motion: reduce) {
+  .record-spin-idle,
+  .record-spin-playing {
+    animation: none;
+  }
+}
+
+/* Search caret blink for the self-typing placeholder. */
+@keyframes lq-caret {
+  0%, 45% { opacity: 1; }
+  55%, 100% { opacity: 0; }
+}
+
+/* Landing hero scroll cue — pulses at the study's ~1 Hz synapse rate. */
+@keyframes ss-cue-pulse {
+  0%, 100% { opacity: 0.35; }
+  50% { opacity: 1; }
+}
+.ss-cue-pulse {
+  animation: ss-cue-pulse 1s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .ss-cue-pulse {
+    animation: none;
+  }
+}
+
+/* /science mechanism diagram — the envelope's dashes flow, the modulated
+ * signal breathes. Both frozen under reduced motion. */
+@keyframes ss-mech-flow {
+  to { stroke-dashoffset: -28; }
+}
+@keyframes ss-mech-pulse {
+  0%, 100% { transform: scaleY(0.42); }
+  50% { transform: scaleY(1); }
+}
+
+/* ── Immersive surfaces now follow the ambient theme ──────────────────────────
+ *
+ * Under "Pressed at Night" the Player and Today hero stayed DARK in both themes
+ * via `.ss-scene-dark`. Desktop.fm is a single flat, light world — those
+ * surfaces live on the same calming-grey canvas as everything else, so the
+ * forced-dark override is retired. `.ss-scene-dark` is left as an inert hook
+ * (no rule) so existing JSX that still carries the class simply inherits the
+ * ambient theme. */

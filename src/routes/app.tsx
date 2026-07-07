@@ -1,161 +1,238 @@
-import { createFileRoute, Link, Outlet } from '@tanstack/react-router'
+import { createFileRoute, Link, Outlet, useRouterState } from '@tanstack/react-router'
+import { useEffect, useRef } from 'react'
+import type { ReactNode } from 'react'
 import { css } from 'styled-system/css'
-import { flex, hstack, stack } from 'styled-system/patterns'
-import { useEngine } from '~/lib/engine-context'
-import { SignalRing } from '~/design/SignalRing'
-import { Button } from '~/components/ui/Button'
-import { Slider } from '~/components/ui/Slider'
-import { TlxCheckIn } from '~/components/TlxCheckIn'
-import { signalColor, arousalLabel, pct } from '~/lib/format'
+import { AuroraBackdrop } from '~/components/Card'
+import { useClickSound } from '~/lib/click-sound'
+import { ensureDevPlan } from '~/lib/dev-access'
+import { MainScrollContext } from '~/lib/scroll-context'
 
+/**
+ * AppShell — the "Pressed at Night" frame. ONE dark world: a Deep Space
+ * canvas with two barely-there aurora blooms drifting beneath the content
+ * (Calm/Endel — never photographic), content scrolling above it, and a
+ * frosted-glass bottom nav (Apple material: frost fill + backdrop blur +
+ * 0.5px starlight hairline). One accent for all five tabs — the active item
+ * turns Starlight and carries a 4px Mercury Blue dot.
+ */
 export const Route = createFileRoute('/app')({
   component: AppShell,
 })
 
-const NAV = [
-  { to: '/app/session', label: 'Session' },
-  { to: '/app/library', label: 'Library' },
-  { to: '/app/insights', label: 'Insights' },
-  { to: '/app/settings', label: 'Settings' },
-] as const
+/** The nav bar's footprint — the scrollport stops above it. */
+export const NAV_HEIGHT = 58
 
-function NavLink({ to, label }: { to: string; label: string }) {
-  return (
-    <Link
-      to={to}
-      className={css({
-        fontFamily: 'display',
-        fontSize: 'sm',
-        fontWeight: '500',
-        color: 'muted',
-        px: '3',
-        py: '2',
-        rounded: 'lg',
-        textDecoration: 'none',
-        transition: 'color token(durations.instant), background token(durations.instant)',
-        _hover: { color: 'text' },
-        '&[data-status=active]': { color: 'text', bg: 'signalFaint' },
-      })}
-      activeProps={{ 'data-status': 'active' }}
-    >
-      {label}
-    </Link>
-  )
+interface Tab {
+  to: string
+  label: string
+  icon: ReactNode
+  exact?: boolean
+  title: string
+}
+
+const iconAttrs = {
+  width: 22,
+  height: 22,
+  viewBox: '0 0 24 24',
+  fill: 'none' as const,
+  stroke: 'currentColor',
+  strokeWidth: 1.7,
+  strokeLinecap: 'round' as const,
+  strokeLinejoin: 'round' as const,
+  'aria-hidden': true,
+}
+
+/** sun.max — the day begins here. */
+const TodayIcon = () => (
+  <svg {...iconAttrs}>
+    <circle cx="12" cy="12" r="4.1" />
+    <path d="M12 2.8v2.2M12 19v2.2M21.2 12H19M5 12H2.8M18.5 5.5L17 7M7 17l-1.5 1.5M18.5 18.5L17 17M7 7L5.5 5.5" />
+  </svg>
+)
+/** a crate of records — The Library. */
+const LibraryIcon = () => (
+  <svg {...iconAttrs}>
+    <rect x="3.4" y="5" width="17.2" height="15" rx="1.4" />
+    <path d="M7.4 5v15M11.2 5v15M15 5l3.4 15" />
+  </svg>
+)
+/** the record itself. */
+const PlayerIcon = () => (
+  <svg {...iconAttrs}>
+    <circle cx="12" cy="12" r="8.8" />
+    <circle cx="12" cy="12" r="2.6" />
+    <path d="M12 3.2v2M12 18.8v2" opacity="0" />
+  </svg>
+)
+/** concentric grooves — the Listening Rings. */
+const ProgressIcon = () => (
+  <svg {...iconAttrs}>
+    <path d="M12 3.2a8.8 8.8 0 1 1-6.2 2.6" />
+    <path d="M12 6.4a5.6 5.6 0 1 1-4 1.7" />
+    <circle cx="12" cy="12" r="2.3" />
+  </svg>
+)
+/** person.crop.circle. */
+const ProfileIcon = () => (
+  <svg {...iconAttrs}>
+    <circle cx="12" cy="12" r="8.8" />
+    <circle cx="12" cy="9.7" r="2.9" />
+    <path d="M6.4 18.3c1.3-2.6 3.3-3.9 5.6-3.9s4.3 1.3 5.6 3.9" />
+  </svg>
+)
+
+const TABS: Tab[] = [
+  { to: '/app', label: 'Today', icon: <TodayIcon />, exact: true, title: 'Today — SmartSound' },
+  { to: '/app/explore', label: 'Library', icon: <LibraryIcon />, title: 'The Library — SmartSound' },
+  { to: '/app/player', label: 'Player', icon: <PlayerIcon />, title: 'Player — SmartSound' },
+  { to: '/app/progress', label: 'Progress', icon: <ProgressIcon />, title: 'Progress — SmartSound' },
+  { to: '/app/profile', label: 'Profile', icon: <ProfileIcon />, title: 'Profile — SmartSound' },
+]
+
+/** Per-route document titles (audit 1.5) — every /app route gets its own. */
+function routeTitle(pathname: string): string {
+  if (pathname.startsWith('/app/paywall')) return 'Plans — SmartSound'
+  const tab = TABS.find((t) => (t.exact ? pathname === t.to : pathname !== '/app' && pathname.startsWith(t.to)))
+  return tab?.title ?? 'Today — SmartSound'
 }
 
 function AppShell() {
-  return (
-    <div className={css({ display: 'grid', gridTemplateRows: '1fr auto', height: '100dvh' })}>
-      <div className={css({ display: 'grid', gridTemplateColumns: { base: '1fr', md: '232px 1fr' }, minHeight: 0 })}>
-        {/* Left rail (desktop) */}
-        <aside
-          className={css({
-            display: { base: 'none', md: 'flex' },
-            flexDir: 'column',
-            gap: '1',
-            borderRight: '1px solid token(colors.hairline)',
-            p: '5',
-          })}
-        >
-          <Link to="/" className={hstack({ gap: '2.5', textDecoration: 'none', color: 'text', mb: '6' })}>
-            <span className={css({ w: '2.5', h: '2.5', rounded: 'full', bg: 'signal', boxShadow: '0 0 12px token(colors.signal)' })} />
-            <span className={css({ fontFamily: 'display', fontWeight: '600', fontSize: 'lg' })}>SmartSound</span>
-          </Link>
-          {NAV.map((n) => <NavLink key={n.to} {...n} />)}
-        </aside>
+  const pathname = useRouterState({ select: (s) => s.location.pathname })
+  const mainRef = useRef<HTMLElement>(null)
 
-        {/* Mobile top nav + scrollable content */}
-        <div className={css({ display: 'flex', flexDir: 'column', minHeight: 0 })}>
-          <nav
-            className={hstack({
-              gap: '1',
-              display: { base: 'flex', md: 'none' },
-              px: '4',
-              py: '3',
-              borderBottom: '1px solid token(colors.hairline)',
-              overflowX: 'auto',
-            })}
-          >
-            {NAV.map((n) => <NavLink key={n.to} {...n} />)}
-          </nav>
-          <main className={css({ overflowY: 'auto', flex: 1, px: { base: '5', md: '10' }, py: { base: '6', md: '8' } })}>
-            <Outlet />
-          </main>
-        </div>
-      </div>
+  useEffect(() => {
+    document.title = routeTitle(pathname)
+  }, [pathname])
 
-      <NowPlaying />
-      <TlxCheckIn />
-    </div>
-  )
-}
-
-function NowPlaying() {
-  const { status, profile, params, arousal, reading, activeScenario, getSpectrum, getPulse, stop, setNeuralIntensity } = useEngine()
-  const color = signalColor(arousal)
-
-  if (status === 'idle') {
-    return (
-      <div
-        className={flex({
-          justify: 'space-between',
-          align: 'center',
-          borderTop: '1px solid token(colors.hairline)',
-          px: { base: '5', md: '10' },
-          py: '3',
-          bg: 'panel',
-        })}
-      >
-        <span className={css({ color: 'muted', fontSize: 'sm' })}>Nothing playing.</span>
-        <Link to="/app/library">
-          <Button size="sm" variant="outline">Open library</Button>
-        </Link>
-      </div>
-    )
-  }
+  // Developer access: keep the elevated plan alive across the local-midnight
+  // rollover (the entitlements stub's fresh record resets plan to 'free').
+  useEffect(() => {
+    ensureDevPlan()
+    const id = window.setInterval(ensureDevPlan, 60_000)
+    return () => window.clearInterval(id)
+  }, [])
 
   return (
     <div
       className={css({
-        display: 'grid',
-        gridTemplateColumns: { base: 'auto 1fr auto', md: '260px 1fr 260px' },
-        alignItems: 'center',
-        gap: '4',
-        borderTop: '1px solid token(colors.hairline)',
-        px: { base: '4', md: '8' },
-        py: '3',
-        bg: 'panel',
-        backdropFilter: 'blur(16px)',
+        position: 'relative',
+        height: '100dvh',
+        overflow: 'hidden',
+        color: 'text',
+        bg: 'bgDeep',
       })}
     >
-      <div className={hstack({ gap: '3' })}>
-        <div style={{ width: 44, height: 44 }}>
-          <SignalRing arousal={arousal} color={color} getSpectrum={getSpectrum} getPulse={getPulse} size={44} />
+      {/* Soft ethereal glow — beneath everything, ignorable, reduced-motion safe. */}
+      <AuroraBackdrop />
+      <main
+        ref={mainRef}
+        className={css({
+          position: 'absolute',
+          inset: '0',
+          zIndex: '1',
+          overflowY: 'auto',
+          WebkitOverflowScrolling: 'touch',
+        })}
+      >
+        <div
+          className={css({
+            maxW: '640px',
+            mx: 'auto',
+            px: '5',
+            pt: 'calc(env(safe-area-inset-top) + 28px)',
+            // Content scrolls BENEATH the frosted nav (that's what makes the
+            // glass read as glass); the padding keeps the last element clear.
+            pb: 'calc(env(safe-area-inset-bottom) + 58px + 40px)',
+          })}
+        >
+          <MainScrollContext.Provider value={mainRef}>
+            <Outlet />
+          </MainScrollContext.Provider>
         </div>
-        <div className={stack({ gap: '0' })}>
-          <span className={css({ fontFamily: 'display', fontWeight: '600', fontSize: 'sm' })}>
-            {activeScenario ? activeScenario.name : profile.label}
-          </span>
-          <span className={css({ fontFamily: 'mono', fontSize: '2xs', color: 'muted' })}>
-            {activeScenario ? `${activeScenario.phase} · ${arousalLabel(arousal)}` : arousalLabel(arousal)}
-          </span>
-        </div>
-      </div>
+      </main>
 
-      <div className={css({ display: { base: 'none', md: 'flex' }, flexDir: 'column', gap: '1.5', maxW: '360px', mx: 'auto', width: 'full' })}>
-        <div className={flex({ justify: 'space-between' })}>
-          <span className={css({ fontFamily: 'mono', fontSize: '2xs', color: 'muted' })}>NEURAL EFFECT</span>
-          <span className={`tabular ${css({ fontFamily: 'mono', fontSize: '2xs', color: 'signal' })}`}>{pct(params.neuralDepth)}%</span>
-        </div>
-        <Slider label="Neural effect intensity" value={params.neuralDepth} onValueChange={setNeuralIntensity} />
-      </div>
-
-      <div className={hstack({ gap: '4', justify: 'flex-end' })}>
-        <span className={`tabular ${css({ fontFamily: 'mono', fontSize: '2xs', color: 'muted', display: { base: 'none', sm: 'block' } })}`}>
-          {reading.active ? `${Math.round(reading.hr)} BPM` : `${Math.round(params.entrainmentHz)} Hz`}
-        </span>
-        <Button size="sm" variant="danger" onClick={() => void stop()}>Stop</Button>
-      </div>
+      <TabBar pathname={pathname} />
     </div>
+  )
+}
+
+function TabBar({ pathname }: { pathname: string }) {
+  const playClick = useClickSound()
+  return (
+    <nav
+      aria-label="Primary"
+      // .ss-frost carries the backdrop blur pair (index.css).
+      className={`ss-frost ${css({
+        position: 'fixed',
+        left: '0',
+        right: '0',
+        bottom: '0',
+        zIndex: '20',
+        // Frosted glass — the nav floats over content, Apple-material style.
+        background: 'frost.fill',
+        borderTop: '0.5px solid',
+        borderColor: 'frost.stroke',
+        paddingBottom: 'env(safe-area-inset-bottom)',
+        '@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px)))': {
+          background: 'frost.fallback',
+        },
+        '@media (prefers-reduced-transparency: reduce)': {
+          background: 'frost.fallback',
+        },
+      })}`}
+    >
+      <div className={css({ display: 'flex', maxW: '520px', mx: 'auto', px: '2' })}>
+        {TABS.map((tab) => {
+          const active = tab.exact ? pathname === tab.to : pathname.startsWith(tab.to)
+          return (
+            <Link
+              key={tab.to}
+              to={tab.to}
+              aria-current={active ? 'page' : undefined}
+              onClick={() => playClick('tap')}
+              className={css({
+                flex: '1',
+                minH: '57px',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '2px',
+                textDecoration: 'none',
+                WebkitTapHighlightColor: 'transparent',
+                touchAction: 'manipulation',
+                color: 'silver',
+                transition: 'color 300ms ease',
+                '&[aria-current=page]': { color: 'starlight' },
+                '@media (prefers-reduced-motion: reduce)': { transition: 'none' },
+              })}
+            >
+              <span className={css({ lineHeight: '0' })}>{tab.icon}</span>
+              <span
+                className={css({
+                  fontSize: '10px',
+                  fontWeight: '500',
+                  letterSpacing: '0.04em',
+                })}
+              >
+                {tab.label}
+              </span>
+              {/* The 4px Mercury Blue dot — the single accent in the chrome. */}
+              <span
+                aria-hidden
+                className={css({
+                  width: '4px',
+                  height: '4px',
+                  borderRadius: 'full',
+                  background: 'mercuryBlue',
+                  transition: 'opacity 300ms ease',
+                })}
+                style={{ opacity: active ? 1 : 0 }}
+              />
+            </Link>
+          )
+        })}
+      </div>
+    </nav>
   )
 }

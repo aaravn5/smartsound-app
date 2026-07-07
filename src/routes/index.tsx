@@ -1,365 +1,343 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
-import { createFileRoute, Link } from '@tanstack/react-router'
-import { css } from 'styled-system/css'
-import { flex, stack, hstack } from 'styled-system/patterns'
-import { SignalRing } from '~/design/SignalRing'
-import {
-  applySignal,
-  arousalToLch,
-  lchToCss,
-  prefersReducedMotion,
-} from '~/design/signal'
+import { useMemo } from 'react'
+import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
+import { css, cx } from 'styled-system/css'
+import { LandingHeader } from '~/landing/LandingHeader'
+import { LandingSearch } from '~/landing/LandingSearch'
+import { NowPlayingWidget } from '~/landing/NowPlayingWidget'
+import { RecordHero } from '~/landing/RecordHero'
+import { AppWindowCard } from '~/landing/AppWindowCard'
+import { PRESSINGS, pressingTint } from '~/landing/PressingCarousel'
+import { RecordDisc } from '~/components/vinyl/RecordDisc'
+import { hasAccount } from '~/lib/account'
+import { useClickSound } from '~/lib/click-sound'
+import { usePageTitle } from '~/lib/page-title'
+import { suggestFor } from '~/engine/circadian/model'
+import type { TargetState } from '~/engine/audio/types'
 
+/**
+ * `/` — the landing, re-cut in the Desktop.fm idiom: a single 3D-rendered
+ * object (a record) floating on the flat calming-grey canvas, with the macOS
+ * app-window card + one carbon-black CTA anchored below it. No scroll-dive, no
+ * photography, no gradients — the rendered disc and its blue laser lines are
+ * the only colour on an otherwise achromatic, Apple-restrained page. Below the
+ * hero: the statement line, the pressings as a clean record row, the offer.
+ *
+ * Browsing stays open (`/app` is one click away); LISTENING is the gate — any
+ * play intent without an on-device account routes through /onboarding/auth
+ * with the intent preserved.
+ */
 export const Route = createFileRoute('/')({
-  component: Home,
+  component: Landing,
 })
 
-const clamp = (n: number) => Math.min(1, Math.max(0, n))
+/** Secondary pill — subtle, hairline-defined, carbon text. */
+const secondaryCtaCss = css({
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  minH: '48px',
+  px: '7',
+  borderRadius: 'pill',
+  border: '1px solid',
+  borderColor: 'lead',
+  font: 'inherit',
+  fontSize: 'bodyMd',
+  fontWeight: '700',
+  letterSpacing: '-0.01em',
+  background: 'bg',
+  color: 'text',
+  textDecoration: 'none',
+  cursor: 'pointer',
+  WebkitTapHighlightColor: 'transparent',
+  transition: 'background 300ms ease, transform 160ms ease',
+  _hover: { background: 'graphite' },
+  _active: { transform: 'scale(0.965)' },
+  '@media (prefers-reduced-motion: reduce)': { transition: 'none', _active: { transform: 'none' } },
+})
 
-function stateName(a: number): string {
-  if (a < 0.25) return 'WIND-DOWN'
-  if (a < 0.5) return 'SETTLED'
-  if (a < 0.78) return 'FOCUS'
-  return 'ELEVATED'
+/** Primary pill — Carbon Black bg, white text. THE one filled CTA. */
+const primaryCtaCss = css({
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  gap: '1.5',
+  minH: '48px',
+  px: '7',
+  borderRadius: 'pill',
+  border: 'none',
+  font: 'inherit',
+  fontSize: 'bodyMd',
+  fontWeight: '800',
+  letterSpacing: '-0.01em',
+  background: 'accent',
+  color: 'bg',
+  textDecoration: 'none',
+  cursor: 'pointer',
+  WebkitTapHighlightColor: 'transparent',
+  transition: 'opacity 300ms ease, transform 160ms ease',
+  _hover: { opacity: '0.92' },
+  _active: { transform: 'scale(0.965)' },
+  '@media (prefers-reduced-motion: reduce)': { transition: 'none', _active: { transform: 'none' } },
+})
+
+const footLinkCss = css({
+  color: 'silver',
+  textDecoration: 'none',
+  _hover: { color: 'text', textDecoration: 'underline' },
+})
+
+const headlineCss = css({
+  m: '0',
+  fontFamily: 'display',
+  fontWeight: '800',
+  fontSize: 'clamp(2.4rem, 6vw, 3.5rem)',
+  letterSpacing: '-0.036em',
+  lineHeight: '1.05',
+  color: 'text',
+})
+
+const sublineCss = css({
+  m: '0',
+  maxW: '32rem',
+  fontSize: 'clamp(0.9375rem, 1.4vw, 1.125rem)',
+  fontWeight: '500',
+  lineHeight: '1.5',
+  letterSpacing: '-0.011em',
+  color: 'silver',
+})
+
+const pulseLineCss = css({
+  m: '0',
+  fontSize: 'bodyMd',
+  fontWeight: '500',
+  lineHeight: '1.5',
+  textAlign: 'center',
+  color: 'silver',
+})
+
+const PULSE_LINE = 'No wearable needed — your camera reads your pulse, on-device, always.'
+const SUBLINE =
+  'Neuroacoustic soundscapes pressed like rare vinyl — each mode tuned to your pulse. Focus, flow, calm, sleep.'
+
+function Headline() {
+  return (
+    <h1 className={headlineCss}>
+      <span className={css({ display: 'block' })}>records cut for</span>
+      <span className={css({ display: 'block' })}>the waking mind.</span>
+    </h1>
+  )
 }
 
-function Home() {
-  const [arousal, setArousal] = useState(0.5)
-  const [phase, setPhase] = useState<'idle' | 'attuning' | 'locked'>('idle')
-  const raf = useRef(0)
-
-  // The identity move: arousal → --signal, applied to the document so every
-  // token that reads `signal` updates at once. One source of truth.
-  useEffect(() => {
-    applySignal(arousalToLch(arousal))
-  }, [arousal])
-
-  const color = lchToCss(arousalToLch(arousal))
-
-  const onMove = useCallback(
-    (e: React.PointerEvent<HTMLDivElement>) => {
-      if (phase === 'attuning') return
-      const rect = e.currentTarget.getBoundingClientRect()
-      const y = clamp((e.clientY - rect.top) / rect.height)
-      setArousal(1 - y) // top of the ring = higher arousal
-    },
-    [phase],
+function FooterLine() {
+  return (
+    <p
+      className={css({
+        m: '0',
+        px: '5',
+        py: '7',
+        textAlign: 'center',
+        fontSize: 'caption',
+        fontWeight: '500',
+        color: 'silver',
+      })}
+    >
+      Free to explore · The camera stays on your device ·{' '}
+      <Link to="/privacy" className={footLinkCss}>
+        Privacy
+      </Link>{' '}
+      ·{' '}
+      <Link to="/terms" className={footLinkCss}>
+        Terms
+      </Link>
+    </p>
   )
+}
 
-  const beginSession = useCallback(() => {
-    if (prefersReducedMotion()) {
-      setArousal(0.62)
-      setPhase('locked')
-      return
-    }
-    setPhase('attuning')
-    const start = performance.now()
-    const from = arousal
-    const to = 0.62
-    const dur = 1300
-    const tick = (now: number) => {
-      const t = Math.min(1, (now - start) / dur)
-      const eased = 1 - Math.pow(1 - t, 3)
-      setArousal(from + (to - from) * eased)
-      if (t < 1) raf.current = requestAnimationFrame(tick)
-      else setPhase('locked')
-    }
-    raf.current = requestAnimationFrame(tick)
-  }, [arousal])
+function Landing() {
+  // Re-asserted on mount so SPA back-navigation restores the title.
+  usePageTitle('SmartSound — calm, tuned to your body')
+  const navigate = useNavigate()
+  const playClick = useClickSound()
+  const suggestion = useMemo(() => suggestFor(new Date()), [])
 
-  useEffect(() => () => cancelAnimationFrame(raf.current), [])
+  /** THE gate — listening requires the on-device account; browsing never does. */
+  const gatedPlay = (state: TargetState, minutes?: number) => {
+    if (hasAccount()) {
+      void navigate({ to: '/app/player', search: { state, minutes } })
+    } else {
+      void navigate({
+        to: '/onboarding/$step',
+        params: { step: 'auth' },
+        search: { intent: 'play', state },
+      })
+    }
+  }
+
+  const startListening = () => {
+    playClick('primary')
+    gatedPlay(suggestion.state)
+  }
 
   return (
-    <div className={css({ maxW: '1200px', mx: 'auto', px: { base: '5', md: '8' } })}>
-      {/* ── Masthead ─────────────────────────────────────────────── */}
-      <header
-        className={flex({
-          justify: 'space-between',
-          align: 'center',
-          py: '6',
-        })}
-      >
-        <div className={hstack({ gap: '2.5' })}>
-          <span
-            aria-hidden
-            className={css({
-              w: '2.5',
-              h: '2.5',
-              rounded: 'full',
-              bg: 'signal',
-              boxShadow: '0 0 12px token(colors.signal)',
-            })}
-          />
-          <span
-            className={css({
-              fontFamily: 'display',
-              fontWeight: '600',
-              fontSize: 'lg',
-              letterSpacing: '-0.01em',
-            })}
-          >
-            SmartSound
-          </span>
-        </div>
-        <span
-          className={css({
-            fontFamily: 'mono',
-            fontSize: '2xs',
-            color: 'muted',
-            letterSpacing: '0.08em',
-            display: { base: 'none', sm: 'block' },
-          })}
-        >
-          CLOSED-LOOP NEUROACOUSTICS
-        </span>
-      </header>
+    <div className={css({ position: 'relative', bg: 'bgDeep', color: 'text' })}>
+      <LandingHeader />
 
-      {/* ── Hero ─────────────────────────────────────────────────── */}
+      {/* ── The hero — a record floating on the grey canvas, card below. ── */}
       <section
         className={css({
-          display: 'grid',
-          gridTemplateColumns: { base: '1fr', lg: '1.05fr 0.95fr' },
-          gap: { base: '10', lg: '6' },
+          position: 'relative',
+          minHeight: '92dvh',
+          display: 'flex',
+          flexDirection: 'column',
           alignItems: 'center',
-          pt: { base: '6', lg: '10' },
-          pb: '16',
+          justifyContent: 'center',
+          overflow: 'hidden',
+          px: '5',
+          pt: 'calc(env(safe-area-inset-top) + 40px)',
+          pb: '10',
         })}
       >
-        <div className={stack({ gap: '6', maxW: '34rem' })}>
-          <p
-            className={css({
-              fontFamily: 'mono',
-              fontSize: '2xs',
-              color: 'signal',
-              letterSpacing: '0.14em',
-            })}
-          >
-            SENSE → STEER → LEARN
-          </p>
-          <h1
-            className={css({
-              fontFamily: 'display',
-              fontWeight: '600',
-              fontSize: { base: '4xl', md: '6xl' },
-              lineHeight: '1.02',
-              letterSpacing: '-0.02em',
-              textWrap: 'balance',
-            })}
-          >
-            The focus-audio engine that reads your body and{' '}
-            <span className={css({ color: 'signal' })}>reshapes the sound</span> in
-            real time.
-          </h1>
-          <p
-            className={css({
-              fontSize: { base: 'md', md: 'lg' },
-              color: 'muted',
-              lineHeight: '1.5',
-              maxW: '30rem',
-            })}
-          >
-            Using nothing but the camera you already have. SmartSound senses how
-            settled you are, then steers a generative soundscape to move you into
-            focus, calm, or sleep — and holds you there.
-          </p>
-
-          <div className={hstack({ gap: '3', flexWrap: 'wrap', mt: '1' })}>
-            <Link
-              to="/onboarding/$step"
-              params={{ step: 'intent' }}
-              className={css({
-                fontFamily: 'display', fontWeight: '500', fontSize: 'sm',
-                px: '5', py: '3', rounded: 'lg', color: 'bg', bg: 'signal',
-                textDecoration: 'none',
-                transition: 'filter token(durations.instant), transform token(durations.instant)',
-                _hover: { filter: 'brightness(1.08)' },
-                _active: { transform: 'translateY(1px)' },
-              })}
-            >
-              Begin session
-            </Link>
-            <button
-              type="button"
-              onClick={beginSession}
-              disabled={phase === 'attuning'}
-              className={css({
-                fontFamily: 'display', fontWeight: '500', fontSize: 'sm',
-                px: '5', py: '3', rounded: 'lg', color: 'text',
-                border: '1px solid token(colors.hairline)', cursor: 'pointer', bg: 'transparent',
-                transition: 'border-color token(durations.instant)',
-                _hover: { borderColor: 'signal' },
-                _disabled: { opacity: 0.7, cursor: 'wait' },
-              })}
-            >
-              {phase === 'attuning' ? 'Attuning…' : 'Preview calibration'}
-            </button>
-          </div>
-
-          <p className={css({ fontFamily: 'mono', fontSize: '2xs', color: 'muted' })}>
-            Interactive preview — move across the ring to feel the color track your state.
-          </p>
-        </div>
-
-        {/* The signature object. Its color IS the --signal token. */}
-        <div className={flex({ justify: 'center' })} onPointerMove={onMove} style={{ touchAction: 'none' }}>
-          <div className={css({ position: 'relative' })} style={{ width: 'min(440px, 80vw)', aspectRatio: '1' }}>
-          <SignalRing arousal={arousal} color={color} />
-          <div
-            className={stack({
-              gap: '0.5',
-              align: 'center',
-              position: 'absolute',
-              top: '50%',
-              left: '50%',
-              transform: 'translate(-50%, -50%)',
-              pointerEvents: 'none',
-            })}
-          >
-            <span
-              className={`tabular ${css({
-                fontFamily: 'display',
-                fontWeight: '600',
-                fontSize: '2xl',
-                color: 'signal',
-                letterSpacing: '0.02em',
-              })}`}
-            >
-              {stateName(arousal)}
-            </span>
-            <span
-              className={css({
-                fontFamily: 'mono',
-                fontSize: '2xs',
-                color: 'muted',
-                letterSpacing: '0.1em',
-              })}
-            >
-              {phase === 'attuning' ? 'finding your pulse' : 'generative preview'}
-            </span>
-          </div>
-          </div>
+        <RecordHero
+          className={css({
+            width: 'min(92vw, 560px)',
+            height: 'min(56vh, 520px)',
+            flexShrink: '0',
+          })}
+        />
+        {/* 30px gap → the app-window card, anchored below the disc. */}
+        <div className={css({ mt: '30px', flexShrink: '0' })}>
+          <AppWindowCard cta="Start listening" onCta={startListening} />
         </div>
       </section>
 
-      {/* ── The wedge: sense → steer → learn (§3) ────────────────── */}
-      <section id="how" className={css({ py: '16', scrollMarginTop: '6' })}>
-        <div className={stack({ gap: '10' })}>
-          {WEDGE.map((w, i) => (
-            <div
-              key={w.title}
-              className={css({
-                display: 'grid',
-                gridTemplateColumns: { base: '1fr', md: 'auto 1fr' },
-                gap: { base: '3', md: '8' },
-                alignItems: 'baseline',
-                borderTop: '1px solid token(colors.hairline)',
-                pt: '6',
-              })}
-            >
-              <span
-                className={`tabular ${css({
-                  fontFamily: 'mono',
-                  fontSize: 'sm',
-                  color: 'signal',
-                })}`}
+      {/* ── The statement. ── */}
+      <section
+        className={css({
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          textAlign: 'center',
+          gap: '4',
+          px: '5',
+          pt: '4',
+          pb: '10',
+        })}
+      >
+        <Headline />
+        <p className={sublineCss}>{SUBLINE}</p>
+      </section>
+
+      {/* ── The pressings — every mode as a record. ── */}
+      <section
+        aria-label="The pressings — every mode as a record"
+        role="group"
+        className={css({ maxW: '1100px', mx: 'auto', px: '5', pb: '4' })}
+      >
+        <p
+          className={cx(
+            'tabular',
+            css({
+              m: '0',
+              mb: '5',
+              textAlign: 'center',
+              fontSize: 'caption',
+              fontWeight: '700',
+              letterSpacing: '0.14em',
+              textTransform: 'uppercase',
+              color: 'silver',
+            }),
+          )}
+        >
+          The pressings
+        </p>
+        <div
+          className={css({
+            display: 'flex',
+            alignItems: 'flex-start',
+            justifyContent: { base: 'flex-start', md: 'center' },
+            gap: '6',
+            overflowX: 'auto',
+            pb: '3',
+            WebkitOverflowScrolling: 'touch',
+          })}
+        >
+          {PRESSINGS.map((item) => (
+            <div key={item.id} className={css({ flexShrink: '0', textAlign: 'center', width: '132px' })}>
+              <button
+                type="button"
+                onClick={() => gatedPlay(item.state, item.minutes)}
+                aria-label={`${item.title} — ${item.meta}. Play`}
+                className={css({
+                  display: 'block',
+                  p: '0',
+                  m: '0',
+                  mx: 'auto',
+                  border: 'none',
+                  background: 'transparent',
+                  cursor: 'pointer',
+                  borderRadius: 'full',
+                  WebkitTapHighlightColor: 'transparent',
+                  transition: 'transform 200ms ease',
+                  _hover: { transform: 'translateY(-3px)' },
+                  _focusVisible: { outline: '2px solid token(colors.accent)', outlineOffset: '4px' },
+                  '@media (prefers-reduced-motion: reduce)': { transition: 'none', _hover: { transform: 'none' } },
+                })}
+                style={{ color: pressingTint(item) }}
               >
-                {String(i + 1).padStart(2, '0')} / {w.tag}
-              </span>
-              <div className={stack({ gap: '2', maxW: '46rem' })}>
-                <h2
-                  className={css({
-                    fontFamily: 'display',
-                    fontWeight: '600',
-                    fontSize: { base: '2xl', md: '3xl' },
-                    letterSpacing: '-0.01em',
-                  })}
-                >
-                  {w.title}
-                </h2>
-                <p className={css({ color: 'muted', fontSize: 'md', lineHeight: '1.55' })}>
-                  {w.body}
-                </p>
-              </div>
+                <RecordDisc state={item.state} size={120} spinning="none" />
+              </button>
+              <p
+                className={css({
+                  m: '0',
+                  mt: '3',
+                  fontFamily: 'display',
+                  fontWeight: '700',
+                  fontSize: 'bodyMd',
+                  letterSpacing: '-0.02em',
+                  color: 'text',
+                })}
+              >
+                {item.title}
+              </p>
+              <p className={cx('tabular', css({ m: '0', mt: '0.5', fontSize: 'caption2', letterSpacing: '0.06em', color: 'silver' }))}>
+                {item.meta}
+              </p>
             </div>
           ))}
         </div>
       </section>
 
-      {/* ── Honest numbers + science framing (§2, §11) ───────────── */}
+      {/* ── The offer — CTAs, search, the pulse line. ── */}
       <section
         className={css({
-          py: '14',
-          borderTop: '1px solid token(colors.hairline)',
-          display: 'grid',
-          gridTemplateColumns: { base: '1fr', md: '1fr 1fr' },
-          gap: '10',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          gap: '4',
+          maxW: '520px',
+          mx: 'auto',
+          px: '5',
+          pt: '6',
+          pb: '12',
         })}
       >
-        <div className={stack({ gap: '3' })}>
-          <p className={css({ fontFamily: 'mono', fontSize: '2xs', color: 'muted', letterSpacing: '0.1em' })}>
-            WHERE WE ARE
-          </p>
-          <p
-            className={`tabular ${css({
-              fontFamily: 'display',
-              fontWeight: '600',
-              fontSize: '5xl',
-              letterSpacing: '-0.02em',
-            })}`}
-          >
-            160+
-          </p>
-          <p className={css({ color: 'muted', fontSize: 'md' })}>
-            people have run real sessions. One pitch, one win. No fabricated
-            testimonials, no "trusted by thousands" — just where the work
-            actually stands.
-          </p>
+        <div className={css({ display: 'flex', alignItems: 'center', flexWrap: 'wrap', justifyContent: 'center', gap: '3' })}>
+          <Link to="/app" className={secondaryCtaCss} onClick={() => playClick('primary')}>
+            Browse the library
+          </Link>
+          <button type="button" className={primaryCtaCss} onClick={startListening}>
+            Start listening
+            <span aria-hidden className={css({ fontWeight: '800' })}>
+              ›
+            </span>
+          </button>
         </div>
-        <div className={stack({ gap: '3' })}>
-          <p className={css({ fontFamily: 'mono', fontSize: '2xs', color: 'muted', letterSpacing: '0.1em' })}>
-            THE HONEST SCIENCE
-          </p>
-          <p className={css({ color: 'text', fontSize: 'md', lineHeight: '1.55' })}>
-            SmartSound uses rhythmic amplitude modulation designed to support
-            focus — not binaural beats, and no headphones required. Effects are
-            individual and work best as part of a broader focus practice.
-            SmartSound is a wellness tool, not a medical device.
-          </p>
-        </div>
+        <LandingSearch onPlay={gatedPlay} className={css({ maxW: '430px' })} />
+        <p className={pulseLineCss}>{PULSE_LINE}</p>
       </section>
 
-      <footer
-        className={flex({
-          justify: 'space-between',
-          align: 'center',
-          py: '8',
-          borderTop: '1px solid token(colors.hairline)',
-          color: 'muted',
-          fontFamily: 'mono',
-          fontSize: '2xs',
-        })}
-      >
-        <span>SmartSound © 2026</span>
-        <span>Video never leaves your device.</span>
-      </footer>
+      <FooterLine />
+      <NowPlayingWidget />
     </div>
   )
 }
-
-const WEDGE = [
-  {
-    tag: 'SENSE',
-    title: 'Your camera reads how settled you are.',
-    body: 'A local-only signal pulled from subtle skin-color changes in your front camera gives a live read on your pulse and steadiness. No wearable, no watch, no frame ever sent anywhere. This is the requirement every competitor still gates behind hardware.',
-  },
-  {
-    tag: 'STEER',
-    title: 'The sound moves you toward your target — then holds.',
-    body: 'Set a state; SmartSound measures where you are against your own baseline and continuously reshapes tempo, layer density, brightness, and modulation depth to close the gap. A real control loop, not a manual slider — with a manual override that always wins.',
-  },
-  {
-    tag: 'LEARN',
-    title: 'It calibrates to your body, not an average.',
-    body: 'Lightweight check-ins ground-truth the model to you, so "focus" comes to mean your focus — learning your personal arousal-to-performance curve instead of assuming a population average.',
-  },
-]

@@ -3,6 +3,8 @@ import { createRoot } from 'react-dom/client'
 import { RouterProvider, createRouter } from '@tanstack/react-router'
 import { routeTree } from './routeTree.gen'
 import { EngineProvider } from '~/lib/engine-context'
+// Desktop.fm uses the native system stack for all UI and a system mono for
+// numbers — no bundled webfonts (see panda.config.ts `fonts`).
 import './index.css'
 
 const router = createRouter({ routeTree, defaultPreload: 'intent' })

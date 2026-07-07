@@ -1,0 +1,20 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(grep -nE \"#[0-9a-fA-F]{3,8}|mercury|tint\" landing/StudyCanvas.tsx)",
+      "Bash(grep -nE \"#[0-9a-fA-F]{3,8}|pressingTint\" routes/index.tsx)",
+      "Bash(grep -nE \"#[0-9a-fA-F]{3,8}\" lib/daypart.ts)",
+      "Bash(git add *)",
+      "Bash(git commit -q -m 'docs\\(spec\\): Desktop.fm record-pressed minimalism design spec *)",
+      "Bash(git reset *)",
+      "Bash(git cherry-pick *)",
+      "Bash(npm run *)",
+      "Bash(git commit -q -m 'feat\\(theme\\): Desktop.fm token layer — light-monochrome + calming-blue signal *)",
+      "Bash(grep -nEi \"#0[0-9a-f]{5}|#1[0-9a-f]{5}|#2[0-9a-f]{5}|rgba\\\\\\(6, ?16, ?38|171721|1e1e2a|5266eb|6f7ff0|5fb8c9|A78BFA|5EEAD4|FDBA74|7DD3FC|237, ?237, ?243\" src/landing/StudyCanvas.tsx src/design/BandField.tsx src/design/Scene.tsx src/design/LivingScene.tsx src/design/LivingSceneCanvas.tsx src/design/ProceduralScene.tsx)",
+      "Read(//root/projects/smartsound/.claude/worktrees/desktop-fm-record/src/routes/**)",
+      "Bash(grep -nE \"#[0-9a-fA-F]{3,6}|rgba?\\\\\\(|starlight|silver|deepSpace|midnight\" src/design/WaveformRing.tsx)",
+      "Bash(git rm *)",
+      "Bash(git commit -q -m 'feat\\(ui\\): Desktop.fm reskin across the app + 3D record hero *)"
+    ]
+  }
+}
