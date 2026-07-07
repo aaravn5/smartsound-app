@@ -137,6 +137,11 @@ export default defineConfig({
           from: { opacity: '0', transform: 'translateY(14px)' },
           to: { opacity: '1', transform: 'translateY(0)' },
         },
+        // The landing's scroll cue — a gentle vertical bob.
+        bob: {
+          '0%, 100%': { transform: 'translateY(0)', opacity: '0.75' },
+          '50%': { transform: 'translateY(6px)', opacity: '1' },
+        },
         sceneDriftA: {
           '0%': { transform: 'translate3d(0, 0, 0) scale(1)' },
           '50%': { transform: 'translate3d(-3%, 2%, 0) scale(1.06)' },
