@@ -11,6 +11,8 @@ import { css, cx } from 'styled-system/css'
 import { LiquidGlass } from '~/design/LiquidGlass'
 import { AppShowcase } from '~/landing/AppShowcase'
 import { TriangleConstellation } from '~/landing/TriangleConstellation'
+import { TriangleText } from '~/landing/TriangleText'
+import { useSmoothScroll } from '~/landing/useSmoothScroll'
 import { useClickSound } from '~/lib/click-sound'
 
 /**
@@ -31,52 +33,12 @@ export const Route = createFileRoute('/')({
 
 const enter = { duration: 1.1, ease: [0.16, 1, 0.3, 1] as const }
 
-/** Per-letter kinetic reveal — letters rise out of a masked line. */
-function Kinetic({
-  text,
-  delay = 0,
-  className,
-}: {
-  text: string
-  delay?: number
-  className?: string
-}) {
-  const reduce = useReducedMotion()
-  let n = 0
-  return (
-    <span className={className} aria-label={text} role="text">
-      {text.split(' ').map((word, w) => (
-        <span
-          key={w}
-          aria-hidden
-          className={css({
-            display: 'inline-block',
-            overflow: 'hidden',
-            verticalAlign: 'bottom',
-            pb: '0.06em',
-            mr: '0.26em',
-          })}
-        >
-          {[...word].map((ch, c) => {
-            const d = delay + n++ * 0.03
-            return (
-              <span
-                key={c}
-                className={css({
-                  display: 'inline-block',
-                  animation: 'riseUp 0.72s cubic-bezier(0.16, 1, 0.3, 1) both',
-                })}
-                style={reduce ? { animation: 'none' } : { animationDelay: `${d}s` }}
-              >
-                {ch}
-              </span>
-            )
-          })}
-        </span>
-      ))}
-    </span>
-  )
-}
+/** The hero's rotating statements — the same triangles rearrange into each. */
+const HERO_PHRASES = [
+  'Unlock your\nquietest mind.',
+  'Focus. Calm.\nSleep.',
+  'Music, made\nof you.',
+]
 
 /** The Dala-style loading counter. rAF drives the count; a wall-clock timer
  * guarantees dismissal even when the tab is throttled or hidden. */
@@ -176,19 +138,16 @@ function SectionHeading({ eyebrow, title }: { eyebrow: string; title: string }) 
       >
         {eyebrow}
       </p>
-      <h2
-        className={css({
-          m: '0',
-          fontFamily: 'display',
-          fontSize: 'clamp(2.2rem, 5.5vw, 3.8rem)',
-          fontWeight: '500',
-          letterSpacing: '-0.03em',
-          lineHeight: '1.02',
-          color: 'text',
-        })}
-      >
-        {title}
-      </h2>
+      {/* Section titles are triangle swarms too — touch them and they scatter. */}
+      <TriangleText
+        as="h2"
+        text={title}
+        fontSize={54}
+        fontWeight={620}
+        align="center"
+        height={72}
+        gap={4}
+      />
     </motion.div>
   )
 }
@@ -289,6 +248,14 @@ function HeroStage() {
   const reduce = useReducedMotion()
   const navigate = useNavigate()
   const playClick = useClickSound()
+  const [phrase, setPhrase] = useState(0)
+
+  // Rotate the statement — the triangle swarm rearranges into each next one.
+  useEffect(() => {
+    if (reduce) return
+    const id = window.setInterval(() => setPhrase((p) => (p + 1) % HERO_PHRASES.length), 5200)
+    return () => window.clearInterval(id)
+  }, [reduce])
 
   const reveal = (delay: number) =>
     reduce
@@ -364,21 +331,18 @@ function HeroStage() {
           >
             SmartSound
           </motion.p>
-          <h1
-            className={css({
-              m: '0',
-              fontFamily: 'display',
-              fontSize: 'clamp(3rem, 9.5vw, 6.4rem)',
-              fontWeight: '500',
-              letterSpacing: '-0.04em',
-              lineHeight: '1.0',
-              color: 'text',
-            })}
-          >
-            <Kinetic text="Unlock your" delay={0.25} />
-            <br />
-            <Kinetic text="quietest mind." delay={0.55} />
-          </h1>
+          {/* The headline is literally built of triangles — the same swarm
+              rearranges into each rotating statement, scattering under the
+              pointer. */}
+          <TriangleText
+            as="h1"
+            text={HERO_PHRASES[phrase]}
+            fontSize={92}
+            fontWeight={650}
+            height={220}
+            gap={4}
+            className={css({ pointerEvents: 'auto', maxW: '760px' })}
+          />
           <motion.p
             {...reveal(1.0)}
             className={css({
@@ -1142,21 +1106,16 @@ function CtaStage() {
           'radial-gradient(60% 45% at 50% 55%, rgba(74, 168, 255, 0.10) 0%, rgba(55, 194, 160, 0.05) 45%, transparent 75%)',
       })}
     >
-      <h2
-        className={css({
-          m: '0',
-          fontFamily: 'display',
-          fontSize: 'clamp(2.4rem, 7vw, 4.6rem)',
-          fontWeight: '500',
-          letterSpacing: '-0.04em',
-          lineHeight: '1.02',
-          color: 'text',
-        })}
-      >
-        Your body has the answer.
-        <br />
-        Ask SmartSound to play it.
-      </h2>
+      <TriangleText
+        as="h2"
+        text={'Your body has the answer.\nAsk SmartSound to play it.'}
+        fontSize={64}
+        fontWeight={620}
+        align="center"
+        height={170}
+        gap={4}
+        className={css({ w: '100%', maxW: '900px' })}
+      />
       <p
         className={css({
           m: '0',
@@ -1279,6 +1238,8 @@ function FooterSection() {
 }
 
 function Welcome() {
+  // The Dala scroll feel — wheel input glides the real scroll position.
+  useSmoothScroll()
   return (
     <div
       id="top"

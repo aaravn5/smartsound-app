@@ -6,6 +6,7 @@ import { css, cx } from 'styled-system/css'
 import { LiquidGlass } from '~/design/LiquidGlass'
 import { LivingScene } from '~/design/LivingScene'
 import { TriangleConstellation } from '~/landing/TriangleConstellation'
+import { TriangleText } from '~/landing/TriangleText'
 import { PulseWave } from '~/design/PulseWave'
 import { SignalRing } from '~/design/SignalRing'
 import type { SceneVariant } from '~/design/Scene'
@@ -424,20 +425,17 @@ function PlayerScreen() {
             >
               SmartSound Session · {profile.label}
             </p>
-            <h1
-              className={css({
-                m: '0',
-                fontFamily: 'display',
-                fontSize: 'title1',
-                fontWeight: '500',
-                letterSpacing: '-0.01em',
-                color: 'text',
-                textShadow: 'var(--ss-text-glow)',
-                transition: 'opacity token(durations.gentle) ease',
-              })}
-            >
-              {title}
-            </h1>
+            {/* The session title is nanobots — the swarm rearranges when the
+                state changes, and scatters under a curious finger. */}
+            <TriangleText
+              as="h1"
+              text={title}
+              fontSize={34}
+              fontWeight={620}
+              align="center"
+              height={44}
+              gap={3}
+            />
             <p
               className={`tabular ${css({
                 m: '0',

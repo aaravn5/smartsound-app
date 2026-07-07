@@ -4,6 +4,7 @@ import { motion, useReducedMotion, useScroll, useTransform } from 'motion/react'
 import { css, cx } from 'styled-system/css'
 import { LiquidGlass } from '~/design/LiquidGlass'
 import { LivingScene } from '~/design/LivingScene'
+import { TriangleText } from '~/landing/TriangleText'
 import { SmartSoundRings } from '~/design/SmartSoundRings'
 import { useClickSound } from '~/lib/click-sound'
 import { useMainScrollRef } from '~/lib/scroll-context'
@@ -280,31 +281,15 @@ function TodayScreen() {
         >
           {todayCaption()}
         </p>
-        <h1
-          className={css({
-            m: '0',
-            fontFamily: 'display',
-            fontSize: 'title1',
-            fontWeight: '500',
-            letterSpacing: '-0.015em',
-            lineHeight: '1.12',
-            color: 'text',
-            textShadow: 'var(--ss-text-glow)',
-            display: 'flex',
-            alignItems: 'baseline',
-            gap: '2.5',
-          })}
-        >
-          <span
-            aria-hidden
-            className={css({ display: 'inline-block', w: '12px', h: '11px', flexShrink: '0' })}
-            style={{
-              background: 'linear-gradient(135deg, #4aa8ff, #37c2a0)',
-              clipPath: 'polygon(50% 0%, 100% 100%, 0% 100%)',
-            }}
-          />
-          {greeting()}
-        </h1>
+        {/* The greeting assembles from the nanobot swarm each morning. */}
+        <TriangleText
+          as="h1"
+          text={greeting()}
+          fontSize={32}
+          fontWeight={620}
+          height={42}
+          gap={3}
+        />
         <p
           className={css({
             m: '0',

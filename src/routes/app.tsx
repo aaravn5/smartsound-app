@@ -4,6 +4,7 @@ import type { CSSProperties, ReactNode } from 'react'
 import { css } from 'styled-system/css'
 import { LiquidGlass } from '~/design/LiquidGlass'
 import { Scene, type SceneVariant } from '~/design/Scene'
+import { TriangleConstellation } from '~/landing/TriangleConstellation'
 import { useClickSound } from '~/lib/click-sound'
 import { ensureDevPlan } from '~/lib/dev-access'
 import { MainScrollContext } from '~/lib/scroll-context'
@@ -126,6 +127,26 @@ function AppShell() {
       {/* `page` scrim — a steadier base dim so browsable text stays legible
           while the landscape remains clearly visible behind it. */}
       <Scene variant={tab.scene} scrim="page" />
+
+      {/* Ambient nanobot field — a sparse triangle constellation drifting
+          between forms behind every tab, tying the app to the landing's
+          idiom without competing with content. */}
+      <TriangleConstellation
+        shapes={['sphere', 'network', 'brain']}
+        mode="auto"
+        rotate="spin"
+        count={1100}
+        size={0.06}
+        holdSeconds={9}
+        particleOpacity={0.4}
+        cameraZ={8.5}
+        className={css({
+          position: 'absolute',
+          inset: '0',
+          pointerEvents: 'none',
+          opacity: '0.35',
+        })}
+      />
 
       <main
         ref={mainRef}
