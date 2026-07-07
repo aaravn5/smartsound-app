@@ -13,8 +13,8 @@ import { TriangleSpectrum } from '~/design/TriangleSpectrum'
  * this element fades in over it — pixels becoming product.
  */
 
-const BLUE = '#4aa8ff'
-const GREEN = '#37c2a0'
+const BLUE = '#2fd4c4'
+const GREEN = '#63e8da'
 
 function PlayGlyph() {
   return (

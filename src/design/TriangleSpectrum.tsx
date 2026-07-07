@@ -15,7 +15,7 @@ import { css, cx } from 'styled-system/css'
 
 const COLS = 48
 const CELL = 12 // triangle cell size (CSS px)
-const PALETTE = ['#4aa8ff', '#5c7cff', '#37c2a0', '#63e0c2', '#7bd4ff']
+const PALETTE = ['#00c2b4', '#2fd4c4', '#63e8da', '#cbfffc', '#fad1ff']
 
 export function TriangleSpectrum({
   getSpectrum,

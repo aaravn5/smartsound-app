@@ -11,9 +11,9 @@ import { LiquidGlass } from '~/design/LiquidGlass'
  * app really has, not screenshots pretending to be interactive.
  */
 
-const RING_BLUE = '#4aa8ff'
-const RING_GREEN = '#37c2a0'
-const RING_YELLOW = '#ffd24a'
+const RING_BLUE = '#2fd4c4'
+const RING_GREEN = '#63e8da'
+const RING_YELLOW = '#fad1ff'
 
 const slab = css({
   position: 'relative',
@@ -25,7 +25,7 @@ const slab = css({
   justifyContent: 'center',
   border: '1px solid rgba(255,255,255,0.09)',
   background:
-    'radial-gradient(120% 90% at 20% 0%, rgba(74,168,255,0.16) 0%, transparent 55%), radial-gradient(110% 80% at 85% 100%, rgba(55,194,160,0.14) 0%, transparent 60%), linear-gradient(to bottom, #070b14, #04060c)',
+    'radial-gradient(120% 90% at 20% 0%, rgba(0, 130, 124, 0.35) 0%, transparent 55%), radial-gradient(110% 80% at 85% 100%, rgba(250, 209, 255, 0.10) 0%, transparent 60%), linear-gradient(to bottom, #01302d, #011d1c)',
 })
 
 function Arc({
@@ -171,9 +171,9 @@ function PlayerMock() {
               fontSize: 'caption',
               fontWeight: '600',
               color: i === 1 ? 'text' : 'var(--ss-ink-soft)',
-              bg: i === 1 ? 'rgba(74,168,255,0.22)' : 'rgba(255,255,255,0.07)',
+              bg: i === 1 ? 'rgba(0, 130, 124, 0.4)' : 'rgba(255,255,255,0.07)',
               border: '1px solid',
-              borderColor: i === 1 ? 'rgba(74,168,255,0.45)' : 'rgba(255,255,255,0.10)',
+              borderColor: i === 1 ? 'rgba(47, 212, 196, 0.5)' : 'rgba(255,255,255,0.10)',
             })}
           >
             {chip}

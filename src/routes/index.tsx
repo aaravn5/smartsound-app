@@ -8,7 +8,6 @@ import {
   useTransform,
 } from 'motion/react'
 import { css, cx } from 'styled-system/css'
-import { LiquidGlass } from '~/design/LiquidGlass'
 import { AppShowcase } from '~/landing/AppShowcase'
 import { PhoneShowcase } from '~/landing/PhoneShowcase'
 import { TriangleConstellation } from '~/landing/TriangleConstellation'
@@ -33,8 +32,6 @@ export const Route = createFileRoute('/')({
 })
 
 const enter = { duration: 1.1, ease: [0.16, 1, 0.3, 1] as const }
-const BLUE = '#4aa8ff'
-const GREEN = '#37c2a0'
 
 /** The hero's rotating statements — the same triangles rearrange into each. */
 const HERO_PHRASES = [
@@ -47,9 +44,11 @@ const signalPill = css({
   display: 'inline-flex',
   alignItems: 'center',
   justifyContent: 'center',
-  borderRadius: 'capsule',
-  background: 'linear-gradient(135deg, #4aa8ff, #2fb89b)',
-  color: 'white',
+  gap: '2',
+  borderRadius: '6px',
+  background:
+    'linear-gradient(90deg, #cbfffc 0%, #edfffe 26%, #fffdfa 48%, #fad1ff 89%)',
+  color: '#012624',
   fontWeight: '700',
   fontSize: 'footnote',
   letterSpacing: '0.1em',
@@ -59,19 +58,26 @@ const signalPill = css({
   border: 'none',
   cursor: 'pointer',
   font: 'inherit',
-  boxShadow: '0 6px 26px rgba(74, 168, 255, 0.38)',
   transition: 'filter 0.18s ease, transform 0.18s ease',
-  _hover: { filter: 'brightness(1.12)' },
+  _hover: { filter: 'brightness(1.05) saturate(1.2)' },
   _active: { transform: 'scale(0.97)' },
+})
+
+
+/** The raised surface — kelp card, 16px radius, no shadow (depth-of-water). */
+const kelpCard = css({
+  bg: '#003734',
+  borderRadius: '16px',
+  p: '9',
 })
 
 const eyebrowMint = css({
   m: '0',
   fontSize: 'footnote',
-  fontWeight: '700',
+  fontWeight: '500',
   letterSpacing: '0.16em',
   textTransform: 'uppercase',
-  color: '#63e0c2',
+  color: '#bbc7c6',
 })
 
 /** The loading counter. rAF drives the count; a wall-clock timer guarantees
@@ -118,7 +124,7 @@ function LoadingOverlay({ onDone }: { onDone: () => void }) {
         position: 'fixed',
         inset: '0',
         zIndex: '100',
-        bg: 'black',
+        bg: '#012624',
         display: 'flex',
         alignItems: 'flex-end',
         justifyContent: 'space-between',
@@ -181,7 +187,7 @@ function VoidNav() {
         justifyContent: 'space-between',
         px: '6',
         py: '4',
-        background: 'linear-gradient(to bottom, rgba(0,0,0,0.72), transparent)',
+        background: 'linear-gradient(to bottom, rgba(1, 29, 28, 0.85), transparent)',
       })}
     >
       <a
@@ -201,7 +207,7 @@ function VoidNav() {
           aria-hidden
           className={css({ display: 'inline-block', w: '13px', h: '12px' })}
           style={{
-            background: `linear-gradient(135deg, ${BLUE}, ${GREEN})`,
+            background: 'linear-gradient(135deg, #2fd4c4, #fad1ff)',
             clipPath: 'polygon(50% 0%, 100% 100%, 0% 100%)',
           }}
         />
@@ -283,7 +289,18 @@ function HeroBeat() {
         sm: { px: '10' },
       })}
     >
-      <div className={css({ maxW: '640px', pt: '20' })}>
+      {/* The bioluminescent glow — a deep radial teal light source. */}
+      <div
+        aria-hidden
+        className={css({
+          position: 'absolute',
+          inset: '0',
+          pointerEvents: 'none',
+          background:
+            'radial-gradient(60% 55% at 38% 62%, rgba(0, 130, 124, 0.55) 0%, rgba(0, 130, 124, 0.18) 45%, transparent 75%)',
+        })}
+      />
+      <div className={css({ maxW: '640px', pt: '20', position: 'relative' })}>
         <TriangleText
           as="h1"
           text={HERO_PHRASES[phrase]}
@@ -318,7 +335,7 @@ function HeroBeat() {
             }}
             className={signalPill}
           >
-            Start listening
+            Start listening <span aria-hidden>↗</span>
           </button>
         </motion.div>
       </div>
@@ -344,9 +361,11 @@ function NarrationBeat() {
     fontFamily: 'display',
     fontSize: 'clamp(1.5rem, 3.4vw, 2.4rem)',
     fontWeight: '500',
-    letterSpacing: '-0.015em',
-    lineHeight: '1.3',
-    color: 'text',
+    letterSpacing: '-0.02em',
+    lineHeight: '1.25',
+    background: 'linear-gradient(90deg, #cbfffc 0%, #edfffe 40%, #63e8da 100%)',
+    backgroundClip: 'text',
+    color: 'transparent',
   })
 
   return (
@@ -361,11 +380,11 @@ function NarrationBeat() {
           justifyContent: 'center',
         })}
       >
-        <motion.p style={{ opacity: oA }} className={statement}>
+        <motion.p style={{ opacity: oA, WebkitBackgroundClip: 'text' }} className={statement}>
           This is your mind under noise. A day shattered into a thousand pings, tabs, and
           half-finished thoughts.
         </motion.p>
-        <motion.p style={{ opacity: oB }} className={statement}>
+        <motion.p style={{ opacity: oB, WebkitBackgroundClip: 'text' }} className={statement}>
           Attention doesn&rsquo;t come back on its own. The right sound, tuned to your pulse,
           brings it back.
         </motion.p>
@@ -555,7 +574,7 @@ function InsideBeat() {
           mx: 'auto',
         })}
       >
-        System type, void-dark surfaces, and one signature material — Liquid Glass — on the
+        System type, abyss-teal surfaces, and one signature material — Liquid Glass — on the
         control layer. Every panel below is a screen the app actually ships.
       </p>
       <AppShowcase />
@@ -584,6 +603,60 @@ const PLANS = [
   },
 ]
 
+
+const STATS = [
+  { n: '0', label: 'Loops — every second is generated live' },
+  { n: '100%', label: 'On-device — your camera never uploads' },
+  { n: '2 min', label: 'From landing to your first session' },
+]
+
+/** Beat 6.5 — instrument-panel statistics, glowing against the abyss. */
+function StatsBeat() {
+  const reduce = useReducedMotion()
+  return (
+    <section className={css({ position: 'relative', px: '5', pt: '24', maxW: '1000px', mx: 'auto' })}>
+      <div className={css({ display: 'grid', gap: '10', md: { gridTemplateColumns: 'repeat(3, 1fr)' }, textAlign: 'center' })}>
+        {STATS.map((st) => (
+          <motion.div
+            key={st.n}
+            initial={reduce ? undefined : { opacity: 0, y: 24 }}
+            whileInView={reduce ? undefined : { opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: '-80px' }}
+            transition={enter}
+          >
+            <p
+              className={css({
+                m: '0',
+                fontFamily: 'display',
+                fontSize: 'clamp(3rem, 6.5vw, 5.4rem)',
+                fontWeight: '500',
+                letterSpacing: '-0.045em',
+                lineHeight: '1',
+                color: '#fde9ff',
+              })}
+            >
+              {st.n}
+            </p>
+            <p
+              className={css({
+                m: '0',
+                mt: '3',
+                fontSize: 'footnote',
+                fontWeight: '500',
+                letterSpacing: '0.055em',
+                textTransform: 'uppercase',
+                color: '#edfffe',
+              })}
+            >
+              {st.label}
+            </p>
+          </motion.div>
+        ))}
+      </div>
+    </section>
+  )
+}
+
 /** Beat 7 — plans: the real tiers, real prices, no dark patterns. */
 function PlansBeat() {
   const navigate = useNavigate()
@@ -596,11 +669,10 @@ function PlansBeat() {
       <SectionHeading eyebrow="Plans" title="Start free, stay honest" />
       <div className={css({ display: 'grid', gap: '5', md: { gridTemplateColumns: 'repeat(3, 1fr)' } })}>
         {PLANS.map((p, i) => (
-          <LiquidGlass
+          <div
             key={p.name}
-            variant="card"
-            tint={i === 1 ? 'rgba(74, 168, 255, 0.30)' : undefined}
-            className={css({ p: '7' })}
+            className={cx(kelpCard, css({ position: 'relative' }))}
+            style={i === 1 ? { background: '#01514b' } : undefined}
           >
             <p className={eyebrowMint}>{p.name}</p>
             <p className={css({ m: '0', mt: '2', color: 'text' })}>
@@ -635,7 +707,7 @@ function PlansBeat() {
                     aria-hidden
                     className={css({ display: 'inline-block', w: '7px', h: '6px', flexShrink: '0' })}
                     style={{
-                      background: `linear-gradient(135deg, ${BLUE}, ${GREEN})`,
+                      background: 'linear-gradient(135deg, #2fd4c4, #fad1ff)',
                       clipPath: 'polygon(50% 0%, 100% 100%, 0% 100%)',
                     }}
                   />
@@ -643,7 +715,26 @@ function PlansBeat() {
                 </li>
               ))}
             </ul>
-          </LiquidGlass>
+            <span
+              aria-hidden
+              className={css({
+                position: 'absolute',
+                top: '5',
+                right: '5',
+                w: '32px',
+                h: '32px',
+                borderRadius: '6px',
+                bg: 'rgba(3, 81, 75, 0.5)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: 'white',
+                fontSize: 'footnote',
+              })}
+            >
+              ↗
+            </span>
+          </div>
         ))}
       </div>
       <div className={css({ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '3', mt: '8' })}>
@@ -654,7 +745,7 @@ function PlansBeat() {
           }}
           className={signalPill}
         >
-          Start free
+          Start free <span aria-hidden>↗</span>
         </button>
         <p className={css({ m: '0', fontSize: 'caption', color: 'var(--ss-ink-soft)' })}>
           Prices as shown in-app · annual saves more · cancel anytime
@@ -723,14 +814,15 @@ function FooterRow() {
     <footer
       className={css({
         position: 'relative',
+        bg: '#011d1c',
         display: 'flex',
         flexWrap: 'wrap',
         alignItems: 'center',
         justifyContent: 'space-between',
         gap: '4',
         px: '6',
-        py: '6',
-        borderTop: '1px solid rgba(255,255,255,0.08)',
+        py: '16',
+        borderTop: '1px solid rgba(255,255,255,0.06)',
       })}
     >
       <p className={css({ m: '0', fontSize: 'caption', color: 'var(--ss-ink-soft)' })}>
@@ -762,7 +854,7 @@ function Welcome() {
   return (
     <div
       id="top"
-      className={cx('ss-scene-dark', css({ position: 'relative', bg: 'black', color: 'text' }))}
+      className={cx('ss-scene-dark', css({ position: 'relative', bg: '#012624', color: 'text' }))}
     >
       <LoadingOverlay onDone={() => setReady(true)} />
       <VoidNav />
@@ -794,6 +886,7 @@ function Welcome() {
         <GlobeBeat />
         <PhoneBeat />
         <InsideBeat />
+        <StatsBeat />
         <PlansBeat />
         <ClosingBeat />
         <FooterRow />

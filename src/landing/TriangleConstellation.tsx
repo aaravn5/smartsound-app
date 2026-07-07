@@ -37,18 +37,18 @@ export type ShapeName =
   | 'ribbon'
   | 'phone'
 
-const HOVER_COLOR = new THREE.Color('#ffd24a')
+const HOVER_COLOR = new THREE.Color('#fad1ff')
 const HOVER_RADIUS = 1.45
 
 // The SmartSound spectrum — its own signal identity (not the reference's
 // violet/amber): deep sky blues into sea greens with silver-blue ink.
 // Yellow warmth stays reserved for the pointer.
 const DEFAULT_PALETTE = [
-  '#4aa8ff', '#4aa8ff', '#4aa8ff',
-  '#5c7cff', '#3b82f6', '#2f6fe0',
-  '#37c2a0', '#37c2a0', '#2fb89b',
-  '#63e0c2', '#7bd4ff',
-  '#dbe9ff', '#bfd6f2',
+  '#00a89c', '#00a89c', '#0cc4b4',
+  '#2fd4c4', '#2fd4c4', '#63e8da',
+  '#9ffcf0', '#cbfffc', '#cbfffc',
+  '#edfffe', '#ffffff',
+  '#fad1ff', '#fde9ff',
 ]
 
 /** Every particle is a real 3D solid — one shared tetrahedron. */
@@ -681,8 +681,8 @@ export function TriangleConstellation({
         {/* Studio lighting — the solids read as lit glass-metal, not sprites. */}
         <ambientLight intensity={0.55} />
         <directionalLight position={[4, 6, 8]} intensity={1.5} />
-        <pointLight position={[-6, -2, 5]} intensity={40} color="#4aa8ff" />
-        <pointLight position={[6, 3, -3]} intensity={30} color="#37c2a0" />
+        <pointLight position={[-6, -2, 5]} intensity={40} color="#00c2b4" />
+        <pointLight position={[6, 3, -3]} intensity={30} color="#fad1ff" />
         <Suspense fallback={null}>
           <Cloud
             shapes={shapes}
