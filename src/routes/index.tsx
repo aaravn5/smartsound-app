@@ -10,6 +10,7 @@ import {
 import { css, cx } from 'styled-system/css'
 import { LiquidGlass } from '~/design/LiquidGlass'
 import { AppShowcase } from '~/landing/AppShowcase'
+import { PhoneShowcase } from '~/landing/PhoneShowcase'
 import { TriangleConstellation } from '~/landing/TriangleConstellation'
 import { TriangleText } from '~/landing/TriangleText'
 import { useSmoothScroll } from '~/landing/useSmoothScroll'
@@ -32,8 +33,8 @@ export const Route = createFileRoute('/')({
 })
 
 const enter = { duration: 1.1, ease: [0.16, 1, 0.3, 1] as const }
-const VIOLET = '#8052ff'
-const AMBER = '#ffb829'
+const BLUE = '#4aa8ff'
+const GREEN = '#37c2a0'
 
 /** The hero's rotating statements — the same triangles rearrange into each. */
 const HERO_PHRASES = [
@@ -42,12 +43,12 @@ const HERO_PHRASES = [
   'Music, made\nof you.',
 ]
 
-const violetPill = css({
+const signalPill = css({
   display: 'inline-flex',
   alignItems: 'center',
   justifyContent: 'center',
   borderRadius: 'capsule',
-  bg: '#8052ff',
+  background: 'linear-gradient(135deg, #4aa8ff, #2fb89b)',
   color: 'white',
   fontWeight: '700',
   fontSize: 'footnote',
@@ -58,30 +59,31 @@ const violetPill = css({
   border: 'none',
   cursor: 'pointer',
   font: 'inherit',
-  boxShadow: '0 6px 26px rgba(128, 82, 255, 0.38)',
-  transition: 'background-color 0.18s ease, transform 0.18s ease',
-  _hover: { bg: '#8f66ff' },
+  boxShadow: '0 6px 26px rgba(74, 168, 255, 0.38)',
+  transition: 'filter 0.18s ease, transform 0.18s ease',
+  _hover: { filter: 'brightness(1.12)' },
   _active: { transform: 'scale(0.97)' },
 })
 
-const eyebrowAmber = css({
+const eyebrowMint = css({
   m: '0',
   fontSize: 'footnote',
   fontWeight: '700',
   letterSpacing: '0.16em',
   textTransform: 'uppercase',
-  color: '#ffb829',
+  color: '#63e0c2',
 })
 
 /** The loading counter. rAF drives the count; a wall-clock timer guarantees
  * dismissal even when the tab is throttled or hidden. */
-function LoadingOverlay() {
+function LoadingOverlay({ onDone }: { onDone: () => void }) {
   const [pct, setPct] = useState(0)
   const [gone, setGone] = useState(false)
 
   useEffect(() => {
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
       setGone(true)
+      onDone()
       return
     }
     let raf = 0
@@ -91,11 +93,15 @@ function LoadingOverlay() {
       const p = Math.min(1, (t - start) / dur)
       setPct(Math.round(p * 100))
       if (p < 1) raf = requestAnimationFrame(tick)
-      else window.setTimeout(() => setGone(true), 300)
+      else {
+        onDone() // 100 reached — the page fades in beneath the counter
+        window.setTimeout(() => setGone(true), 450)
+      }
     }
     raf = requestAnimationFrame(tick)
     const fallback = window.setTimeout(() => {
       setPct(100)
+      onDone()
       setGone(true)
     }, 2000)
     return () => {
@@ -195,7 +201,7 @@ function VoidNav() {
           aria-hidden
           className={css({ display: 'inline-block', w: '13px', h: '12px' })}
           style={{
-            background: `linear-gradient(135deg, ${VIOLET}, ${AMBER})`,
+            background: `linear-gradient(135deg, ${BLUE}, ${GREEN})`,
             clipPath: 'polygon(50% 0%, 100% 100%, 0% 100%)',
           }}
         />
@@ -210,7 +216,7 @@ function VoidNav() {
             playClick('primary')
             void navigate({ to: '/app' })
           }}
-          className={cx(violetPill, css({ h: '38px', px: '5' }))}
+          className={cx(signalPill, css({ h: '38px', px: '5' }))}
         >
           Open the app
         </button>
@@ -230,7 +236,7 @@ function SectionHeading({ eyebrow, title }: { eyebrow: string; title: string }) 
       transition={enter}
       className={css({ textAlign: 'center', mb: '10' })}
     >
-      <p className={cx(eyebrowAmber, css({ mb: '3', textAlign: 'center' }))}>{eyebrow}</p>
+      <p className={cx(eyebrowMint, css({ mb: '3', textAlign: 'center' }))}>{eyebrow}</p>
       <TriangleText
         as="h2"
         text={title}
@@ -286,7 +292,7 @@ function HeroBeat() {
           height={220}
           gap={4}
         />
-        <motion.p {...reveal(0.5)} className={cx(eyebrowAmber, css({ mt: '2' }))}>
+        <motion.p {...reveal(0.5)} className={cx(eyebrowMint, css({ mt: '2' }))}>
           Stop chasing calm. Start hearing it.
         </motion.p>
         <motion.p
@@ -310,7 +316,7 @@ function HeroBeat() {
               playClick('primary')
               void navigate({ to: '/onboarding/$step', params: { step: 'welcome' } })
             }}
-            className={violetPill}
+            className={signalPill}
           >
             Start listening
           </button>
@@ -473,6 +479,61 @@ function GlobeBeat() {
   )
 }
 
+
+/** Beat 5.5 — the swarm's pixels assemble into the phone, and the real
+ * player fades in over them: pixels becoming product. */
+function PhoneBeat() {
+  const reduce = useReducedMotion()
+  return (
+    <section className={css({ position: 'relative', height: '170vh' })}>
+      <div
+        className={css({
+          position: 'sticky',
+          top: '0',
+          height: '100vh',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: '10',
+          px: '6',
+          flexWrap: 'wrap',
+        })}
+      >
+        <motion.div
+          initial={reduce ? undefined : { opacity: 0, scale: 0.94 }}
+          whileInView={reduce ? undefined : { opacity: 1, scale: 1 }}
+          viewport={{ once: true, amount: 0.55 }}
+          transition={{ duration: 1.4, ease: [0.16, 1, 0.3, 1], delay: 0.35 }}
+        >
+          <PhoneShowcase />
+        </motion.div>
+        <motion.div
+          initial={reduce ? undefined : { opacity: 0, y: 30 }}
+          whileInView={reduce ? undefined : { opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: '-120px' }}
+          transition={enter}
+          className={css({ maxW: '360px' })}
+        >
+          <TriangleText as="h2" text={'Pixels become\nthe player.'} fontSize={52} fontWeight={630} height={132} gap={4} />
+          <p
+            className={css({
+              m: '0',
+              mt: '4',
+              fontSize: 'subhead',
+              lineHeight: '1.7',
+              color: 'var(--ss-ink-body)',
+            })}
+          >
+            The same swarm that carried the story assembles into the phone in your pocket —
+            the session title, the triangular wavelength breathing with the engine, and one
+            perfectly centered play.
+          </p>
+        </motion.div>
+      </div>
+    </section>
+  )
+}
+
 /** Beat 6 — the product, shown honestly. */
 function InsideBeat() {
   return (
@@ -538,10 +599,10 @@ function PlansBeat() {
           <LiquidGlass
             key={p.name}
             variant="card"
-            tint={i === 1 ? 'rgba(128, 82, 255, 0.30)' : undefined}
+            tint={i === 1 ? 'rgba(74, 168, 255, 0.30)' : undefined}
             className={css({ p: '7' })}
           >
-            <p className={eyebrowAmber}>{p.name}</p>
+            <p className={eyebrowMint}>{p.name}</p>
             <p className={css({ m: '0', mt: '2', color: 'text' })}>
               <span className={css({ fontFamily: 'display', fontSize: 'largeTitle', fontWeight: '600' })}>
                 {p.price}
@@ -574,7 +635,7 @@ function PlansBeat() {
                     aria-hidden
                     className={css({ display: 'inline-block', w: '7px', h: '6px', flexShrink: '0' })}
                     style={{
-                      background: `linear-gradient(135deg, ${VIOLET}, ${AMBER})`,
+                      background: `linear-gradient(135deg, ${BLUE}, ${GREEN})`,
                       clipPath: 'polygon(50% 0%, 100% 100%, 0% 100%)',
                     }}
                   />
@@ -591,7 +652,7 @@ function PlansBeat() {
             playClick('primary')
             void navigate({ to: '/onboarding/$step', params: { step: 'welcome' } })
           }}
-          className={violetPill}
+          className={signalPill}
         >
           Start free
         </button>
@@ -636,7 +697,7 @@ function ClosingBeat() {
           playClick('primary')
           void navigate({ to: '/onboarding/$step', params: { step: 'welcome' } })
         }}
-        className={violetPill}
+        className={signalPill}
       >
         Start listening
       </button>
@@ -688,6 +749,8 @@ function FooterRow() {
 function Welcome() {
   // The screen-glide scroll feel — wheel input lerps the real scroll position.
   useSmoothScroll()
+  // The page fades in only once the counter reaches 100.
+  const [ready, setReady] = useState(false)
 
   // One swarm, one story: overall page progress drives the shape timeline.
   const progressRef = useRef(0)
@@ -701,14 +764,14 @@ function Welcome() {
       id="top"
       className={cx('ss-scene-dark', css({ position: 'relative', bg: 'black', color: 'text' }))}
     >
-      <LoadingOverlay />
+      <LoadingOverlay onDone={() => setReady(true)} />
       <VoidNav />
 
       {/* THE canvas — fixed behind everything; scroll morphs it through
           brain → terrain → dust (held) → bulb → globe (held) → network →
           ribbon, with loner triangles drifting throughout. */}
       <TriangleConstellation
-        shapes={['brain', 'dome', 'dust', 'dust', 'bulb', 'globe', 'globe', 'network', 'ribbon']}
+        shapes={['brain', 'dome', 'dust', 'bulb', 'bulb', 'globe', 'phone', 'phone', 'network', 'ribbon']}
         mode="scroll"
         progressRef={progressRef}
         rotate="sway"
@@ -716,15 +779,20 @@ function Welcome() {
         size={0.075}
         ambient={110}
         stageOffsets={{ brain: 1.7 }}
-        className={css({ position: 'fixed', inset: '0', zIndex: '0' })}
+        className={css({ position: 'fixed', inset: '0', zIndex: '0', transition: 'opacity 1.1s ease' })}
+        style={{ opacity: ready ? 1 : 0 }}
       />
 
-      <div className={css({ position: 'relative', zIndex: '1' })}>
+      <div
+        className={css({ position: 'relative', zIndex: '1', transition: 'opacity 1.1s ease, transform 1.1s cubic-bezier(0.16, 1, 0.3, 1)' })}
+        style={{ opacity: ready ? 1 : 0, transform: ready ? 'none' : 'translateY(18px)' }}
+      >
         <HeroBeat />
         <NarrationBeat />
         <DustBeat />
         <BulbBeat />
         <GlobeBeat />
+        <PhoneBeat />
         <InsideBeat />
         <PlansBeat />
         <ClosingBeat />

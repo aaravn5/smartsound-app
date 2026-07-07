@@ -1,4 +1,4 @@
-import { Suspense, useMemo, useRef, type MutableRefObject } from 'react'
+import { Suspense, useMemo, useRef, type CSSProperties, type MutableRefObject } from 'react'
 import { Canvas, useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
 import { useReducedMotion } from 'motion/react'
@@ -35,53 +35,26 @@ export type ShapeName =
   | 'bulb'
   | 'globe'
   | 'ribbon'
+  | 'phone'
 
 const HOVER_COLOR = new THREE.Color('#ffd24a')
 const HOVER_RADIUS = 1.45
 
-// The signature spectrum — violet-dominant with amber sparks, silver ink and
-// deep teal; yellow warmth stays reserved for the pointer.
+// The SmartSound spectrum — its own signal identity (not the reference's
+// violet/amber): deep sky blues into sea greens with silver-blue ink.
+// Yellow warmth stays reserved for the pointer.
 const DEFAULT_PALETTE = [
-  '#8052ff', '#8052ff', '#8052ff',
-  '#9a7bff', '#b689ff', '#6a4bd6',
-  '#ffb829', '#ffcf6b',
-  '#e8e6f2', '#cfcbe4',
-  '#15846e', '#2fb89b',
+  '#4aa8ff', '#4aa8ff', '#4aa8ff',
+  '#5c7cff', '#3b82f6', '#2f6fe0',
+  '#37c2a0', '#37c2a0', '#2fb89b',
+  '#63e0c2', '#7bd4ff',
+  '#dbe9ff', '#bfd6f2',
 ]
 
-type HoverRef = MutableRefObject<{ x: number; y: number; active: boolean }>
+/** Every particle is a real 3D solid — one shared tetrahedron. */
+const TETRA_GEOMETRY = new THREE.TetrahedronGeometry(1)
 
-/** Outlined triangle sprite — each particle reads as a small open glyph with
- * a faint interior glow, the way the reference renders its swarm. */
-function useTriangleTexture(): THREE.Texture {
-  return useMemo(() => {
-    const S = 64
-    const c = document.createElement('canvas')
-    c.width = c.height = S
-    const ctx = c.getContext('2d')!
-    ctx.clearRect(0, 0, S, S)
-    const path = () => {
-      ctx.beginPath()
-      ctx.moveTo(S * 0.5, S * 0.14)
-      ctx.lineTo(S * 0.86, S * 0.8)
-      ctx.lineTo(S * 0.14, S * 0.8)
-      ctx.closePath()
-    }
-    // Faint fill so tiny/distant sprites still read...
-    path()
-    ctx.fillStyle = 'rgba(255,255,255,0.16)'
-    ctx.fill()
-    // ...under a bright outline stroke.
-    path()
-    ctx.lineWidth = S * 0.09
-    ctx.lineJoin = 'round'
-    ctx.strokeStyle = 'rgba(255,255,255,0.95)'
-    ctx.stroke()
-    const tex = new THREE.CanvasTexture(c)
-    tex.colorSpace = THREE.SRGBColorSpace
-    return tex
-  }, [])
-}
+type HoverRef = MutableRefObject<{ x: number; y: number; active: boolean }>
 
 // ── samplers — each returns positions (n*3) and a region id per particle ──
 
@@ -391,6 +364,51 @@ function sampleRibbon(n: number): Sampled {
   return { pos, region }
 }
 
+
+function samplePhone(n: number): Sampled {
+  // The front face of a modern phone, drawn in pixels: a rounded portrait
+  // slab, a brighter edge frame, and the island cutout near the top.
+  const pos = new Float32Array(n * 3)
+  const region = new Float32Array(n)
+  const W = 1.05 // half-width
+  const H = 2.15 // half-height
+  const R = 0.34 // corner radius
+  const inside = (x: number, y: number): boolean => {
+    const qx = Math.abs(x) - (W - R)
+    const qy = Math.abs(y) - (H - R)
+    if (qx <= 0 || qy <= 0) return Math.abs(x) <= W && Math.abs(y) <= H
+    return qx * qx + qy * qy <= R * R
+  }
+  const inIsland = (x: number, y: number): boolean =>
+    Math.abs(y - 1.62) < 0.09 && Math.abs(x) < 0.34
+  let i = 0
+  let guard = 0
+  while (i < n && guard < n * 40) {
+    guard++
+    const edge = Math.random() < 0.3
+    let x = (Math.random() * 2 - 1) * W
+    let y = (Math.random() * 2 - 1) * H
+    if (edge) {
+      // Bias onto the frame — walk a point to the border band.
+      const side = Math.random()
+      if (side < 0.5) {
+        x = (Math.random() < 0.5 ? -1 : 1) * (W - 0.03 - Math.random() * 0.05)
+        y = (Math.random() * 2 - 1) * H
+      } else {
+        y = (Math.random() < 0.5 ? -1 : 1) * (H - 0.03 - Math.random() * 0.05)
+        x = (Math.random() * 2 - 1) * W
+      }
+    }
+    if (!inside(x, y) || inIsland(x, y)) continue
+    pos[i * 3] = x
+    pos[i * 3 + 1] = y
+    pos[i * 3 + 2] = (Math.random() - 0.5) * 0.12
+    region[i] = edge ? 1 : Math.abs(y) < 0.9 ? 0.5 : 0
+    i++
+  }
+  return { pos, region }
+}
+
 const SAMPLERS: Record<ShapeName, (n: number) => Sampled> = {
   brain: sampleBrain,
   note: sampleNote,
@@ -402,10 +420,12 @@ const SAMPLERS: Record<ShapeName, (n: number) => Sampled> = {
   bulb: sampleBulb,
   globe: sampleGlobe,
   ribbon: sampleRibbon,
+  phone: samplePhone,
 }
 
 export interface TriangleConstellationProps {
   className?: string
+  style?: CSSProperties
   shapes?: ShapeName[]
   mode?: 'auto' | 'scroll' | 'static'
   /** scroll mode — 0..1 sweeps the whole shapes sequence. */
@@ -456,10 +476,11 @@ function Cloud({
   hoverRef: HoverRef
   stageOffsets?: Partial<Record<ShapeName, number>>
 }) {
-  const points = useRef<THREE.Points>(null)
-  const tex = useTriangleTexture()
+  const mesh = useRef<THREE.InstancedMesh>(null)
+  const dummy = useMemo(() => new THREE.Object3D(), [])
+  const tint = useMemo(() => new THREE.Color(), [])
 
-  const { geometry, targets, current, base, colors } = useMemo(() => {
+  const { targets, current, base, colors, spins, scales, offsets } = useMemo(() => {
     const sampled = shapes.map((s) => {
       const smp = SAMPLERS[s](count)
       const off = stageOffsets?.[s] ?? 0
@@ -483,10 +504,17 @@ function Cloud({
       base[i * 3 + 2] = col.b
     }
     colors.set(base)
-    const geometry = new THREE.BufferGeometry()
-    geometry.setAttribute('position', new THREE.BufferAttribute(current, 3))
-    geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3))
-    return { geometry, targets, current, base, colors }
+    // Per-instance life: tumble speeds + phase, size variance, physics offsets.
+    const spins = new Float32Array(count * 3)
+    const scales = new Float32Array(count)
+    const offsets = new Float32Array(count * 3)
+    for (let i = 0; i < count; i++) {
+      spins[i * 3] = (Math.random() - 0.5) * 1.7
+      spins[i * 3 + 1] = (Math.random() - 0.5) * 1.7
+      spins[i * 3 + 2] = Math.random() * Math.PI * 2
+      scales[i] = 0.55 + Math.random() * 1.05
+    }
+    return { targets, current, base, colors, spins, scales, offsets }
   }, [shapes, count, palette, stageOffsets])
 
   const st8 = useRef({ idx: 0, hold: 0 })
@@ -494,7 +522,7 @@ function Cloud({
   const ray = useMemo(() => new THREE.Vector3(), [])
 
   useFrame((st, dt) => {
-    const pts = points.current
+    const pts = mesh.current
     if (!pts) return
     const t = st.clock.elapsedTime
     if (animate && rotate === 'sway') pts.rotation.y = Math.sin(t * 0.22) * 0.42
@@ -533,9 +561,8 @@ function Cloud({
       const target = blend === 0 ? targetA[i] : targetA[i] + (targetB[i] - targetA[i]) * blend
       current[i] += (target - current[i]) * speed
     }
-    ;(geometry.getAttribute('position') as THREE.BufferAttribute).needsUpdate = true
 
-    // ── pointer → yellow ──
+    // ── pointer: warmth + physical repulsion ──
     const hover = hoverRef.current
     let hasHover = false
     if (hover.active) {
@@ -551,44 +578,68 @@ function Cloud({
     }
     const R2 = HOVER_RADIUS * HOVER_RADIUS
     const k = animate ? Math.min(1, dt * 7) : 1
+    const settle = animate ? Math.pow(0.12, dt) : 0 // displaced solids spring home
     for (let i = 0; i < count; i++) {
       const i3 = i * 3
       let f = 0
       if (hasHover) {
-        const dx = current[i3] - hoverPoint.x
-        const dy = current[i3 + 1] - hoverPoint.y
-        const dz = current[i3 + 2] - hoverPoint.z
+        const dx = current[i3] + offsets[i3] - hoverPoint.x
+        const dy = current[i3 + 1] + offsets[i3 + 1] - hoverPoint.y
+        const dz = current[i3 + 2] + offsets[i3 + 2] - hoverPoint.z
         const d2 = dx * dx + dy * dy + dz * dz
         if (d2 < R2) {
           f = 1 - d2 / R2
           f *= f
+          // The swarm physically parts around the pointer.
+          if (animate && d2 > 1e-6) {
+            const d = Math.sqrt(d2)
+            const push = f * dt * 5.5
+            offsets[i3] += (dx / d) * push
+            offsets[i3 + 1] += (dy / d) * push
+            offsets[i3 + 2] += (dz / d) * push
+          }
         }
       }
+      offsets[i3] *= settle
+      offsets[i3 + 1] *= settle
+      offsets[i3 + 2] *= settle
       colors[i3] += (base[i3] + (HOVER_COLOR.r - base[i3]) * f - colors[i3]) * k
       colors[i3 + 1] += (base[i3 + 1] + (HOVER_COLOR.g - base[i3 + 1]) * f - colors[i3 + 1]) * k
       colors[i3 + 2] += (base[i3 + 2] + (HOVER_COLOR.b - base[i3 + 2]) * f - colors[i3 + 2]) * k
+
+      // Compose this solid: position + individual tumble + size variance.
+      dummy.position.set(current[i3] + offsets[i3], current[i3 + 1] + offsets[i3 + 1], current[i3 + 2] + offsets[i3 + 2])
+      const rt = animate ? t : 0
+      const phase = spins[i3 + 2]
+      dummy.rotation.set(spins[i3] * rt + phase, spins[i3 + 1] * rt + phase * 1.7, phase * 0.6)
+      dummy.scale.setScalar(scales[i] * size)
+      dummy.updateMatrix()
+      pts.setMatrixAt(i, dummy.matrix)
+      tint.setRGB(colors[i3], colors[i3 + 1], colors[i3 + 2])
+      pts.setColorAt(i, tint)
     }
-    ;(geometry.getAttribute('color') as THREE.BufferAttribute).needsUpdate = true
+    pts.instanceMatrix.needsUpdate = true
+    if (pts.instanceColor) pts.instanceColor.needsUpdate = true
   })
 
   return (
-    <points ref={points} geometry={geometry}>
-      <pointsMaterial
-        map={tex}
-        size={size}
-        sizeAttenuation
-        vertexColors
+    <instancedMesh ref={mesh} args={[TETRA_GEOMETRY, undefined, count]} frustumCulled={false}>
+      <meshStandardMaterial
+        color="#ffffff"
+        metalness={0.35}
+        roughness={0.32}
+        emissive="#ffffff"
+        emissiveIntensity={0.05}
         transparent
-        depthWrite={false}
-        blending={THREE.AdditiveBlending}
         opacity={particleOpacity}
       />
-    </points>
+    </instancedMesh>
   )
 }
 
 export function TriangleConstellation({
   className,
+  style,
   shapes = ['brain', 'note'],
   mode = 'auto',
   progressRef,
@@ -609,6 +660,7 @@ export function TriangleConstellation({
   return (
     <div
       className={className}
+      style={style}
       aria-hidden
       onPointerMove={(e) => {
         const r = e.currentTarget.getBoundingClientRect()
@@ -626,6 +678,11 @@ export function TriangleConstellation({
         gl={{ antialias: true, alpha: true, powerPreference: 'high-performance' }}
         style={{ background: 'transparent' }}
       >
+        {/* Studio lighting — the solids read as lit glass-metal, not sprites. */}
+        <ambientLight intensity={0.55} />
+        <directionalLight position={[4, 6, 8]} intensity={1.5} />
+        <pointLight position={[-6, -2, 5]} intensity={40} color="#4aa8ff" />
+        <pointLight position={[6, 3, -3]} intensity={30} color="#37c2a0" />
         <Suspense fallback={null}>
           <Cloud
             shapes={shapes}
@@ -652,8 +709,8 @@ export function TriangleConstellation({
   )
 }
 
-/** Larger loner triangles drifting across the whole frame — always present,
- * never part of the morph, giving the void its depth. */
+/** Larger loner tetrahedra drifting across the whole frame — always present,
+ * never part of the morph, giving the void its 3D depth. */
 function AmbientDust({
   count,
   palette,
@@ -663,47 +720,56 @@ function AmbientDust({
   palette: string[]
   animate: boolean
 }) {
-  const points = useRef<THREE.Points>(null)
-  const tex = useTriangleTexture()
-  const geometry = useMemo(() => {
+  const mesh = useRef<THREE.InstancedMesh>(null)
+  const dummy = useMemo(() => new THREE.Object3D(), [])
+  const data = useMemo(() => {
     const pos = new Float32Array(count * 3)
-    const colors = new Float32Array(count * 3)
-    const col = new THREE.Color()
+    const spin = new Float32Array(count * 3)
+    const scale = new Float32Array(count)
+    const cols: THREE.Color[] = []
     for (let i = 0; i < count; i++) {
       pos[i * 3] = (Math.random() * 2 - 1) * 6.5
       pos[i * 3 + 1] = (Math.random() * 2 - 1) * 4
       pos[i * 3 + 2] = (Math.random() * 2 - 1) * 3.5
-      col.set(palette[(Math.random() * palette.length) | 0])
-      colors[i * 3] = col.r
-      colors[i * 3 + 1] = col.g
-      colors[i * 3 + 2] = col.b
+      spin[i * 3] = (Math.random() - 0.5) * 0.7
+      spin[i * 3 + 1] = (Math.random() - 0.5) * 0.7
+      spin[i * 3 + 2] = Math.random() * Math.PI * 2
+      scale[i] = 0.08 + Math.random() * 0.2
+      cols.push(new THREE.Color(palette[(Math.random() * palette.length) | 0]))
     }
-    const g = new THREE.BufferGeometry()
-    g.setAttribute('position', new THREE.BufferAttribute(pos, 3))
-    g.setAttribute('color', new THREE.BufferAttribute(colors, 3))
-    return g
+    return { pos, spin, scale, cols }
   }, [count, palette])
 
   useFrame((st) => {
-    const pts = points.current
-    if (!pts || !animate) return
-    const t = st.clock.elapsedTime
-    pts.rotation.z = Math.sin(t * 0.05) * 0.12
-    pts.rotation.y = t * 0.02
+    const m = mesh.current
+    if (!m) return
+    const t = animate ? st.clock.elapsedTime : 0
+    m.rotation.y = t * 0.02
+    for (let i = 0; i < count; i++) {
+      const i3 = i * 3
+      dummy.position.set(data.pos[i3], data.pos[i3 + 1], data.pos[i3 + 2])
+      const phase = data.spin[i3 + 2]
+      dummy.rotation.set(data.spin[i3] * t + phase, data.spin[i3 + 1] * t + phase * 1.7, 0)
+      dummy.scale.setScalar(data.scale[i])
+      dummy.updateMatrix()
+      m.setMatrixAt(i, dummy.matrix)
+      m.setColorAt(i, data.cols[i])
+    }
+    m.instanceMatrix.needsUpdate = true
+    if (m.instanceColor) m.instanceColor.needsUpdate = true
   })
 
   return (
-    <points ref={points} geometry={geometry}>
-      <pointsMaterial
-        map={tex}
-        size={0.34}
-        sizeAttenuation
-        vertexColors
+    <instancedMesh ref={mesh} args={[TETRA_GEOMETRY, undefined, count]} frustumCulled={false}>
+      <meshStandardMaterial
+        color="#ffffff"
+        metalness={0.35}
+        roughness={0.35}
+        emissive="#ffffff"
+        emissiveIntensity={0.04}
         transparent
-        depthWrite={false}
-        blending={THREE.AdditiveBlending}
-        opacity={0.5}
+        opacity={0.55}
       />
-    </points>
+    </instancedMesh>
   )
 }

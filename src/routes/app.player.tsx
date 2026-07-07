@@ -7,7 +7,7 @@ import { LiquidGlass } from '~/design/LiquidGlass'
 import { LivingScene } from '~/design/LivingScene'
 import { TriangleConstellation } from '~/landing/TriangleConstellation'
 import { TriangleText } from '~/landing/TriangleText'
-import { PulseWave } from '~/design/PulseWave'
+import { TriangleSpectrum } from '~/design/TriangleSpectrum'
 import { SignalRing } from '~/design/SignalRing'
 import type { SceneVariant } from '~/design/Scene'
 import { useAttuneVisuals } from '~/design/useAttuneVisuals'
@@ -117,11 +117,11 @@ const ChevronDownIcon = () => (
   </svg>
 )
 
-// Larger, optically-centered glyphs for the orb's center. The play triangle is
-// nudged slightly right so its visual mass sits on the true center.
+// Larger glyphs for the orb's center, drawn symmetric about the viewBox
+// center so flex centering puts them perfectly on the true center.
 const CenterPlayIcon = () => (
-  <svg width="38" height="38" viewBox="0 0 24 24" aria-hidden style={{ transform: 'translateX(2px)' }}>
-    <path d="M8.2 5.6a1 1 0 0 1 1.53-.85l9.4 6.4a1 1 0 0 1 0 1.66l-9.4 6.4A1 1 0 0 1 8.2 18.3V5.6z" fill="currentColor" />
+  <svg width="38" height="38" viewBox="0 0 24 24" aria-hidden>
+    <path d="M8.5 5.9a1 1 0 0 1 1.52-.85l9.6 6.1a1 1 0 0 1 0 1.7l-9.6 6.1a1 1 0 0 1-1.52-.85V5.9z" fill="currentColor" />
   </svg>
 )
 
@@ -327,9 +327,13 @@ function PlayerScreen() {
           })}
         />
 
-        {/* Beat-pulsed light-wave loop — slightly blurred, screen-blended,
-            intensity driven by the REAL low-band spectrum while running. */}
-        <PulseWave getSpectrum={getSpectrum} />
+        {/* The pixelated wavelength — columns of triangle pixels rising and
+            falling with the REAL frequency spectrum while running. */}
+        <TriangleSpectrum
+          getSpectrum={getSpectrum}
+          running={status === 'running'}
+          className={css({ position: 'absolute', insetX: '0', bottom: '0', h: '22%' })}
+        />
       </div>
 
       {/* Elevated → a vignette breathing at the measured respiration pace. */}
