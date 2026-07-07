@@ -5,6 +5,7 @@ import * as Slider from '@radix-ui/react-slider'
 import { css, cx } from 'styled-system/css'
 import { LiquidGlass } from '~/design/LiquidGlass'
 import { LivingScene } from '~/design/LivingScene'
+import { TriangleConstellation } from '~/landing/TriangleConstellation'
 import { PulseWave } from '~/design/PulseWave'
 import { SignalRing } from '~/design/SignalRing'
 import type { SceneVariant } from '~/design/Scene'
@@ -300,6 +301,31 @@ function PlayerScreen() {
       >
         <LivingScene variant={scene} />
 
+        {/* The triangle schematic — the landing's constellation, living inside
+            the player: brain → waveform → note → network, breathing with the
+            REAL measured pulse. Ambient layer; pointer events stay with the
+            controls above. */}
+        <TriangleConstellation
+          shapes={['brain', 'waveform', 'note', 'network']}
+          mode="auto"
+          rotate="sway"
+          count={2400}
+          size={0.07}
+          holdSeconds={6.5}
+          particleOpacity={0.55}
+          getPulse={() => {
+            // Beat envelope from the cardiac phase — sharp systole, soft decay.
+            const p = getPulse()
+            return p ? Math.pow(1 - p.phase, 3) * p.confidence : 0
+          }}
+          className={css({
+            position: 'absolute',
+            inset: '0',
+            pointerEvents: 'none',
+            opacity: '0.6',
+          })}
+        />
+
         {/* Beat-pulsed light-wave loop — slightly blurred, screen-blended,
             intensity driven by the REAL low-band spectrum while running. */}
         <PulseWave getSpectrum={getSpectrum} />
@@ -403,7 +429,7 @@ function PlayerScreen() {
                 m: '0',
                 fontFamily: 'display',
                 fontSize: 'title1',
-                fontWeight: '700',
+                fontWeight: '500',
                 letterSpacing: '-0.01em',
                 color: 'text',
                 textShadow: 'var(--ss-text-glow)',

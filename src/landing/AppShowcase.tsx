@@ -4,8 +4,8 @@ import { LiquidGlass } from '~/design/LiquidGlass'
 /**
  * AppShowcase — "inside the app" panels for the landing.
  *
- * Three static, hand-drawn miniatures of the real Apple/Calm UI — the Fitness
- * rings, the glass player, and the HIG tab bar — each staged on a scene-dark
+ * Three static, hand-drawn miniatures of the real UI — the progress rings,
+ * the glass player, and the native tab bar — each staged on a scene-dark
  * device slab so visitors see the actual product idiom before onboarding.
  * Pure CSS/SVG, no live engine: these are honest illustrations of screens the
  * app really has, not screenshots pretending to be interactive.
@@ -56,7 +56,7 @@ function Arc({
   )
 }
 
-/** Apple Fitness-style rings — Attune / Minutes / Streak. */
+/** Progress rings — Attune / Minutes / Streak. */
 function RingsMock() {
   return (
     <div className={css({ display: 'flex', alignItems: 'center', gap: '7' })}>
@@ -184,7 +184,7 @@ function PlayerMock() {
   )
 }
 
-/** The HIG five-tab Liquid Glass tab bar. */
+/** The five-tab Liquid Glass tab bar. */
 function TabBarMock() {
   const tabs = ['Today', 'Explore', 'Player', 'Progress', 'Profile'] as const
   return (
@@ -251,7 +251,7 @@ const PANELS = [
     id: 'rings',
     mock: <RingsMock />,
     title: 'Rings that close, honestly',
-    body: 'Apple Fitness-style rings for Attune, Minutes and Streak — filled only by what the engine actually measured in your sessions, with a close animation when you make it.',
+    body: 'Progress rings for Attune, Minutes and Streak — filled only by what the engine actually measured in your sessions, with a close animation when you make it.',
   },
   {
     id: 'player',
@@ -262,8 +262,8 @@ const PANELS = [
   {
     id: 'tabs',
     mock: <TabBarMock />,
-    title: 'Five tabs, pure HIG',
-    body: 'Today, Explore, Player, Progress, Profile — a floating Liquid Glass tab bar, SF-system type, grouped settings, and scene-dark surfaces exactly as the Human Interface Guidelines draw them.',
+    title: 'Five tabs, native to the bone',
+    body: 'Today, Explore, Player, Progress, Profile — a floating Liquid Glass tab bar, system type, grouped settings, and scene-dark surfaces exactly as the platform schematics draw them.',
   },
 ]
 

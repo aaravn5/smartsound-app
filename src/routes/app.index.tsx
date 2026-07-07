@@ -285,13 +285,24 @@ function TodayScreen() {
             m: '0',
             fontFamily: 'display',
             fontSize: 'title1',
-            fontWeight: '700',
+            fontWeight: '500',
             letterSpacing: '-0.015em',
             lineHeight: '1.12',
             color: 'text',
             textShadow: 'var(--ss-text-glow)',
+            display: 'flex',
+            alignItems: 'baseline',
+            gap: '2.5',
           })}
         >
+          <span
+            aria-hidden
+            className={css({ display: 'inline-block', w: '12px', h: '11px', flexShrink: '0' })}
+            style={{
+              background: 'linear-gradient(135deg, #4aa8ff, #37c2a0)',
+              clipPath: 'polygon(50% 0%, 100% 100%, 0% 100%)',
+            }}
+          />
           {greeting()}
         </h1>
         <p
@@ -374,7 +385,7 @@ function TodayScreen() {
                 m: '0',
                 fontFamily: 'display',
                 fontSize: 'title1',
-                fontWeight: '700',
+                fontWeight: '500',
                 letterSpacing: '-0.01em',
                 lineHeight: '1.15',
                 color: 'text',

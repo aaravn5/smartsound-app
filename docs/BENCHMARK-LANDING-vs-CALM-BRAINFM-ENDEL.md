@@ -2,7 +2,7 @@
 
 **Branch audited:** `liquid-glass-restore`
 **Date:** 2026-07-07
-**Subject:** the `/` landing page (Liquid Glass era restore + Calm-clone structure + Dala-idiom constellation)
+**Subject:** the `/` landing page (Liquid Glass era restore + Calm-clone structure + full Dala idiom: loading counter, kinetic per-letter type, constellation hero)
 
 ## Method
 
@@ -30,7 +30,7 @@
 
 ## Rationale
 
-1. **Hero first impression** — SmartSound's hero is an *interactive argument*: the same ridge barren and in bloom, revealed by a cursor spotlight — the product's before/after as a gesture, not a slogan. Calm's nature hero is beautiful but passive; brain.fm's rotating "Music made for …" device is effective copy but static; Endel opens with plain text.
+1. **Hero first impression** — SmartSound opens Dala-style: a loading counter resolves into a pinned void where an anatomical triangle-particle brain (cortex folds, cerebellum, brainstem) continuously transforms into a music note, a waveform, and a synapse network under kinetic per-letter type — and warms to yellow where the pointer touches. Calm's nature hero is beautiful but passive; brain.fm's rotating "Music made for …" device is effective copy but static; Endel opens with plain text.
 2. **Scroll & motion craft** — SmartSound pins the hero, pins a 320vh morph stage whose scroll *drives* the transformation, then stacks three glass cards with staggered sticky offsets. brain.fm and Endel scroll conventionally (carousels, fades); Calm barely animates.
 3. **Signature interactive element** — the blue/green particle brain that scroll-morphs into a beamed music note, warming to yellow under the pointer, is the page's one unforgettable object (the Dala idiom). Endel's generative visuals appear only as static/video assets on its landing; Calm and brain.fm have no interactive centerpiece.
 4. **Visual-system coherence** — one material (Liquid Glass) on the control layer, one scene-dark ground, one blue→green accent family with yellow reserved for touch. Calm is coherent but conventional; Endel is austerely coherent; brain.fm mixes several card styles, gradients and testimonial formats.
@@ -48,6 +48,6 @@ On **design craft** — hero concept, scroll choreography, interactive centerpie
 ## Verification appendix
 
 - Build: PASSED (panda codegen + tsr generate + tsc -b + vite build, exit 0).
-- Headless DOM audit of the built page: nav, hero (spotlight mask live with coordinates), benefits trio, morph stage (canvas `data-engine="three.js r169"` mounted, both captions present at opacity 0 pre-scroll, glass hint chip), app showcase (rings SVG, player card, tab bar), 3 sticky how-it-works cards (staggered `top: calc(0/3.5/7rem + 12vh)`, blue/green/yellow tints), science trio, reviews, plans (Free/$0, Pro/$9.99, Studio/$19.99 — matching `app.paywall.tsx`), 5-item FAQ, CTA, footer — all present in order.
+- Headless DOM audit of the built page: nav, loader + kinetic hero over the auto-morphing constellation, benefits trio, morph stage (canvas `data-engine="three.js r169"` mounted, both captions present at opacity 0 pre-scroll, glass hint chip), app showcase (rings SVG, player card, tab bar), 3 sticky how-it-works cards (staggered `top: calc(0/3.5/7rem + 12vh)`, blue/green/yellow tints), science trio, reviews, plans (Free/$0, Pro/$9.99, Studio/$19.99 — matching `app.paywall.tsx`), 5-item FAQ, CTA, footer — all present in order.
 - The `/` route no longer redirects onboarded visitors to `/app`; the landing always shows, with "Open the app" in the nav.
 - Known limitation: headless capture freezes animation clocks, so the morph, hover-yellow and sticky choreography were verified structurally (DOM/geometry), not frame-by-frame — worth a 30-second real-browser pass.

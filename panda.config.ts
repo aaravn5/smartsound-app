@@ -142,6 +142,11 @@ export default defineConfig({
           '0%, 100%': { transform: 'translateY(0)', opacity: '0.75' },
           '50%': { transform: 'translateY(6px)', opacity: '1' },
         },
+        // Kinetic type — letters rise out of a masked line (the Dala idiom).
+        riseUp: {
+          from: { transform: 'translateY(112%)', opacity: '0' },
+          to: { transform: 'translateY(0)', opacity: '1' },
+        },
         sceneDriftA: {
           '0%': { transform: 'translate3d(0, 0, 0) scale(1)' },
           '50%': { transform: 'translate3d(-3%, 2%, 0) scale(1.06)' },

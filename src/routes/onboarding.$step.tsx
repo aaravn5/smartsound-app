@@ -122,7 +122,7 @@ const title = css({
   mt: '2',
   fontFamily: 'display',
   fontSize: 'clamp(1.9rem, 7vw, 2.6rem)',
-  fontWeight: '700',
+  fontWeight: '500',
   letterSpacing: '-0.015em',
   lineHeight: '1.12',
   color: 'text',

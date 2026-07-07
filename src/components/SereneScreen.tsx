@@ -38,7 +38,7 @@ export function ScreenTitle({ title, caption }: { title: string; caption?: strin
           m: '0',
           fontFamily: 'display',
           fontSize: 'largeTitle',
-          fontWeight: '700',
+          fontWeight: '500',
           letterSpacing: '-0.015em',
           lineHeight: '1.12',
           color: 'text',
