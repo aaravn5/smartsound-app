@@ -10,12 +10,19 @@
 
 export type CognitiveState = 'winddown' | 'settled' | 'focus' | 'elevated'
 
-/** OKLCH anchor points [L, C, H] per §1.2, ordered along the arousal axis. */
+/**
+ * OKLCH anchor points [L, C, H], ordered along the arousal axis.
+ *
+ * Desktop.fm keeps the UI strictly achromatic — the ONLY color on the page is
+ * this signal. It is recolored to a calming blue → soft periwinkle band: the
+ * hue never leaves the 232–258 blue range and chroma stays low-mid, so every
+ * live state reads as one tranquil blue rather than a rainbow sweep.
+ */
 export const STATE_ANCHORS: Record<CognitiveState, readonly [number, number, number]> = {
-  winddown: [0.55, 0.09, 285],
-  settled: [0.74, 0.13, 205],
-  focus: [0.70, 0.17, 265],
-  elevated: [0.80, 0.16, 70],
+  winddown: [0.54, 0.08, 258], // deep calm indigo
+  settled: [0.70, 0.10, 238], // soft sky blue
+  focus: [0.66, 0.13, 250], // clear periwinkle-blue
+  elevated: [0.76, 0.12, 240], // bright, airy blue
 }
 
 const AROUSAL_ORDER: CognitiveState[] = ['winddown', 'settled', 'focus', 'elevated']

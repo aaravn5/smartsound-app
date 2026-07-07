@@ -23,109 +23,108 @@ export default defineConfig({
     extend: {
       tokens: {
         colors: {
-          // ── "Pressed at Night" palette (design.md — the single source of truth) ──
-          deepSpace: { value: '#171721' }, // outermost page background
-          midnightSlate: { value: '#1e1e2a' }, // section / card backgrounds
-          graphite: { value: '#272735' }, // interactive surfaces, hover fills
-          lead: { value: '#70707d' }, // borders, dividers, etched groove lines
-          starlight: { value: '#ededf3' }, // primary text
-          silver: { value: '#c3c3cc' }, // secondary text, captions
-          mercuryBlue: { value: '#5266eb' }, // THE accent — primary CTAs, active dot, stylus
-          ghostBlue: { value: '#cdddff' }, // secondary button bg @ ~20%, focus rings
+          // ── "Desktop.fm" palette — near-monochrome, light, Apple-restraint. ──
+          // Token NAMES are kept (so every existing usage cascades); VALUES flip
+          // to a calming grey canvas + carbon-black ink + white card surfaces.
+          deepSpace: { value: '#f1f2f3' }, // outermost page canvas (Canvas Mist)
+          midnightSlate: { value: '#ffffff' }, // section / card surface (Pure White)
+          graphite: { value: '#ededf0' }, // interactive surfaces, hover fills
+          lead: { value: '#dddddd' }, // borders, dividers, etched groove lines (Pale Stone)
+          starlight: { value: '#111111' }, // primary text (Carbon Black)
+          silver: { value: '#5c5c63' }, // secondary text, captions
+          mercuryBlue: { value: '#5872e6' }, // THE one color — calming blue: active dot, stylus, live accents
+          ghostBlue: { value: '#dfe6ff' }, // secondary button bg @ ~20%, focus rings
           // Band tints — content-only palette (labels, waveforms, band-mix bars).
+          // Shifted into one calm blue family so the page stays monochrome-blue.
           band: {
-            beta: { value: '#6f7ff0' },
-            alpha: { value: '#5fb8c9' },
-            theta: { value: '#b78fd6' },
-            delta: { value: '#4a5a8a' },
+            beta: { value: '#5872e6' },
+            alpha: { value: '#7a95e0' },
+            theta: { value: '#9aa6d0' },
+            delta: { value: '#3f4f86' },
           },
-          // Deep scene base — legacy aliases, re-pointed at the Pressed-at-Night neutrals.
-          base: { value: '#1e1e2a' },
-          baseDeep: { value: '#171721' },
-          // HIG-style label hierarchy — soft off-white ink with warmth.
-          label: { value: 'rgba(248, 247, 252, 0.96)' },
-          // Alphas tuned so body/caption text clears ~4.5:1 against the lightest
-          // points of every scene gradient (verified via WCAG relative-luminance
-          // contrast against dusk/aurora/ocean/dawn tops, not just the darkest floor).
-          secondaryLabel: { value: 'rgba(235, 235, 248, 0.72)' },
-          tertiaryLabel: { value: 'rgba(230, 230, 246, 0.60)' },
-          quaternaryLabel: { value: 'rgba(228, 228, 246, 0.56)' },
-          separator: { value: 'rgba(255, 255, 255, 0.10)' },
-          // Scene accents — one calm accent per scene.
+          // Deep canvas base — legacy aliases, re-pointed at the Desktop.fm neutrals.
+          base: { value: '#ffffff' },
+          baseDeep: { value: '#f1f2f3' },
+          // HIG-style label hierarchy — carbon-black ink softening down the scale.
+          label: { value: 'rgba(17, 17, 17, 0.96)' },
+          // Alphas tuned so body/caption text clears AA+ (≥4.5:1) against the
+          // #f1f2f3 canvas and the #ffffff card surface.
+          secondaryLabel: { value: 'rgba(17, 17, 17, 0.62)' },
+          tertiaryLabel: { value: 'rgba(17, 17, 17, 0.48)' },
+          quaternaryLabel: { value: 'rgba(17, 17, 17, 0.40)' },
+          separator: { value: 'rgba(17, 17, 17, 0.10)' },
+          // Scene accents — all collapsed into the one calming blue (monochrome UI).
           scene: {
-            dusk: { value: '#A78BFA' }, // soft violet
-            aurora: { value: '#5EEAD4' }, // sea-glass teal
-            ocean: { value: '#7DD3FC' }, // clear sky blue
-            dawn: { value: '#FDBA74' }, // warm amber
+            dusk: { value: '#5872e6' },
+            aurora: { value: '#6a86ea' },
+            ocean: { value: '#5f7ce8' },
+            dawn: { value: '#7d8fe0' },
           },
-          // Ring gradient anchors — the SmartSound rings (Attune · Minutes · Streak).
+          // Ring gradient anchors — Attune · Minutes · Streak, as tonal blues.
           ring: {
-            attuneFrom: { value: '#C4B5FD' },
-            attuneTo: { value: '#8B5CF6' },
-            minutesFrom: { value: '#6EE7B7' },
-            minutesTo: { value: '#14B8A6' },
-            streakFrom: { value: '#FDE68A' },
-            streakTo: { value: '#FB923C' },
+            attuneFrom: { value: '#9fb2f2' },
+            attuneTo: { value: '#5566d8' },
+            minutesFrom: { value: '#a9c0ef' },
+            minutesTo: { value: '#4f7fd8' },
+            streakFrom: { value: '#c3cdf2' },
+            streakTo: { value: '#6a7fe0' },
           },
-          // Frosted glass — the Pressed-at-Night material for floating chrome
-          // (bottom nav, overlays, toasts, sticky headers). Midnight-slate
-          // tinted, paired with backdrop-filter saturate(180%) blur(20px)
-          // and a 0.5px starlight hairline (see glassCss in components/Card).
+          // Frosted glass — floating chrome (bottom nav, overlays, toasts, sticky
+          // headers). Light frosted white, paired with backdrop-filter
+          // saturate(180%) blur(20px) and a faint carbon hairline.
           frost: {
-            fill: { value: 'rgba(30, 30, 42, 0.72)' },
-            stroke: { value: 'rgba(237, 237, 243, 0.10)' },
-            fallback: { value: 'rgba(30, 30, 42, 0.97)' },
+            fill: { value: 'rgba(255, 255, 255, 0.72)' },
+            stroke: { value: 'rgba(17, 17, 17, 0.08)' },
+            fallback: { value: 'rgba(255, 255, 255, 0.96)' },
           },
-          // Liquid Glass — translucent fills over the scene, per apple-design-materials.
+          // Liquid Glass — light translucent fills over the grey canvas.
           glass: {
-            fill: { value: 'rgba(22, 26, 44, 0.40)' },
-            fillStrong: { value: 'rgba(20, 24, 40, 0.58)' },
-            fillSoft: { value: 'rgba(255, 255, 255, 0.07)' },
-            stroke: { value: 'rgba(255, 255, 255, 0.13)' },
-            strokeStrong: { value: 'rgba(255, 255, 255, 0.20)' },
-            specular: { value: 'rgba(255, 255, 255, 0.18)' },
-            fallback: { value: 'rgba(24, 28, 46, 0.94)' },
+            fill: { value: 'rgba(255, 255, 255, 0.55)' },
+            fillStrong: { value: 'rgba(255, 255, 255, 0.70)' },
+            fillSoft: { value: 'rgba(255, 255, 255, 0.50)' },
+            stroke: { value: 'rgba(17, 17, 17, 0.08)' },
+            strokeStrong: { value: 'rgba(17, 17, 17, 0.14)' },
+            specular: { value: 'rgba(255, 255, 255, 0.80)' },
+            fallback: { value: 'rgba(255, 255, 255, 0.94)' },
           },
         },
         gradients: {
-          // Immersive scene washes — usable as backgroundImage token(...) on cards.
+          // Retired immersive washes — collapsed to the flat calming-grey canvas
+          // (Desktop.fm is a single flat stage; any lingering usage renders grey).
           duskSky: {
-            value:
-              'linear-gradient(172deg, #2B1E56 0%, #1E1B4B 34%, #151A3E 62%, #0E1230 100%)',
+            value: 'linear-gradient(172deg, #f4f5f7 0%, #eef0f2 100%)',
           },
           auroraSky: {
-            value:
-              'linear-gradient(168deg, #0B2E33 0%, #0F3D3E 30%, #11343F 58%, #0A1626 100%)',
+            value: 'linear-gradient(168deg, #f4f5f7 0%, #eef0f2 100%)',
           },
           oceanDepth: {
-            value:
-              'linear-gradient(174deg, #0C2A4D 0%, #0B2344 36%, #0A1B38 66%, #081226 100%)',
+            value: 'linear-gradient(174deg, #f4f5f7 0%, #eef0f2 100%)',
           },
           warmDawn: {
-            value:
-              'linear-gradient(170deg, #4A2B3F 0%, #3D2547 30%, #27204A 62%, #121430 100%)',
+            value: 'linear-gradient(170deg, #f4f5f7 0%, #eef0f2 100%)',
           },
         },
         fonts: {
-          // Instrument Serif — LARGE display only (≥ ~30px): headlines, record
-          // titles, greetings. Weight 400 is the whole family — never bold.
-          // Small headings (≤ ~22px) use Hanken Grotesk 600 instead, so they
-          // stay crisp (Instrument is a light, high-contrast display face).
+          // Desktop.fm — the SYSTEM stack for everything. Headlines live at
+          // weight 800, UI at 700, the smallest tags at 500 — never lighter.
+          // Instrument Serif / Hanken Grotesk are dropped; `display` and `text`
+          // both resolve to the native platform face (SF on Apple).
           display: {
-            value: '"Instrument Serif", Georgia, "Times New Roman", serif',
+            value:
+              '-apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, "Helvetica Neue", Arial, sans-serif',
           },
-          // Hanken Grotesk — UI, body, labels, nav, forms (400/500/600).
           text: {
             value:
-              '"Hanken Grotesk Variable", "Hanken Grotesk", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif',
+              '-apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, "Helvetica Neue", Arial, sans-serif',
           },
-          // JetBrains Mono — every number: Hz, min, %, BPM, dates, timers.
+          // System mono — every number (Hz, min, %, BPM, dates, timers). At
+          // weight 800 it reads as a stamped serial number, per Desktop.fm.
           mono: {
-            value: '"JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace',
+            value: 'ui-monospace, "SF Mono", SFMono-Regular, Menlo, Monaco, Consolas, monospace',
           },
           // Legacy alias (timers/ring values) — numbers are mono in this world.
           rounded: {
-            value: '"JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace',
+            value: 'ui-monospace, "SF Mono", SFMono-Regular, Menlo, Monaco, Consolas, monospace',
           },
         },
         fontSizes: {
@@ -151,21 +150,25 @@ export default defineConfig({
           caption2: { value: '0.6875rem' }, // 11
         },
         radii: {
-          control: { value: '14px' },
-          // Cards & elevated surfaces — continuous/squircle feel (Apple).
-          // Record SLEEVES stay 4px (real jackets); records stay circles.
-          card: { value: '16px' },
+          control: { value: '12px' },
+          // Cards & elevated surfaces — the largest radius in the Desktop.fm
+          // system. Record SLEEVES stay 4px (real jackets); records stay circles.
+          card: { value: '25px' },
           sleeve: { value: '4px' },
           sheet: { value: '32px' },
           capsule: { value: '9999px' },
-          // Buttons & inputs — pill.
+          // Buttons & inputs — lozenge pill (Apple).
           pill: { value: '9999px' },
         },
         shadows: {
-          // Apple/Calm SOFT depth — subtle, low-opacity, never harsh. Prefer
-          // "brighten on hover"; these are for elevated cards & overlays only.
-          soft: { value: '0 1px 2px rgba(0, 0, 0, 0.30), 0 8px 30px rgba(0, 0, 0, 0.22)' },
-          overlay: { value: '0 2px 6px rgba(0, 0, 0, 0.32), 0 16px 48px rgba(0, 0, 0, 0.34)' },
+          // Desktop.fm SOFT elevation — the only depth on the page. Carbon-tinted,
+          // very low opacity; the white card floats a hair above the grey canvas.
+          soft: {
+            value: '0 1px 3px rgba(17, 17, 17, 0.08), 0 4px 12px rgba(17, 17, 17, 0.06)',
+          },
+          overlay: {
+            value: '0 2px 8px rgba(17, 17, 17, 0.10), 0 16px 40px rgba(17, 17, 17, 0.12)',
+          },
         },
         durations: {
           quick: { value: '150ms' },
@@ -254,21 +257,23 @@ export default defineConfig({
       },
       semanticTokens: {
         colors: {
-          // Pressed at Night — ONE dark world. Semantic tokens point at the
-          // design.md neutrals so the whole app lives in it.
-          bg: { value: '{colors.midnightSlate}' },
-          bgDeep: { value: '{colors.deepSpace}' },
-          text: { value: '{colors.starlight}' },
+          // Desktop.fm — ONE light world. Semantic tokens point at the
+          // near-monochrome neutrals so the whole app lives on the grey canvas.
+          bg: { value: '{colors.midnightSlate}' }, // white card surface
+          bgDeep: { value: '{colors.deepSpace}' }, // grey page canvas
+          text: { value: '{colors.starlight}' }, // carbon black
           muted: { value: '{colors.silver}' },
-          faint: { value: 'rgba(195, 195, 204, 0.62)' },
-          ghost: { value: 'rgba(195, 195, 204, 0.45)' },
-          hairline: { value: 'rgba(112, 112, 125, 0.28)' },
-          // ONE accent for the whole app — Mercury Blue, primary actions only.
-          accent: { value: '{colors.mercuryBlue}' },
+          faint: { value: 'rgba(17, 17, 17, 0.50)' },
+          ghost: { value: 'rgba(17, 17, 17, 0.38)' },
+          hairline: { value: 'rgba(17, 17, 17, 0.12)' },
+          // The one FILLED action is Carbon Black — the page's single CTA.
+          // Focus rings read from this too, keeping the UI strictly achromatic.
+          accent: { value: '{colors.starlight}' },
           accentSoft: {
-            value: 'color-mix(in oklab, #5266eb 24%, transparent)',
+            value: 'color-mix(in oklab, #111111 8%, transparent)',
           },
-          // The living biofeedback accent — driven by the loop, unchanged mechanism.
+          // The living biofeedback accent — driven by the loop, unchanged
+          // mechanism, now a calming blue. This is the ONE color on the page.
           signal: { value: 'var(--signal, {colors.scene.dusk})' },
           signalSoft: {
             value: 'color-mix(in oklab, var(--signal, {colors.scene.dusk}) 22%, transparent)',
@@ -282,15 +287,16 @@ export default defineConfig({
   },
   globalCss: {
     ':root': {
-      colorScheme: 'dark',
-      // The biofeedback accent — the loop overwrites this every frame.
-      '--signal': 'oklch(0.72 0.14 285)',
+      colorScheme: 'light',
+      // The biofeedback accent — the loop overwrites this every frame with a
+      // calming blue (see src/design/signal.ts). The one color on the page.
+      '--signal': 'oklch(0.66 0.13 250)',
       '--signal-glow': '0 0 48px color-mix(in oklab, var(--signal) 45%, transparent)',
-      // ONE accent for every surface — Mercury Blue (no per-tab scene accents).
-      '--scene-accent': '#5266eb',
+      // The live accent seed — calming blue (no per-tab scene accents).
+      '--scene-accent': '#5872e6',
       // Raw Liquid Glass vars for inline styles / canvas that can't read tokens.
-      '--glass-fill': 'rgba(22, 26, 44, 0.40)',
-      '--glass-stroke': 'rgba(255, 255, 255, 0.13)',
+      '--glass-fill': 'rgba(255, 255, 255, 0.55)',
+      '--glass-stroke': 'rgba(17, 17, 17, 0.08)',
       '--glass-blur': '24px',
       // Gentle spring easings — CSS linear() where supported, calm bezier fallback.
       '--ease-calm': 'cubic-bezier(0.32, 0.72, 0, 1)',

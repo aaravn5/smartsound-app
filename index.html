@@ -1,9 +1,9 @@
 <!doctype html>
-<html lang="en" data-theme="dark">
+<html lang="en" data-theme="light">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="color-scheme" content="dark" />
+    <meta name="color-scheme" content="light dark" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta
       name="description"
@@ -11,11 +11,18 @@
     />
     <title>SmartSound — calm, tuned to your body</title>
     <script>
-      // Pressed at Night — ONE dark world. Dark is the only presented theme;
-      // any stored "light" preference is ignored (lib/theme.ts stays dormant).
+      // Desktop.fm — light is native, Carbon Dark is the alternate. Apply the
+      // stored choice before first paint (default light) so there is no flash.
       (function () {
-        document.documentElement.setAttribute('data-theme', 'dark')
-        document.documentElement.style.colorScheme = 'dark'
+        try {
+          var v = window.localStorage.getItem('ss_theme')
+          var t = v === 'light' || v === 'dark' ? v : 'light'
+          document.documentElement.setAttribute('data-theme', t)
+          document.documentElement.style.colorScheme = t
+        } catch (e) {
+          document.documentElement.setAttribute('data-theme', 'light')
+          document.documentElement.style.colorScheme = 'light'
+        }
       })()
     </script>
   </head>

@@ -23,60 +23,74 @@
  * originals by default so dark stays byte-identical, and flip to deep-slate /
  * dark-on-light equivalents under Daylight. */
 :root {
-  /* Pressed at Night ink — Starlight/Silver hierarchy (design.md). */
-  --ss-ink-strong: rgba(237, 237, 243, 0.92);
-  --ss-ink-body: rgba(195, 195, 204, 0.88);
-  --ss-ink-soft: rgba(195, 195, 204, 0.66);
-  --ss-ink-dim: rgba(195, 195, 204, 0.55);
-  --ss-control-track: rgba(255, 255, 255, 0.14);
-  --ss-control-track-soft: rgba(255, 255, 255, 0.06);
-  --ss-line-strong: rgba(255, 255, 255, 0.3);
-  /* Soft dark halo for text sitting directly on the crisp nature photos —
-     invisible over the dark scrim, decisive over a bright fog/sky patch.
-     Off under Daylight (dark ink on a light canvas needs no halo). */
-  --ss-text-glow: 0 1px 2px rgba(4, 8, 20, 0.6), 0 2px 18px rgba(4, 8, 20, 0.55);
+  /* Desktop.fm ink — carbon-black hierarchy on the grey canvas (default/light). */
+  --ss-ink-strong: rgba(17, 17, 17, 0.92);
+  --ss-ink-body: rgba(17, 17, 17, 0.72);
+  --ss-ink-soft: rgba(17, 17, 17, 0.55);
+  --ss-ink-dim: rgba(17, 17, 17, 0.45);
+  --ss-control-track: rgba(17, 17, 17, 0.12);
+  --ss-control-track-soft: rgba(17, 17, 17, 0.06);
+  --ss-line-strong: rgba(17, 17, 17, 0.28);
+  /* No text halo on the light canvas — dark ink over grey needs none. */
+  --ss-text-glow: none;
 }
 
-/* ── Daylight — a calm, airy morning palette ──────────────────────────────────
+/* ── Carbon Dark — the optional monochrome-dark counterpart ───────────────────
  *
- * Soft cool off-white canvas (never pure white), deep-slate ink, muted slates
- * for the secondary hierarchy. Body text clears AA+ (≥4.5:1) against the
- * canvas. Glass becomes light frosted white; strokes become faint slate. */
-:root[data-theme='light'] {
-  color-scheme: light;
+ * Desktop.fm ships light; this is the alternate for users who toggle. Same
+ * near-monochrome system, inverted: a carbon canvas, off-white ink, the one
+ * calming-blue signal untouched. Raw neutral tokens are overridden so the
+ * semantic aliases that reference them (bg/text/…) re-resolve dark; the literal
+ * rgba semantics (faint/ghost/hairline) are set directly. */
+:root[data-theme='dark'] {
+  color-scheme: dark;
 
-  /* Canvas — soft warm-cool off-white, with a touch more depth beneath. */
-  --colors-base: #f4f6fb;
-  --colors-base-deep: #eef1f8;
+  /* Neutral tokens — carbon canvas + near-black card surfaces. */
+  --colors-deep-space: #17181c; /* page canvas */
+  --colors-midnight-slate: #202127; /* card surface */
+  --colors-graphite: #2a2b32; /* interactive / hover */
+  --colors-lead: rgba(255, 255, 255, 0.14); /* hairlines, grooves */
+  --colors-starlight: #f3f3f5; /* primary text */
+  --colors-silver: #a6a6ad; /* secondary text */
+  --colors-base: #202127;
+  --colors-base-deep: #17181c;
 
-  /* Ink hierarchy — deep slate, softening down the scale. */
-  --colors-label: rgba(24, 31, 48, 0.94);
-  --colors-secondary-label: rgba(30, 38, 58, 0.68);
-  --colors-tertiary-label: rgba(35, 43, 64, 0.55);
-  --colors-quaternary-label: rgba(40, 48, 70, 0.48);
-  --colors-separator: rgba(15, 23, 42, 0.1);
+  /* Ink hierarchy — off-white, softening down the scale. */
+  --colors-label: rgba(243, 243, 245, 0.95);
+  --colors-secondary-label: rgba(240, 240, 245, 0.64);
+  --colors-tertiary-label: rgba(238, 238, 245, 0.48);
+  --colors-quaternary-label: rgba(236, 236, 245, 0.40);
+  --colors-separator: rgba(255, 255, 255, 0.10);
 
-  /* Liquid Glass — light frosted white over the daylight wash. */
-  --colors-glass-fill: rgba(255, 255, 255, 0.55);
-  --colors-glass-fill-strong: rgba(255, 255, 255, 0.68);
-  --colors-glass-fill-soft: rgba(255, 255, 255, 0.5);
-  --colors-glass-stroke: rgba(15, 23, 42, 0.08);
-  --colors-glass-stroke-strong: rgba(15, 23, 42, 0.14);
-  --colors-glass-specular: rgba(255, 255, 255, 0.7);
-  --colors-glass-fallback: rgba(255, 255, 255, 0.92);
+  /* Semantic aliases whose values are literal rgba — set directly. */
+  --colors-faint: rgba(243, 243, 245, 0.55);
+  --colors-ghost: rgba(243, 243, 245, 0.40);
+  --colors-hairline: rgba(255, 255, 255, 0.12);
+
+  /* Liquid Glass — dark frosted over the carbon canvas. */
+  --colors-glass-fill: rgba(255, 255, 255, 0.06);
+  --colors-glass-fill-strong: rgba(255, 255, 255, 0.09);
+  --colors-glass-fill-soft: rgba(255, 255, 255, 0.05);
+  --colors-glass-stroke: rgba(255, 255, 255, 0.12);
+  --colors-glass-stroke-strong: rgba(255, 255, 255, 0.18);
+  --colors-glass-specular: rgba(255, 255, 255, 0.16);
+  --colors-glass-fallback: rgba(30, 31, 38, 0.94);
+  --colors-frost-fill: rgba(28, 29, 35, 0.72);
+  --colors-frost-stroke: rgba(255, 255, 255, 0.10);
+  --colors-frost-fallback: rgba(28, 29, 35, 0.97);
 
   /* Plain-name mirror vars (inline styles / canvas that can't read tokens). */
-  --glass-fill: rgba(255, 255, 255, 0.55);
-  --glass-stroke: rgba(15, 23, 42, 0.08);
+  --glass-fill: rgba(255, 255, 255, 0.06);
+  --glass-stroke: rgba(255, 255, 255, 0.12);
 
-  /* Helper vars — deep-slate ink + dark-on-light control tracks. */
-  --ss-ink-strong: rgba(24, 31, 48, 0.86);
-  --ss-ink-body: rgba(30, 38, 58, 0.7);
-  --ss-ink-soft: rgba(35, 43, 64, 0.58);
-  --ss-ink-dim: rgba(40, 48, 70, 0.52);
-  --ss-control-track: rgba(15, 23, 42, 0.14);
-  --ss-control-track-soft: rgba(15, 23, 42, 0.08);
-  --ss-line-strong: rgba(15, 23, 42, 0.28);
+  /* Helper vars — off-white ink + light-on-dark control tracks. */
+  --ss-ink-strong: rgba(243, 243, 245, 0.90);
+  --ss-ink-body: rgba(243, 243, 245, 0.70);
+  --ss-ink-soft: rgba(243, 243, 245, 0.55);
+  --ss-ink-dim: rgba(243, 243, 245, 0.45);
+  --ss-control-track: rgba(255, 255, 255, 0.14);
+  --ss-control-track-soft: rgba(255, 255, 255, 0.06);
+  --ss-line-strong: rgba(255, 255, 255, 0.28);
   --ss-text-glow: none;
 }
 
@@ -113,14 +127,14 @@
   isolation: isolate;
   background: linear-gradient(
     135deg,
-    rgba(255, 255, 255, 0.12) 0%,
-    rgba(255, 255, 255, 0.045) 100%
+    rgba(255, 255, 255, 0.78) 0%,
+    rgba(255, 255, 255, 0.62) 100%
   );
   -webkit-backdrop-filter: blur(18px) saturate(160%);
   backdrop-filter: blur(18px) saturate(160%);
   box-shadow:
-    0 8px 32px rgba(2, 6, 18, 0.36),
-    inset 0 1px 0 rgba(255, 255, 255, 0.14);
+    0 1px 3px rgba(17, 17, 17, 0.08),
+    0 4px 12px rgba(17, 17, 17, 0.06);
 }
 .liquid-glass::before {
   content: '';
@@ -130,10 +144,10 @@
   padding: 1px;
   background: linear-gradient(
     135deg,
-    rgba(255, 255, 255, 0.42) 0%,
-    rgba(255, 255, 255, 0.08) 38%,
-    rgba(255, 255, 255, 0.03) 62%,
-    rgba(255, 255, 255, 0.22) 100%
+    rgba(17, 17, 17, 0.10) 0%,
+    rgba(17, 17, 17, 0.04) 38%,
+    rgba(17, 17, 17, 0.03) 62%,
+    rgba(17, 17, 17, 0.08) 100%
   );
   -webkit-mask:
     linear-gradient(#fff 0 0) content-box,
@@ -148,12 +162,12 @@
 }
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
   .liquid-glass {
-    background: rgba(18, 22, 38, 0.92);
+    background: rgba(255, 255, 255, 0.94);
   }
 }
 @media (prefers-reduced-transparency: reduce) {
   .liquid-glass {
-    background: rgba(18, 22, 38, 0.92);
+    background: rgba(255, 255, 255, 0.94);
     -webkit-backdrop-filter: none;
     backdrop-filter: none;
   }
@@ -257,51 +271,11 @@
   50% { transform: scaleY(1); }
 }
 
-/* ── Always-dark immersive surfaces ───────────────────────────────────────────
+/* ── Immersive surfaces now follow the ambient theme ──────────────────────────
  *
- * The full-screen Player and the Today hero card are cinematic, scene-backed
- * surfaces — like Calm's / Endel's session players, they stay DARK in both
- * themes (their text and glass sit over an inherently dark landscape). Daylight
- * applies to the browsable chrome, not these. `.ss-scene-dark` re-asserts the
- * dark token originals for its subtree so, under Daylight, everything inside
- * resolves dark-correct again — no per-element color churn. Higher specificity
- * than the :root[data-theme='light'] block above, so it wins for the subtree. */
-:root[data-theme='light'] .ss-scene-dark {
-  color-scheme: dark;
-  /* Raw vars — for anything used directly (glass, canvas). */
-  --colors-base: oklch(0.145 0.03 275);
-  --colors-base-deep: oklch(0.11 0.025 278);
-  --colors-label: rgba(248, 247, 252, 0.96);
-  --colors-secondary-label: rgba(235, 235, 248, 0.72);
-  --colors-tertiary-label: rgba(230, 230, 246, 0.6);
-  --colors-quaternary-label: rgba(228, 228, 246, 0.56);
-  --colors-separator: rgba(255, 255, 255, 0.1);
-  /* Semantic vars — MUST be set directly. `--colors-text: var(--colors-label)`
-     is computed at :root, so overriding the raw --colors-label on a descendant
-     does NOT re-resolve it; the semantic alias inherits its already-computed
-     (light) value. Set each semantic var to the dark original explicitly. */
-  --colors-text: rgba(248, 247, 252, 0.96);
-  --colors-muted: rgba(235, 235, 248, 0.72);
-  --colors-faint: rgba(230, 230, 246, 0.6);
-  --colors-ghost: rgba(228, 228, 246, 0.56);
-  --colors-hairline: rgba(255, 255, 255, 0.1);
-  --colors-bg: oklch(0.145 0.03 275);
-  --colors-bg-deep: oklch(0.11 0.025 278);
-  --colors-glass-fill: rgba(22, 26, 44, 0.4);
-  --colors-glass-fill-strong: rgba(20, 24, 40, 0.58);
-  --colors-glass-fill-soft: rgba(255, 255, 255, 0.07);
-  --colors-glass-stroke: rgba(255, 255, 255, 0.13);
-  --colors-glass-stroke-strong: rgba(255, 255, 255, 0.2);
-  --colors-glass-specular: rgba(255, 255, 255, 0.18);
-  --colors-glass-fallback: rgba(24, 28, 46, 0.94);
-  --glass-fill: rgba(22, 26, 44, 0.4);
-  --glass-stroke: rgba(255, 255, 255, 0.13);
-  --ss-ink-strong: rgba(235, 235, 248, 0.84);
-  --ss-ink-body: rgba(235, 235, 248, 0.72);
-  --ss-ink-soft: rgba(235, 235, 248, 0.62);
-  --ss-ink-dim: rgba(235, 235, 248, 0.52);
-  --ss-control-track: rgba(255, 255, 255, 0.14);
-  --ss-control-track-soft: rgba(255, 255, 255, 0.06);
-  --ss-line-strong: rgba(255, 255, 255, 0.3);
-  --ss-text-glow: 0 1px 2px rgba(4, 8, 20, 0.6), 0 2px 18px rgba(4, 8, 20, 0.55);
-}
+ * Under "Pressed at Night" the Player and Today hero stayed DARK in both themes
+ * via `.ss-scene-dark`. Desktop.fm is a single flat, light world — those
+ * surfaces live on the same calming-grey canvas as everything else, so the
+ * forced-dark override is retired. `.ss-scene-dark` is left as an inert hook
+ * (no rule) so existing JSX that still carries the class simply inherits the
+ * ambient theme. */
