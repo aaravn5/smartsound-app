@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react'
-import { createFileRoute, redirect, useNavigate } from '@tanstack/react-router'
+import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import {
   motion,
   useMotionValueEvent,
@@ -9,9 +9,9 @@ import {
 } from 'motion/react'
 import { css, cx } from 'styled-system/css'
 import { LiquidGlass } from '~/design/LiquidGlass'
+import { AppShowcase } from '~/landing/AppShowcase'
 import { NeuralNote } from '~/landing/NeuralNote'
 import { useClickSound } from '~/lib/click-sound'
-import { hasOnboarded } from '~/lib/onboarding'
 
 /**
  * Welcome — the interactive landing, now a sticky-scroll story.
@@ -28,9 +28,6 @@ import { hasOnboarded } from '~/lib/onboarding'
  * Stage 4 closes with the door in. Returning visitors skip straight to /app.
  */
 export const Route = createFileRoute('/')({
-  beforeLoad: () => {
-    if (hasOnboarded()) throw redirect({ to: '/app' })
-  },
   component: Welcome,
 })
 
@@ -338,7 +335,7 @@ function MorphStage() {
   })
 
   return (
-    <section ref={ref} className={css({ position: 'relative', height: '320vh' })}>
+    <section id="engine" ref={ref} className={css({ position: 'relative', height: '320vh' })}>
       <div
         className={css({
           position: 'sticky',
@@ -498,7 +495,7 @@ const CARDS = [
 /** Stage 3 — Liquid Glass cards that pile up as you scroll. */
 function CardsStage() {
   return (
-    <section className={css({ position: 'relative', px: '5', pb: '20', maxW: '720px', mx: 'auto' })}>
+    <section id="how" className={css({ position: 'relative', px: '5', pb: '20', maxW: '720px', mx: 'auto' })}>
       <div className={css({ pt: '24', pb: '10', textAlign: 'center' })}>
         <p
           className={css({
@@ -662,18 +659,603 @@ function CtaStage() {
   )
 }
 
+/** Fixed Liquid Glass navigation — the Calm-style top bar. */
+function GlassNav() {
+  const navigate = useNavigate()
+  const playClick = useClickSound()
+  const link = css({
+    display: 'none',
+    md: { display: 'inline' },
+    fontSize: 'footnote',
+    fontWeight: '600',
+    color: 'var(--ss-ink-body)',
+    textDecoration: 'none',
+    px: '2.5',
+    _hover: { color: 'text' },
+  })
+  return (
+    <div
+      className={css({
+        position: 'fixed',
+        top: '4',
+        insetX: '0',
+        zIndex: '50',
+        display: 'flex',
+        justifyContent: 'center',
+        px: '4',
+        pointerEvents: 'none',
+      })}
+    >
+      <LiquidGlass
+        as="nav"
+        variant="bar"
+        className={css({ pointerEvents: 'auto', px: '4', py: '2', maxW: '860px', w: '100%' })}
+      >
+        <div className={css({ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '3' })}>
+          <a
+            href="#top"
+            className={css({
+              fontSize: 'headline',
+              fontWeight: '700',
+              letterSpacing: '-0.01em',
+              color: 'text',
+              textDecoration: 'none',
+            })}
+          >
+            SmartSound
+          </a>
+          <div className={css({ display: 'flex', alignItems: 'center' })}>
+            <a href="#engine" className={link}>Engine</a>
+            <a href="#inside" className={link}>The app</a>
+            <a href="#how" className={link}>How it works</a>
+            <a href="#reviews" className={link}>Reviews</a>
+            <a href="#plans" className={link}>Plans</a>
+            <a href="#faq" className={link}>FAQ</a>
+          </div>
+          <button
+            onClick={() => {
+              playClick('primary')
+              void navigate({ to: '/app' })
+            }}
+            className={css({
+              borderRadius: 'capsule',
+              px: '4',
+              py: '2',
+              fontSize: 'footnote',
+              fontWeight: '600',
+              color: '#04060c',
+              bg: 'rgba(255,255,255,0.92)',
+              border: 'none',
+              cursor: 'pointer',
+              font: 'inherit',
+              _hover: { bg: 'white' },
+            })}
+          >
+            Open the app
+          </button>
+        </div>
+      </LiquidGlass>
+    </div>
+  )
+}
+
+const sectionHeading = (eyebrow: string, title: string) => (
+  <div className={css({ textAlign: 'center', mb: '10' })}>
+    <p
+      className={css({
+        m: '0',
+        mb: '2',
+        fontSize: 'footnote',
+        fontWeight: '600',
+        letterSpacing: '0.22em',
+        textTransform: 'uppercase',
+        color: 'var(--ss-ink-soft)',
+      })}
+    >
+      {eyebrow}
+    </p>
+    <h2
+      className={css({
+        m: '0',
+        fontFamily: 'display',
+        fontSize: 'clamp(1.9rem, 4.5vw, 3rem)',
+        fontWeight: '700',
+        letterSpacing: '-0.02em',
+        color: 'text',
+      })}
+    >
+      {title}
+    </h2>
+  </div>
+)
+
+const BENEFITS = [
+  {
+    k: 'Focus',
+    body: 'Steady, lyric-free momentum tuned against your live pulse — for deep work that holds.',
+    grad: 'linear-gradient(135deg, rgba(74,168,255,0.28), rgba(92,124,255,0.10))',
+    dot: '#4aa8ff',
+  },
+  {
+    k: 'Calm',
+    body: 'Soft pads and slow air that ease a racing afternoon back down to baseline.',
+    grad: 'linear-gradient(135deg, rgba(55,194,160,0.26), rgba(99,224,194,0.10))',
+    dot: '#37c2a0',
+  },
+  {
+    k: 'Sleep',
+    body: 'A soundscape that dims with you — slower, darker, quieter as your body lets go.',
+    grad: 'linear-gradient(135deg, rgba(255,210,74,0.20), rgba(74,168,255,0.08))',
+    dot: '#ffd24a',
+  },
+]
+
+/** Calm's benefit trio — our three target states. */
+function BenefitsSection() {
+  return (
+    <section className={css({ position: 'relative', px: '5', pt: '24', maxW: '1000px', mx: 'auto' })}>
+      {sectionHeading('One engine, three doors', 'Focus. Calm. Sleep.')}
+      <div className={css({ display: 'grid', gap: '5', md: { gridTemplateColumns: 'repeat(3, 1fr)' } })}>
+        {BENEFITS.map((b) => (
+          <LiquidGlass key={b.k} variant="card" className={css({ p: '7' })}>
+            <div
+              aria-hidden
+              className={css({ w: '44px', h: '44px', borderRadius: 'full', mb: '4' })}
+              style={{ background: b.grad, border: `1px solid ${b.dot}55` }}
+            />
+            <h3
+              className={css({
+                m: '0',
+                fontFamily: 'display',
+                fontSize: 'title2',
+                fontWeight: '700',
+                color: 'text',
+              })}
+            >
+              {b.k}
+            </h3>
+            <p
+              className={css({
+                m: '0',
+                mt: '2',
+                fontSize: 'subhead',
+                lineHeight: '1.6',
+                color: 'var(--ss-ink-body)',
+              })}
+            >
+              {b.body}
+            </p>
+          </LiquidGlass>
+        ))}
+      </div>
+    </section>
+  )
+}
+
+/** Inside the app — the Apple/Calm UI, shown in detail. */
+function InsideAppSection() {
+  return (
+    <section
+      id="inside"
+      className={css({ position: 'relative', px: '5', pt: '28', maxW: '1080px', mx: 'auto' })}
+    >
+      {sectionHeading('Inside the app', 'Apple HIG, all the way down')}
+      <p
+        className={css({
+          m: '0',
+          mt: '-6',
+          mb: '10',
+          textAlign: 'center',
+          fontSize: 'subhead',
+          lineHeight: '1.65',
+          color: 'var(--ss-ink-body)',
+          maxW: '560px',
+          mx: 'auto',
+        })}
+      >
+        SF-system type, scene-dark surfaces, and one signature material — Liquid Glass — on the
+        navigation and control layer. No chrome for chrome&rsquo;s sake: every surface below is a
+        screen the app actually ships.
+      </p>
+      <AppShowcase />
+    </section>
+  )
+}
+
+/** The science, claimed honestly — our answer to brain.fm/Endel science strips. */
+function ScienceSection() {
+  const items = [
+    {
+      title: 'rPPG, on-device',
+      body: 'Your camera watches the micro-flush of skin with each heartbeat (remote photoplethysmography). Frames are processed locally and never leave the device.',
+    },
+    {
+      title: 'A closed loop',
+      body: 'Pulse and its trend feed the engine; tempo, chord density, brightness and reverb answer. Slow, hysteretic changes — never jarring, never random.',
+    },
+    {
+      title: 'No overclaiming',
+      body: 'We cite the rPPG literature and general auditory-entrainment findings — and the app tells you it is not a medical device. Attune shows only what it measured.',
+    },
+  ]
+  return (
+    <section className={css({ position: 'relative', px: '5', pt: '28', maxW: '1000px', mx: 'auto' })}>
+      {sectionHeading('The science', 'Measured, then made audible')}
+      <div className={css({ display: 'grid', gap: '5', md: { gridTemplateColumns: 'repeat(3, 1fr)' } })}>
+        {items.map((s) => (
+          <LiquidGlass key={s.title} variant="card" className={css({ p: '7' })}>
+            <h3
+              className={css({
+                m: '0',
+                fontFamily: 'display',
+                fontSize: 'title3',
+                fontWeight: '700',
+                color: 'text',
+              })}
+            >
+              {s.title}
+            </h3>
+            <p
+              className={css({
+                m: '0',
+                mt: '2',
+                fontSize: 'subhead',
+                lineHeight: '1.65',
+                color: 'var(--ss-ink-body)',
+              })}
+            >
+              {s.body}
+            </p>
+          </LiquidGlass>
+        ))}
+      </div>
+    </section>
+  )
+}
+
+const REVIEWS = [
+  {
+    who: 'J.M. — early listener',
+    quote:
+      'The ring filling while my pulse actually settled was the first time an app ever showed me calm instead of telling me about it.',
+  },
+  {
+    who: 'A.R. — early listener',
+    quote:
+      'I leave Focus running for whole afternoons. It never loops, so my brain never gets the "I know this song" itch.',
+  },
+  {
+    who: 'S.K. — early listener',
+    quote:
+      'Sleep mode getting slower and darker as I drift is uncanny in the best way. I stopped noticing when it ends — which is the point.',
+  },
+]
+
+/** Early-listener quotes — clearly labeled, no invented star counts. */
+function ReviewsSection() {
+  return (
+    <section
+      id="reviews"
+      className={css({ position: 'relative', px: '5', pt: '28', maxW: '1000px', mx: 'auto' })}
+    >
+      {sectionHeading('Early listeners', 'What people say')}
+      <div className={css({ display: 'grid', gap: '5', md: { gridTemplateColumns: 'repeat(3, 1fr)' } })}>
+        {REVIEWS.map((r) => (
+          <LiquidGlass key={r.who} variant="card" className={css({ p: '7' })}>
+            <p
+              className={css({
+                m: '0',
+                fontSize: 'subhead',
+                lineHeight: '1.7',
+                color: 'text',
+                fontStyle: 'italic',
+              })}
+            >
+              &ldquo;{r.quote}&rdquo;
+            </p>
+            <p
+              className={css({
+                m: '0',
+                mt: '4',
+                fontSize: 'footnote',
+                fontWeight: '600',
+                color: 'var(--ss-ink-soft)',
+              })}
+            >
+              {r.who}
+            </p>
+          </LiquidGlass>
+        ))}
+      </div>
+    </section>
+  )
+}
+
+const PLANS = [
+  {
+    name: 'Free',
+    price: '$0',
+    per: 'forever',
+    lines: ['Explore every state', '20 minutes a day', 'No account needed'],
+    tint: undefined,
+  },
+  {
+    name: 'Pro',
+    price: '$9.99',
+    per: '/ month',
+    lines: ['Unlimited listening', 'Full Attune biofeedback', 'All scenes and sessions'],
+    tint: 'rgba(74, 168, 255, 0.25)',
+  },
+  {
+    name: 'Studio',
+    price: '$19.99',
+    per: '/ month',
+    lines: ['Everything in Pro', 'Developer sound controls', 'Early features first'],
+    tint: 'rgba(55, 194, 160, 0.22)',
+  },
+]
+
+/** Plans — the real in-app tiers, real prices, no dark patterns. */
+function PlansSection() {
+  const navigate = useNavigate()
+  const playClick = useClickSound()
+  return (
+    <section
+      id="plans"
+      className={css({ position: 'relative', px: '5', pt: '28', maxW: '1000px', mx: 'auto' })}
+    >
+      {sectionHeading('Plans', 'Start free, stay honest')}
+      <div className={css({ display: 'grid', gap: '5', md: { gridTemplateColumns: 'repeat(3, 1fr)' } })}>
+        {PLANS.map((p) => (
+          <LiquidGlass key={p.name} variant="card" tint={p.tint} className={css({ p: '7' })}>
+            <p
+              className={css({
+                m: '0',
+                fontSize: 'footnote',
+                fontWeight: '600',
+                letterSpacing: '0.18em',
+                textTransform: 'uppercase',
+                color: 'var(--ss-ink-soft)',
+              })}
+            >
+              {p.name}
+            </p>
+            <p className={css({ m: '0', mt: '2', color: 'text' })}>
+              <span className={css({ fontFamily: 'display', fontSize: 'largeTitle', fontWeight: '700' })}>
+                {p.price}
+              </span>{' '}
+              <span className={css({ fontSize: 'footnote', color: 'var(--ss-ink-soft)' })}>{p.per}</span>
+            </p>
+            <ul
+              className={css({
+                m: '0',
+                mt: '4',
+                p: '0',
+                listStyle: 'none',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '2',
+              })}
+            >
+              {p.lines.map((l) => (
+                <li
+                  key={l}
+                  className={css({
+                    fontSize: 'subhead',
+                    color: 'var(--ss-ink-body)',
+                    display: 'flex',
+                    gap: '2',
+                    alignItems: 'baseline',
+                  })}
+                >
+                  <span aria-hidden className={css({ color: 'var(--ss-ink-soft)' })}>·</span>
+                  {l}
+                </li>
+              ))}
+            </ul>
+          </LiquidGlass>
+        ))}
+      </div>
+      <div className={css({ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '3', mt: '8' })}>
+        <LiquidGlass
+          as="button"
+          variant="control"
+          tint="rgba(139, 108, 246, 0.6)"
+          onClick={() => {
+            playClick('primary')
+            void navigate({ to: '/onboarding/$step', params: { step: 'welcome' } })
+          }}
+          className={css({
+            minW: '200px',
+            border: '1px solid rgba(196, 181, 253, 0.38)',
+            color: 'text',
+            font: 'inherit',
+          })}
+        >
+          <span
+            className={css({
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              height: '48px',
+              px: '8',
+              fontSize: 'headline',
+              fontWeight: '600',
+            })}
+          >
+            Start free
+          </span>
+        </LiquidGlass>
+        <p className={css({ m: '0', fontSize: 'caption', color: 'var(--ss-ink-soft)' })}>
+          Prices as shown in-app · annual saves more · cancel anytime
+        </p>
+      </div>
+    </section>
+  )
+}
+
+const FAQS = [
+  {
+    q: 'How does SmartSound read my pulse?',
+    a: 'Through your camera, using remote photoplethysmography — the faint change in skin color with every heartbeat. All processing happens on your device; video is never uploaded, stored, or shared.',
+  },
+  {
+    q: 'Is this binaural beats?',
+    a: 'No. SmartSound is a generative soundscape — chord pads, natural beds, sparse melodies composed live — with gentle amplitude entrainment layered in. It works on speakers or a single earbud; no special headphones required.',
+  },
+  {
+    q: 'Do I need an account?',
+    a: 'No. You can explore every state free without one. An account only becomes useful if you want your progress and settings to follow you.',
+  },
+  {
+    q: 'What does Attune actually claim?',
+    a: 'Only what it measures: your pulse, its trend, and how the engine responded. SmartSound is not a medical device and never pretends to diagnose or treat anything.',
+  },
+  {
+    q: 'Does the music ever repeat?',
+    a: 'No. Every session is generated in the moment from the engine’s current reading of you, so no two sessions are the same — and there is nothing to loop.',
+  },
+]
+
+/** FAQ — native disclosure elements dressed in glass. */
+function FaqSection() {
+  return (
+    <section
+      id="faq"
+      className={css({ position: 'relative', px: '5', pt: '28', maxW: '720px', mx: 'auto' })}
+    >
+      {sectionHeading('FAQ', 'Fair questions')}
+      <div className={css({ display: 'flex', flexDirection: 'column', gap: '3' })}>
+        {FAQS.map((f) => (
+          <LiquidGlass key={f.q} variant="card" staticSheen className={css({ p: '0' })}>
+            <details className={css({ p: '5' })}>
+              <summary
+                className={css({
+                  cursor: 'pointer',
+                  fontSize: 'headline',
+                  fontWeight: '600',
+                  color: 'text',
+                  listStyle: 'none',
+                  _hover: { color: 'white' },
+                })}
+              >
+                {f.q}
+              </summary>
+              <p
+                className={css({
+                  m: '0',
+                  mt: '3',
+                  fontSize: 'subhead',
+                  lineHeight: '1.7',
+                  color: 'var(--ss-ink-body)',
+                })}
+              >
+                {f.a}
+              </p>
+            </details>
+          </LiquidGlass>
+        ))}
+      </div>
+    </section>
+  )
+}
+
+/** Footer — quiet, link-dense, Calm-style. */
+function FooterSection() {
+  const col = css({ display: 'flex', flexDirection: 'column', gap: '2' })
+  const head = css({
+    m: '0',
+    mb: '1',
+    fontSize: 'caption',
+    fontWeight: '700',
+    letterSpacing: '0.18em',
+    textTransform: 'uppercase',
+    color: 'var(--ss-ink-soft)',
+  })
+  const a = css({
+    fontSize: 'footnote',
+    color: 'var(--ss-ink-body)',
+    textDecoration: 'none',
+    _hover: { color: 'text' },
+  })
+  return (
+    <footer className={css({ px: '5', pt: '28', pb: '12', maxW: '1000px', mx: 'auto' })}>
+      <div
+        className={css({
+          display: 'grid',
+          gap: '8',
+          pb: '10',
+          borderBottom: '1px solid rgba(255,255,255,0.08)',
+          sm: { gridTemplateColumns: '2fr 1fr 1fr 1fr' },
+        })}
+      >
+        <div>
+          <p className={css({ m: '0', fontSize: 'headline', fontWeight: '700', color: 'text' })}>
+            SmartSound
+          </p>
+          <p
+            className={css({
+              m: '0',
+              mt: '2',
+              fontSize: 'footnote',
+              lineHeight: '1.6',
+              color: 'var(--ss-ink-body)',
+              maxW: '260px',
+            })}
+          >
+            A generative soundscape that listens to your pulse and steers you toward focus, calm,
+            or sleep.
+          </p>
+        </div>
+        <div className={col}>
+          <p className={head}>Product</p>
+          <a className={a} href="#inside">Inside the app</a>
+          <a className={a} href="#plans">Plans</a>
+          <a className={a} href="#faq">FAQ</a>
+        </div>
+        <div className={col}>
+          <p className={head}>Science</p>
+          <a className={a} href="#engine">The engine</a>
+          <a className={a} href="#how">How it works</a>
+        </div>
+        <div className={col}>
+          <p className={head}>Privacy</p>
+          <p className={cx(a, css({ m: '0', cursor: 'default' }))}>
+            The camera stays on your device. Always.
+          </p>
+        </div>
+      </div>
+      <p className={css({ m: '0', mt: '6', fontSize: 'caption', color: 'var(--ss-ink-soft)' })}>
+        © 2026 SmartSound. Not a medical device.
+      </p>
+    </footer>
+  )
+}
+
 function Welcome() {
   return (
     <div
+      id="top"
       className={cx(
         'ss-scene-dark',
-        css({ position: 'relative', bg: 'black', color: 'text' }),
+        css({ position: 'relative', bg: 'black', color: 'text', scrollBehavior: 'smooth' }),
       )}
     >
+      <GlassNav />
       <HeroStage />
-      <MorphStage />
-      <CardsStage />
-      <CtaStage />
+      {/* Everything after the pinned hero rides over it on an opaque layer. */}
+      <div className={css({ position: 'relative', zIndex: '1', bg: '#04060c' })}>
+        <BenefitsSection />
+        <MorphStage />
+        <InsideAppSection />
+        <CardsStage />
+        <ScienceSection />
+        <ReviewsSection />
+        <PlansSection />
+        <FaqSection />
+        <CtaStage />
+        <FooterSection />
+      </div>
     </div>
   )
 }
