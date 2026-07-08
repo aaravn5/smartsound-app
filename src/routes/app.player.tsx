@@ -5,9 +5,8 @@ import * as Slider from '@radix-ui/react-slider'
 import { css, cx } from 'styled-system/css'
 import { LiquidGlass } from '~/design/LiquidGlass'
 import { LivingScene } from '~/design/LivingScene'
-import { TriangleConstellation } from '~/landing/TriangleConstellation'
 import { TriangleText } from '~/landing/TriangleText'
-import { TriangleSpectrum } from '~/design/TriangleSpectrum'
+import { WaveField3D } from '~/design/WaveField3D'
 import { SignalRing } from '~/design/SignalRing'
 import type { SceneVariant } from '~/design/Scene'
 import { useAttuneVisuals } from '~/design/useAttuneVisuals'
@@ -302,37 +301,13 @@ function PlayerScreen() {
       >
         <LivingScene variant={scene} />
 
-        {/* The triangle schematic — the landing's constellation, living inside
-            the player: brain → waveform → note → network, breathing with the
-            REAL measured pulse. Ambient layer; pointer events stay with the
-            controls above. */}
-        <TriangleConstellation
-          shapes={['brain', 'waveform', 'note', 'network']}
-          mode="auto"
-          rotate="sway"
-          count={2400}
-          size={0.07}
-          holdSeconds={6.5}
-          particleOpacity={0.55}
-          getPulse={() => {
-            // Beat envelope from the cardiac phase — sharp systole, soft decay.
-            const p = getPulse()
-            return p ? Math.pow(1 - p.phase, 3) * p.confidence : 0
-          }}
-          className={css({
-            position: 'absolute',
-            inset: '0',
-            pointerEvents: 'none',
-            opacity: '0.6',
-          })}
-        />
 
-        {/* The pixelated wavelength — columns of triangle pixels rising and
-            falling with the REAL frequency spectrum while running. */}
-        <TriangleSpectrum
+        {/* The wavelength, in 3D — tetra columns riding the live spectrum,
+            breathing on the low band. */}
+        <WaveField3D
           getSpectrum={getSpectrum}
           running={status === 'running'}
-          className={css({ position: 'absolute', insetX: '0', bottom: '0', h: '22%' })}
+          className={css({ position: 'absolute', inset: '0' })}
         />
       </div>
 

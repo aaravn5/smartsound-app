@@ -19,10 +19,10 @@ const WIRE_URL = '/assets/3d/tetra-wire-lo.glb'
 
 // Edges are Starlight with slight variance; the material tint (band color)
 // multiplies on top.
-const EDGE_PALETTE = ['#141417', '#141417', '#26262b', '#3a3a41', '#0a0a0c']
+const EDGE_PALETTE = ['#f7f7f5', '#ffffff', '#e7e8e1', '#c9cbbe', '#ffffff']
 
 // design.md band tints + their scaled pulse paces (Beta ripples, Delta barely breathes).
-const BAND_TINTS = ['#ffffff', '#e9e9ee', '#f6f6f2', '#dfdfe6']
+const BAND_TINTS = ['#ffffff', '#e9f5df', '#ffffff', '#d9e8cf']
 const BAND_PULSE = [1.5, 1.0, 0.6, 0.25]
 
 export function WireSwarm({ progressRef }: { progressRef: MutableRefObject<number> }) {
@@ -50,7 +50,7 @@ export function WireSwarm({ progressRef }: { progressRef: MutableRefObject<numbe
       tintTimeline={BAND_TINTS}
       pulseTimeline={BAND_PULSE}
       particleOpacity={0.9}
-      hoverColor="#e2ff70"
+      hoverColor="#cef79e"
       className={css({ position: 'fixed', inset: '0', zIndex: '0' })}
     />
   )
