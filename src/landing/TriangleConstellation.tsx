@@ -445,6 +445,16 @@ export interface TriangleConstellationProps {
   stageOffsets?: Partial<Record<ShapeName, number>>
   /** Count of larger, always-present loner triangles drifting across the frame. */
   ambient?: number
+  /** Outline geometry (e.g. the Blender wire-tetra GLB). Replaces the solid tetra. */
+  wireGeometry?: THREE.BufferGeometry
+  /** Faint glass-ghost interior volume (≤4% opacity, additive). */
+  ghost?: boolean
+  /** Band tints crossfaded across scroll progress (multiplies edge color). */
+  tintTimeline?: string[]
+  /** Scaled band pulse frequencies (Hz) matched to tintTimeline stops. */
+  pulseTimeline?: number[]
+  /** Award choreography: scroll-scrubbed rotation/drift/dolly + idle drift + pointer parallax. */
+  choreo?: boolean
 }
 
 function Cloud({
@@ -454,6 +464,11 @@ function Cloud({
   pulseRef,
   getPulse,
   stageOffsets,
+  wireGeometry,
+  ghost,
+  tintTimeline,
+  pulseTimeline,
+  choreo,
   count,
   size,
   holdSeconds,
@@ -475,6 +490,11 @@ function Cloud({
   animate: boolean
   hoverRef: HoverRef
   stageOffsets?: Partial<Record<ShapeName, number>>
+  wireGeometry?: THREE.BufferGeometry
+  ghost?: boolean
+  tintTimeline?: string[]
+  pulseTimeline?: number[]
+  choreo?: boolean
 }) {
   const mesh = useRef<THREE.InstancedMesh>(null)
   const dummy = useMemo(() => new THREE.Object3D(), [])
@@ -520,13 +540,44 @@ function Cloud({
   const st8 = useRef({ idx: 0, hold: 0 })
   const hoverPoint = useMemo(() => new THREE.Vector3(), [])
   const ray = useMemo(() => new THREE.Vector3(), [])
+  const ghostMesh = useRef<THREE.InstancedMesh>(null)
+  const edgeMat = useRef<THREE.MeshStandardMaterial>(null)
+  const parallax = useRef({ x: 0, y: 0 })
+  const tints = useMemo(() => (tintTimeline ?? []).map((c) => new THREE.Color(c)), [tintTimeline])
+  const tintNow = useMemo(() => new THREE.Color('#ffffff'), [])
 
   useFrame((st, dt) => {
     const pts = mesh.current
     if (!pts) return
     const t = st.clock.elapsedTime
-    if (animate && rotate === 'sway') pts.rotation.y = Math.sin(t * 0.22) * 0.42
-    if (animate && rotate === 'spin') pts.rotation.y += dt * 0.14
+    const prog = progressRef ? Math.min(1, Math.max(0, progressRef.current)) : 0
+    if (choreo) {
+      // Scroll owns the motion: ~120° across the page, a horizontal drift to
+      // counterweight the copy, a subtle camera dolly — plus only an
+      // ignorable ≥14s idle drift and ±2° pointer parallax (lerp 0.05).
+      const hover = hoverRef.current
+      parallax.current.x += ((hover.active ? hover.y * 0.035 : 0) - parallax.current.x) * 0.05
+      parallax.current.y += ((hover.active ? hover.x * 0.035 : 0) - parallax.current.y) * 0.05
+      const idle = animate ? Math.sin((t * Math.PI * 2) / 14) * 0.03 : 0
+      pts.rotation.y = prog * 2.094 + idle + parallax.current.y
+      pts.rotation.x = parallax.current.x
+      pts.position.x = Math.sin(prog * Math.PI * 2) * 1.1
+      st.camera.position.z = 8 - prog * 1.5
+      // Band tint crossfade + band-paced edge pulse (Beta fast → Delta slow).
+      if (tints.length > 1 && edgeMat.current) {
+        const tp = prog * (tints.length - 1)
+        const i0 = Math.min(tints.length - 2, Math.floor(tp))
+        tintNow.lerpColors(tints[i0], tints[i0 + 1], tp - i0)
+        edgeMat.current.color.copy(tintNow)
+        if (pulseTimeline && pulseTimeline.length === tints.length) {
+          const f = pulseTimeline[i0] + (pulseTimeline[i0 + 1] - pulseTimeline[i0]) * (tp - i0)
+          edgeMat.current.opacity = 0.85 * (0.92 + (animate ? 0.08 * Math.sin(t * Math.PI * 2 * f) : 0))
+        }
+      }
+    } else {
+      if (animate && rotate === 'sway') pts.rotation.y = Math.sin(t * 0.22) * 0.42
+      if (animate && rotate === 'spin') pts.rotation.y += dt * 0.14
+    }
 
     // Heartbeat breathing.
     const pulse = getPulse ? getPulse() : (pulseRef?.current ?? 0)
@@ -617,23 +668,50 @@ function Cloud({
       pts.setMatrixAt(i, dummy.matrix)
       tint.setRGB(colors[i3], colors[i3 + 1], colors[i3 + 2])
       pts.setColorAt(i, tint)
+      if (ghostMesh.current) ghostMesh.current.setMatrixAt(i, dummy.matrix)
     }
     pts.instanceMatrix.needsUpdate = true
     if (pts.instanceColor) pts.instanceColor.needsUpdate = true
+    if (ghostMesh.current) {
+      ghostMesh.current.rotation.copy(pts.rotation)
+      ghostMesh.current.position.copy(pts.position)
+      ghostMesh.current.scale.copy(pts.scale)
+      ghostMesh.current.instanceMatrix.needsUpdate = true
+    }
   })
 
   return (
-    <instancedMesh ref={mesh} args={[TETRA_GEOMETRY, undefined, count]} frustumCulled={false}>
-      <meshStandardMaterial
-        color="#ffffff"
-        metalness={0.35}
-        roughness={0.32}
-        emissive="#ffffff"
-        emissiveIntensity={0.05}
-        transparent
-        opacity={particleOpacity}
-      />
-    </instancedMesh>
+    <>
+      <instancedMesh
+        ref={mesh}
+        args={[wireGeometry ?? TETRA_GEOMETRY, undefined, count]}
+        frustumCulled={false}
+      >
+        <meshStandardMaterial
+          ref={edgeMat}
+          color="#ffffff"
+          metalness={0.35}
+          roughness={0.32}
+          emissive="#ffffff"
+          emissiveIntensity={0.05}
+          transparent
+          opacity={particleOpacity}
+        />
+      </instancedMesh>
+      {ghost && (
+        /* Glass-ghost interior: the filled tetra at 3% additive — never a
+           visible solid face. */
+        <instancedMesh ref={ghostMesh} args={[TETRA_GEOMETRY, undefined, count]} frustumCulled={false}>
+          <meshBasicMaterial
+            color="#aab6ff"
+            transparent
+            opacity={0.03}
+            blending={THREE.AdditiveBlending}
+            depthWrite={false}
+          />
+        </instancedMesh>
+      )}
+    </>
   )
 }
 
@@ -654,6 +732,11 @@ export function TriangleConstellation({
   particleOpacity = 0.95,
   stageOffsets,
   ambient = 0,
+  wireGeometry,
+  ghost,
+  tintTimeline,
+  pulseTimeline,
+  choreo,
 }: TriangleConstellationProps) {
   const reduce = useReducedMotion()
   const hover = useRef({ x: 0, y: 0, active: false })
@@ -699,6 +782,11 @@ export function TriangleConstellation({
             animate={!reduce}
             hoverRef={hover}
             stageOffsets={stageOffsets}
+            wireGeometry={wireGeometry}
+            ghost={ghost}
+            tintTimeline={tintTimeline}
+            pulseTimeline={pulseTimeline}
+            choreo={choreo}
           />
           {ambient > 0 && (
             <AmbientDust count={ambient} palette={paletteOverride ?? DEFAULT_PALETTE} animate={!reduce} />

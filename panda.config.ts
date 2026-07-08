@@ -147,6 +147,21 @@ export default defineConfig({
           from: { transform: 'translateY(112%)', opacity: '0' },
           to: { transform: 'translateY(0)', opacity: '1' },
         },
+        // The band-litany strip.
+        marquee: {
+          from: { transform: 'translateX(0)' },
+          to: { transform: 'translateX(-100%)' },
+        },
+        // Scroll cue — 1 Hz breath.
+        cuePulse: {
+          '0%, 100%': { opacity: '0.35' },
+          '50%': { opacity: '1' },
+        },
+        // The Calm layer — a ≥20s ambient glow drift, slow enough to ignore.
+        glowDrift: {
+          '0%, 100%': { transform: 'translate(0, 0) scale(1)' },
+          '50%': { transform: 'translate(4%, -3%) scale(1.12)' },
+        },
         sceneDriftA: {
           '0%': { transform: 'translate3d(0, 0, 0) scale(1)' },
           '50%': { transform: 'translate3d(-3%, 2%, 0) scale(1.06)' },

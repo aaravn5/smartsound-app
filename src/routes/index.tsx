@@ -1,180 +1,239 @@
-import { useEffect, useRef, useState } from 'react'
+import { Suspense, useEffect, useRef, useState } from 'react'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
-import {
-  motion,
-  useMotionValueEvent,
-  useReducedMotion,
-  useScroll,
-  useTransform,
-} from 'motion/react'
+import * as THREE from 'three'
 import { css, cx } from 'styled-system/css'
-import { AppShowcase } from '~/landing/AppShowcase'
+import {
+  CountUp,
+  CursorDot,
+  FadeUp,
+  Magnetic,
+  Marquee,
+  SplitReveal,
+  useLenis,
+} from '~/landing/craft'
 import { PhoneShowcase } from '~/landing/PhoneShowcase'
-import { TriangleConstellation } from '~/landing/TriangleConstellation'
-import { TriangleText } from '~/landing/TriangleText'
-import { useSmoothScroll } from '~/landing/useSmoothScroll'
+import { WireSwarm } from '~/landing/WireSwarm'
 import { useClickSound } from '~/lib/click-sound'
 
 /**
- * Welcome — the landing as one continuous swarm story.
+ * Welcome — the award pass: one continuous shot from preloader to footer.
  *
- * A single fixed WebGL canvas holds the whole narrative: a triangle-particle
- * brain (staged right of the headline) that the page's scroll transforms into
- * a rolling terrain, a weightless dust field, a lightbulb, a planet, a
- * synapse network and finally a closing ribbon — while HTML beats ride over
- * it. Larger loner triangles drift across the void the entire way. Headlines
- * are set in TriangleText, so even the type is a swarm that rearranges.
- * Wheel scrolling glides (lerped real scroll), touch stays native, and
- * reduced motion snaps everything.
+ * A real-progress preloader wipes to a fluid serif hero; the outlined
+ * wire-tetra swarm rides fixed behind everything, scrubbed by Lenis scroll
+ * through four band tints (Beta → Alpha → Theta → Delta); every display
+ * heading enters as masked line reveals; marquee, honest counters, section
+ * index numbers and an oversized footer carry the editorial furniture.
+ * Colors resolve to design.md tokens — this pass added craft, not colors.
  */
 export const Route = createFileRoute('/')({
   component: Welcome,
 })
 
-const enter = { duration: 1.1, ease: [0.16, 1, 0.3, 1] as const }
+// design.md tokens
+const MERCURY = '#5266eb'
+const SERIF = '"Instrument Serif", Georgia, serif'
 
-/** The hero's rotating statements — the same triangles rearrange into each. */
-const HERO_PHRASES = [
-  'Unlock your\nquietest mind.',
-  'Focus. Calm.\nSleep.',
-  'Music, made\nof you.',
-]
+const monoLabel = css({
+  m: '0',
+  fontFamily: '"JetBrains Mono", ui-monospace, monospace',
+  fontSize: '12px',
+  letterSpacing: '0.1em',
+  textTransform: 'uppercase',
+  color: '#c3c3cc',
+})
 
-const signalPill = css({
+const mercuryPill = css({
   display: 'inline-flex',
   alignItems: 'center',
   justifyContent: 'center',
   gap: '2',
-  borderRadius: '6px',
-  background:
-    'linear-gradient(90deg, #cbfffc 0%, #edfffe 26%, #fffdfa 48%, #fad1ff 89%)',
-  color: '#012624',
-  fontWeight: '700',
-  fontSize: 'footnote',
-  letterSpacing: '0.1em',
-  textTransform: 'uppercase',
+  borderRadius: '32px',
+  bg: '#5266eb',
+  color: 'white',
+  fontWeight: '500',
+  fontSize: '15px',
   px: '6',
-  h: '46px',
+  py: '4',
   border: 'none',
   cursor: 'pointer',
   font: 'inherit',
-  transition: 'filter 0.18s ease, transform 0.18s ease',
-  _hover: { filter: 'brightness(1.05) saturate(1.2)' },
-  _active: { transform: 'scale(0.97)' },
+  transition: 'filter 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
+  _hover: { filter: 'brightness(1.12)' },
 })
 
-
-/** The raised surface — kelp card, 16px radius, no shadow (depth-of-water). */
-const kelpCard = css({
-  bg: '#003734',
-  borderRadius: '16px',
-  p: '9',
-})
-
-const eyebrowMint = css({
-  m: '0',
-  fontSize: 'footnote',
+const navLink = css({
+  position: 'relative',
+  fontSize: '13px',
   fontWeight: '500',
-  letterSpacing: '0.16em',
-  textTransform: 'uppercase',
-  color: '#bbc7c6',
+  color: '#c3c3cc',
+  textDecoration: 'none',
+  pb: '1',
+  _after: {
+    content: '""',
+    position: 'absolute',
+    left: '0',
+    bottom: '0',
+    height: '1px',
+    width: '100%',
+    background: '#ededf3',
+    transform: 'scaleX(0)',
+    transformOrigin: 'right',
+    transition: 'transform 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
+  },
+  _hover: { color: '#ededf3', _after: { transform: 'scaleX(1)', transformOrigin: 'left' } },
 })
 
-/** The loading counter. rAF drives the count; a wall-clock timer guarantees
- * dismissal even when the tab is throttled or hidden. */
-function LoadingOverlay({ onDone }: { onDone: () => void }) {
+const bodyCopy = css({
+  m: '0',
+  fontSize: '16px',
+  lineHeight: '1.65',
+  color: '#c3c3cc',
+})
+
+const displayH2 = css({
+  m: '0',
+  fontFamily: '"Instrument Serif", Georgia, serif',
+  fontSize: 'clamp(32px, 4.5vw, 64px)',
+  fontWeight: '400',
+  lineHeight: '1.08',
+  letterSpacing: '-0.01em',
+  color: '#ededf3',
+})
+
+/** The preloader — real progress (fonts + three's loading manager), a masked
+ * wordmark, mono counter, Lead hairline filling Mercury, then a vertical
+ * clip-path wipe. Once per session; reduced motion never sees it. */
+function Preloader({ onDone }: { onDone: () => void }) {
   const [pct, setPct] = useState(0)
+  const [leaving, setLeaving] = useState(false)
   const [gone, setGone] = useState(false)
 
   useEffect(() => {
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    if (
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches ||
+      sessionStorage.getItem('ss_pressed') === '1'
+    ) {
       setGone(true)
       onDone()
       return
     }
+    let assets = 0 // three's loader share
+    let fonts = 0
+    let shown = 0
     let raf = 0
+    let finished = false
     const start = performance.now()
-    const dur = 1300
+    const MIN_MS = 1400
+
+    const prev = THREE.DefaultLoadingManager.onProgress
+    THREE.DefaultLoadingManager.onProgress = (_u, loaded, total) => {
+      assets = total > 0 ? loaded / total : 1
+    }
+    void document.fonts.ready.then(() => {
+      fonts = 1
+    })
+    // If no three assets ever enqueue, don't hold the door.
+    const assetGrace = window.setTimeout(() => {
+      if (assets === 0) assets = 1
+    }, 900)
+
+    const finish = () => {
+      if (finished) return
+      finished = true
+      sessionStorage.setItem('ss_pressed', '1')
+      window.setTimeout(() => {
+        onDone()
+        setLeaving(true)
+        window.setTimeout(() => setGone(true), 850)
+      }, 200)
+    }
+
     const tick = (t: number) => {
-      const p = Math.min(1, (t - start) / dur)
-      setPct(Math.round(p * 100))
-      if (p < 1) raf = requestAnimationFrame(tick)
-      else {
-        onDone() // 100 reached — the page fades in beneath the counter
-        window.setTimeout(() => setGone(true), 450)
+      const real = fonts * 0.4 + assets * 0.6
+      const floor = Math.min(1, (t - start) / MIN_MS) // pacing floor
+      const target = Math.min(real, floor) * 100
+      shown += (target - shown) * 0.12
+      setPct(Math.round(shown))
+      if (shown > 99.2) {
+        setPct(100)
+        finish()
+        return
       }
+      raf = requestAnimationFrame(tick)
     }
     raf = requestAnimationFrame(tick)
-    const fallback = window.setTimeout(() => {
+    // Wall-clock failsafe — never trap anyone behind the curtain.
+    const failsafe = window.setTimeout(() => {
       setPct(100)
-      onDone()
-      setGone(true)
-    }, 2000)
+      finish()
+    }, 5000)
     return () => {
       cancelAnimationFrame(raf)
-      window.clearTimeout(fallback)
+      window.clearTimeout(failsafe)
+      window.clearTimeout(assetGrace)
+      THREE.DefaultLoadingManager.onProgress = prev
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   if (gone) return null
   return (
     <div
       aria-hidden
-      className={css({
-        position: 'fixed',
-        inset: '0',
-        zIndex: '100',
-        bg: '#012624',
-        display: 'flex',
-        alignItems: 'flex-end',
-        justifyContent: 'space-between',
-        p: '8',
-      })}
+      className={css({ position: 'fixed', inset: '0', zIndex: '100', bg: '#171721' })}
+      style={{
+        clipPath: leaving ? 'inset(0 0 100% 0)' : 'inset(0 0 0% 0)',
+        transition: 'clip-path 0.8s cubic-bezier(0.16, 1, 0.3, 1)',
+      }}
     >
-      <span
+      <div
         className={css({
-          fontSize: 'footnote',
-          fontWeight: '600',
-          letterSpacing: '0.24em',
-          textTransform: 'uppercase',
-          color: 'var(--ss-ink-soft)',
+          position: 'absolute',
+          inset: '0',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
         })}
       >
-        SmartSound
+        <span className={css({ display: 'block', overflow: 'hidden' })}>
+          <span
+            className={css({
+              display: 'block',
+              fontSize: 'clamp(40px, 7vw, 96px)',
+              fontWeight: '400',
+              letterSpacing: '-0.01em',
+              color: '#ededf3',
+              animation: 'riseUp 1s cubic-bezier(0.16, 1, 0.3, 1) 0.2s both',
+            })}
+            style={{ fontFamily: SERIF }}
+          >
+            SmartSound
+          </span>
+        </span>
+      </div>
+      <div className={css({ position: 'absolute', bottom: '88px', insetX: '32px', h: '1px', bg: '#70707d55' })}>
+        <div
+          className={css({ h: '100%', bg: '#5266eb', transition: 'width 0.2s ease' })}
+          style={{ width: `${pct}%` }}
+        />
+      </div>
+      <span
+        className={cx(monoLabel, css({ position: 'absolute', bottom: '48px', left: '32px', fontSize: '14px', color: '#ededf3' }))}
+        style={{ fontVariantNumeric: 'tabular-nums' }}
+      >
+        {String(pct).padStart(2, '0')}
       </span>
-      <span
-        className={css({
-          fontFamily: 'display',
-          fontSize: 'clamp(3rem, 9vw, 6rem)',
-          fontWeight: '500',
-          letterSpacing: '-0.03em',
-          lineHeight: '1',
-          color: 'text',
-          fontVariantNumeric: 'tabular-nums',
-        })}
-      >
-        {pct}
+      <span className={cx(monoLabel, css({ position: 'absolute', bottom: '48px', right: '32px' }))}>
+        Cutting today&rsquo;s press…
       </span>
     </div>
   )
 }
 
-/** Bare void navigation — logo left, spaced caps right, one violet pill. */
-function VoidNav() {
+/** Thin nav — serif wordmark, underline-reveal links, one Mercury pill. */
+function Nav() {
   const navigate = useNavigate()
   const playClick = useClickSound()
-  const link = css({
-    display: 'none',
-    md: { display: 'inline' },
-    fontSize: 'caption',
-    fontWeight: '700',
-    letterSpacing: '0.14em',
-    textTransform: 'uppercase',
-    color: 'var(--ss-ink-body)',
-    textDecoration: 'none',
-    px: '3',
-    _hover: { color: 'text' },
-  })
   return (
     <nav
       className={css({
@@ -185,711 +244,499 @@ function VoidNav() {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
-        px: '6',
-        py: '4',
-        background: 'linear-gradient(to bottom, rgba(1, 29, 28, 0.85), transparent)',
+        px: '7',
+        py: '5',
+        background: 'linear-gradient(to bottom, rgba(23, 23, 33, 0.88), transparent)',
       })}
     >
       <a
         href="#top"
-        className={css({
-          display: 'flex',
-          alignItems: 'center',
-          gap: '2.5',
-          fontSize: 'headline',
-          fontWeight: '700',
-          letterSpacing: '-0.01em',
-          color: 'text',
-          textDecoration: 'none',
-        })}
+        className={css({ fontSize: '20px', color: '#ededf3', textDecoration: 'none' })}
+        style={{ fontFamily: SERIF }}
       >
-        <span
-          aria-hidden
-          className={css({ display: 'inline-block', w: '13px', h: '12px' })}
-          style={{
-            background: 'linear-gradient(135deg, #2fd4c4, #fad1ff)',
-            clipPath: 'polygon(50% 0%, 100% 100%, 0% 100%)',
-          }}
-        />
         SmartSound
       </a>
-      <div className={css({ display: 'flex', alignItems: 'center', gap: '2' })}>
-        <a href="#engine" className={link}>Engine</a>
-        <a href="#inside" className={link}>The app</a>
-        <a href="#plans" className={link}>Plans</a>
+      <div className={css({ display: 'none', md: { display: 'flex' }, gap: '6', alignItems: 'center' })}>
+        <a href="#press" className={navLink}>The press</a>
+        <a href="#attune" className={navLink}>Attune</a>
+        <a href="#science" className={navLink}>The science</a>
+        <a href="#pricing" className={navLink}>Pricing</a>
+      </div>
+      <Magnetic>
         <button
+          data-cursor="OPEN"
           onClick={() => {
             playClick('primary')
             void navigate({ to: '/app' })
           }}
-          className={cx(signalPill, css({ h: '38px', px: '5' }))}
+          className={cx(mercuryPill, css({ py: '2.5', px: '5', fontSize: '13px' }))}
         >
           Open the app
         </button>
-      </div>
+      </Magnetic>
     </nav>
   )
 }
 
-/** Section heading — eyebrow + swarm title, revealed on scroll. */
-function SectionHeading({ eyebrow, title }: { eyebrow: string; title: string }) {
-  const reduce = useReducedMotion()
+/** Mono section index label — `01 / THE PRESS`. */
+function SectionIndex({ n, name }: { n: string; name: string }) {
   return (
-    <motion.div
-      initial={reduce ? undefined : { opacity: 0, y: 26 }}
-      whileInView={reduce ? undefined : { opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: '-70px' }}
-      transition={enter}
-      className={css({ textAlign: 'center', mb: '10' })}
-    >
-      <p className={cx(eyebrowMint, css({ mb: '3', textAlign: 'center' }))}>{eyebrow}</p>
-      <TriangleText
-        as="h2"
-        text={title}
-        fontSize={54}
-        fontWeight={620}
-        align="center"
-        height={72}
-        gap={4}
-      />
-    </motion.div>
+    <p className={cx(monoLabel, css({ mb: '8' }))}>
+      {n} / {name}
+    </p>
   )
 }
 
-/** Beat 1 — the hero: headline left, the brain owns the right half. */
-function HeroBeat() {
-  const reduce = useReducedMotion()
+function Hero() {
   const navigate = useNavigate()
   const playClick = useClickSound()
-  const [phrase, setPhrase] = useState(0)
-
-  useEffect(() => {
-    if (reduce) return
-    const id = window.setInterval(() => setPhrase((p) => (p + 1) % HERO_PHRASES.length), 5200)
-    return () => window.clearInterval(id)
-  }, [reduce])
-
-  const reveal = (delay: number) =>
-    reduce
-      ? {}
-      : {
-          initial: { opacity: 0, y: 18 },
-          animate: { opacity: 1, y: 0 },
-          transition: { ...enter, delay },
-        }
-
   return (
     <section
       className={css({
         position: 'relative',
         minHeight: '100vh',
         display: 'flex',
-        alignItems: 'center',
-        px: '6',
-        sm: { px: '10' },
+        flexDirection: 'column',
+        justifyContent: 'center',
+        px: '7',
+        sm: { px: '12' },
       })}
     >
-      {/* The bioluminescent glow — a deep radial teal light source. */}
+      {/* The Calm layer — a Mercury-tinted glow drifting like slow water. */}
       <div
         aria-hidden
         className={css({
           position: 'absolute',
-          inset: '0',
+          inset: '-20%',
           pointerEvents: 'none',
           background:
-            'radial-gradient(60% 55% at 38% 62%, rgba(0, 130, 124, 0.55) 0%, rgba(0, 130, 124, 0.18) 45%, transparent 75%)',
+            'radial-gradient(45% 38% at 60% 45%, rgba(82, 102, 235, 0.06) 0%, transparent 70%)',
+          animation: 'glowDrift 24s ease-in-out infinite',
+          '@media (prefers-reduced-motion: reduce)': { animation: 'none' },
         })}
       />
-      <div className={css({ maxW: '640px', pt: '20', position: 'relative' })}>
-        <TriangleText
+      <div className={css({ position: 'relative', maxW: '1100px' })}>
+        <p className={cx(monoLabel, css({ mb: '6' }))}>Pressed at night · played by your pulse</p>
+        <SplitReveal
           as="h1"
-          text={HERO_PHRASES[phrase]}
-          fontSize={92}
-          fontWeight={650}
-          height={220}
-          gap={4}
-        />
-        <motion.p {...reveal(0.5)} className={cx(eyebrowMint, css({ mt: '2' }))}>
-          Stop chasing calm. Start hearing it.
-        </motion.p>
-        <motion.p
-          {...reveal(0.65)}
           className={css({
             m: '0',
-            mt: '4',
-            maxW: '430px',
-            fontSize: 'subhead',
-            lineHeight: '1.7',
-            color: 'var(--ss-ink-body)',
+            fontFamily: '"Instrument Serif", Georgia, serif',
+            fontSize: 'clamp(44px, 7vw, 110px)',
+            fontWeight: '400',
+            lineHeight: '1.05',
+            letterSpacing: '-0.01em',
+            color: '#ededf3',
           })}
         >
-          Plug into your own signal. SmartSound reads your pulse from your camera and composes
-          a living soundscape that steers you into focus, calm, or sleep — on your device,
-          never uploaded.
-        </motion.p>
-        <motion.div {...reveal(0.8)} className={css({ mt: '7' })}>
-          <button
-            onClick={() => {
-              playClick('primary')
-              void navigate({ to: '/onboarding/$step', params: { step: 'welcome' } })
-            }}
-            className={signalPill}
-          >
-            Start listening <span aria-hidden>↗</span>
-          </button>
-        </motion.div>
+          Stop chasing calm. Start hearing it.
+        </SplitReveal>
+        <FadeUp className={css({ mt: '7', maxW: '460px' })}>
+          <p className={cx(bodyCopy, css({ fontSize: '17px' }))}>
+            SmartSound reads your pulse from your camera and presses a living record for the
+            state you asked for — focus, calm, or sleep. On your device. Never uploaded.
+          </p>
+          <div className={css({ mt: '8', display: 'flex', alignItems: 'center', gap: '5' })}>
+            <Magnetic>
+              <button
+                data-cursor="PLAY"
+                onClick={() => {
+                  playClick('primary')
+                  void navigate({ to: '/onboarding/$step', params: { step: 'welcome' } })
+                }}
+                className={mercuryPill}
+              >
+                Start listening
+              </button>
+            </Magnetic>
+            <span className={monoLabel}>Free · no account</span>
+          </div>
+        </FadeUp>
       </div>
+      {/* Scroll cue — 1 Hz. */}
+      <span
+        aria-hidden
+        className={cx(
+          monoLabel,
+          css({
+            position: 'absolute',
+            bottom: '32px',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            animation: 'cuePulse 1s ease-in-out infinite',
+            '@media (prefers-reduced-motion: reduce)': { animation: 'none' },
+          }),
+        )}
+      >
+        Scroll ↓
+      </span>
     </section>
   )
 }
 
-/** Beat 2 — narration: the brain spreads into terrain while two centered
- * statements carry the story. */
-function NarrationBeat() {
-  const ref = useRef<HTMLElement>(null)
-  const { scrollYProgress } = useScroll({ target: ref, offset: ['start end', 'end start'] })
-  const oA = useTransform(scrollYProgress, [0.22, 0.32, 0.45, 0.55], [0, 1, 1, 0])
-  const oB = useTransform(scrollYProgress, [0.55, 0.65, 0.8, 0.9], [0, 1, 1, 0])
+const SLEEVES = [
+  {
+    band: 'BETA · ~15 Hz',
+    tint: '#6f7ff0',
+    title: 'Deep Focus',
+    body: 'Steady, lyric-free momentum cut against your live pulse — a side that holds as long as the work does.',
+  },
+  {
+    band: 'ALPHA · ~10 Hz',
+    tint: '#5fb8c9',
+    title: 'Open Calm',
+    body: 'Soft pads and slow air that ease a racing afternoon back down to baseline.',
+  },
+  {
+    band: 'DELTA · ~2.5 Hz',
+    tint: '#4a5a8a',
+    title: 'First Sleep',
+    body: 'A pressing that dims with you — slower, darker, quieter as your body lets go.',
+  },
+]
 
-  const statement = css({
-    position: 'absolute',
-    insetX: '0',
-    textAlign: 'center',
-    px: '6',
-    mx: 'auto',
-    maxW: '820px',
-    fontFamily: 'display',
-    fontSize: 'clamp(1.5rem, 3.4vw, 2.4rem)',
-    fontWeight: '500',
-    letterSpacing: '-0.02em',
-    lineHeight: '1.25',
-    background: 'linear-gradient(90deg, #cbfffc 0%, #edfffe 40%, #63e8da 100%)',
-    backgroundClip: 'text',
-    color: 'transparent',
-  })
-
+function ThePress() {
   return (
-    <section id="engine" ref={ref} className={css({ position: 'relative', height: '230vh' })}>
-      <div
+    <section id="press" className={css({ position: 'relative', px: '7', py: '32', maxW: '1100px', mx: 'auto' })}>
+      <SectionIndex n="01" name="The press" />
+      <SplitReveal as="h2" className={cx(displayH2, css({ maxW: '760px' }))}>
+        Every session is a record, pressed for tonight only.
+      </SplitReveal>
+      <FadeUp
         className={css({
-          position: 'sticky',
-          top: '0',
-          height: '100vh',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
+          mt: '12',
+          display: 'grid',
+          gap: '6',
+          md: { gridTemplateColumns: 'repeat(3, 1fr)' },
         })}
       >
-        <motion.p style={{ opacity: oA, WebkitBackgroundClip: 'text' }} className={statement}>
-          This is your mind under noise. A day shattered into a thousand pings, tabs, and
-          half-finished thoughts.
-        </motion.p>
-        <motion.p style={{ opacity: oB, WebkitBackgroundClip: 'text' }} className={statement}>
-          Attention doesn&rsquo;t come back on its own. The right sound, tuned to your pulse,
-          brings it back.
-        </motion.p>
-      </div>
-    </section>
-  )
-}
-
-/** Beat 3 — the swarm rests as weightless dust. */
-function DustBeat() {
-  return <section aria-hidden className={css({ height: '80vh' })} />
-}
-
-/** Beat 4 — the lightbulb, copy on the right. */
-function BulbBeat() {
-  const reduce = useReducedMotion()
-  return (
-    <section className={css({ position: 'relative', height: '170vh' })}>
-      <div
-        className={css({
-          position: 'sticky',
-          top: '0',
-          height: '100vh',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'flex-end',
-          px: '6',
-          sm: { px: '10' },
-        })}
-      >
-        <motion.div
-          initial={reduce ? undefined : { opacity: 0, y: 30 }}
-          whileInView={reduce ? undefined : { opacity: 1, y: 0 }}
-          viewport={{ once: true, margin: '-120px' }}
-          transition={enter}
-          className={css({ maxW: '420px' })}
-        >
-          <TriangleText as="h2" text={'Spark quieter\nmoments.'} fontSize={56} fontWeight={630} height={140} gap={4} />
-          <p
+        {SLEEVES.map((s) => (
+          <div
+            key={s.title}
+            data-cursor="PLAY"
             className={css({
-              m: '0',
-              mt: '4',
-              fontSize: 'subhead',
-              lineHeight: '1.7',
-              color: 'var(--ss-ink-body)',
+              bg: '#1e1e2a',
+              borderRadius: '4px',
+              p: '7',
+              overflow: 'hidden',
+              transition: 'background 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
+              _hover: { bg: '#262633' },
             })}
           >
-            SmartSound is your real-time engine for changing state. It watches the micro-flush
-            of your skin for your heartbeat, then answers with sound — tempo, density and
-            brightness easing you toward where you asked to go.
-          </p>
-          <p
-            className={css({
-              m: '0',
-              mt: '3',
-              fontSize: 'subhead',
-              lineHeight: '1.7',
-              color: 'var(--ss-ink-body)',
-            })}
-          >
-            No playlists, no loops, no guesswork. Just ask it for focus, calm, or sleep, and
-            let the loop do the steering.
-          </p>
-        </motion.div>
-      </div>
+            {/* The record peeking from the sleeve. */}
+            <div aria-hidden className={css({ position: 'relative', h: '120px', mb: '6' })}>
+              <div
+                className={css({
+                  position: 'absolute',
+                  top: '12px',
+                  left: '50%',
+                  transform: 'translateX(-50%)',
+                  w: '180px',
+                  h: '180px',
+                  borderRadius: 'full',
+                  bg: '#101018',
+                  border: '1px solid #70707d33',
+                })}
+                style={{
+                  backgroundImage:
+                    'repeating-radial-gradient(circle at 50% 50%, transparent 0 3px, rgba(112, 112, 125, 0.14) 3px 4px)',
+                }}
+              >
+                <span
+                  className={css({
+                    position: 'absolute',
+                    top: '50%',
+                    left: '50%',
+                    transform: 'translate(-50%, -50%)',
+                    w: '56px',
+                    h: '56px',
+                    borderRadius: 'full',
+                  })}
+                  style={{ background: s.tint }}
+                />
+              </div>
+            </div>
+            <p className={cx(monoLabel, css({ fontSize: '10px' }))} style={{ color: s.tint }}>
+              {s.band}
+            </p>
+            <h3 className={css({ m: '0', mt: '2', fontSize: '20px', fontWeight: '600', color: '#ededf3' })}>
+              {s.title}
+            </h3>
+            <p className={cx(bodyCopy, css({ mt: '2', fontSize: '15px' }))}>{s.body}</p>
+          </div>
+        ))}
+      </FadeUp>
     </section>
   )
 }
 
-/** Beat 5 — the planet, headline anchored bottom-left. */
-function GlobeBeat() {
-  const reduce = useReducedMotion()
+/** The pulse trace — a hairline polyline in Alpha tint that draws itself on
+ * entry, mono BPM readout beneath. */
+function PulseTrace() {
+  const ref = useRef<SVGPathElement>(null)
+  useEffect(() => {
+    const path = ref.current
+    if (!path) return
+    const len = path.getTotalLength()
+    path.style.strokeDasharray = `${len}`
+    path.style.strokeDashoffset = `${len}`
+    const io = new IntersectionObserver(
+      ([e]) => {
+        if (!e.isIntersecting) return
+        io.disconnect()
+        path.style.transition = 'stroke-dashoffset 2.2s cubic-bezier(0.16, 1, 0.3, 1)'
+        path.style.strokeDashoffset = '0'
+      },
+      { rootMargin: '-80px' },
+    )
+    io.observe(path)
+    return () => io.disconnect()
+  }, [])
   return (
-    <section className={css({ position: 'relative', height: '170vh' })}>
-      <div
-        className={css({
-          position: 'sticky',
-          top: '0',
-          height: '100vh',
-          display: 'flex',
-          alignItems: 'flex-end',
-          px: '6',
-          pb: '16',
-          sm: { px: '10' },
-        })}
-      >
-        <motion.div
-          initial={reduce ? undefined : { opacity: 0, y: 30 }}
-          whileInView={reduce ? undefined : { opacity: 1, y: 0 }}
-          viewport={{ once: true, margin: '-120px' }}
-          transition={enter}
-          className={css({ maxW: '460px' })}
-        >
-          <TriangleText as="h2" text={'Calm, for\nevery mind.'} fontSize={56} fontWeight={630} height={140} gap={4} />
-          <p
-            className={css({
-              m: '0',
-              mt: '4',
-              fontSize: 'subhead',
-              lineHeight: '1.7',
-              color: 'var(--ss-ink-body)',
-            })}
-          >
-            Our mission is to make deep rest and deep work ordinary — not a retreat, a
-            subscription of promises, or a lucky day, but something your own body can be
-            steered toward, anywhere, in two minutes.
-          </p>
-        </motion.div>
-      </div>
-    </section>
+    <svg viewBox="0 0 600 80" className={css({ w: '100%', maxW: '520px', h: 'auto' })} aria-hidden>
+      <path
+        ref={ref}
+        d="M0 46 H150 L166 40 L180 12 L194 66 L208 42 H300 L316 38 L330 10 L344 68 L358 44 H470 L486 40 L500 14 L514 64 L528 44 H600"
+        fill="none"
+        stroke="#5fb8c9"
+        strokeWidth="1.4"
+      />
+    </svg>
   )
 }
 
-
-/** Beat 5.5 — the swarm's pixels assemble into the phone, and the real
- * player fades in over them: pixels becoming product. */
-function PhoneBeat() {
-  const reduce = useReducedMotion()
+function Attune() {
   return (
-    <section className={css({ position: 'relative', height: '170vh' })}>
-      <div
-        className={css({
-          position: 'sticky',
-          top: '0',
-          height: '100vh',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: '10',
-          px: '6',
-          flexWrap: 'wrap',
-        })}
-      >
-        <motion.div
-          initial={reduce ? undefined : { opacity: 0, scale: 0.94 }}
-          whileInView={reduce ? undefined : { opacity: 1, scale: 1 }}
-          viewport={{ once: true, amount: 0.55 }}
-          transition={{ duration: 1.4, ease: [0.16, 1, 0.3, 1], delay: 0.35 }}
-        >
+    <section id="attune" className={css({ position: 'relative', px: '7', py: '32', maxW: '1100px', mx: 'auto' })}>
+      <SectionIndex n="02" name="Attune" />
+      <div className={css({ display: 'flex', gap: '12', alignItems: 'center', flexWrap: 'wrap' })}>
+        <div className={css({ flex: '1', minW: '300px' })}>
+          <SplitReveal as="h2" className={displayH2}>
+            The stylus is your heartbeat.
+          </SplitReveal>
+          <FadeUp className={css({ mt: '7', maxW: '440px' })}>
+            <p className={bodyCopy}>
+              Attune watches the micro-flush of your skin through the camera — remote
+              photoplethysmography — and lets your pulse steer tempo, density and brightness.
+              Frames are processed on your device and never leave it.
+            </p>
+            <div className={css({ mt: '8' })}>
+              <PulseTrace />
+              <p className={cx(monoLabel, css({ mt: '3' }))}>62 BPM · live · on-device</p>
+            </div>
+          </FadeUp>
+        </div>
+        <FadeUp delay={0.3}>
           <PhoneShowcase />
-        </motion.div>
-        <motion.div
-          initial={reduce ? undefined : { opacity: 0, y: 30 }}
-          whileInView={reduce ? undefined : { opacity: 1, y: 0 }}
-          viewport={{ once: true, margin: '-120px' }}
-          transition={enter}
-          className={css({ maxW: '360px' })}
-        >
-          <TriangleText as="h2" text={'Pixels become\nthe player.'} fontSize={52} fontWeight={630} height={132} gap={4} />
-          <p
-            className={css({
-              m: '0',
-              mt: '4',
-              fontSize: 'subhead',
-              lineHeight: '1.7',
-              color: 'var(--ss-ink-body)',
-            })}
-          >
-            The same swarm that carried the story assembles into the phone in your pocket —
-            the session title, the triangular wavelength breathing with the engine, and one
-            perfectly centered play.
-          </p>
-        </motion.div>
+        </FadeUp>
       </div>
     </section>
   )
 }
 
-/** Beat 6 — the product, shown honestly. */
-function InsideBeat() {
+const NUMBERS = [
+  { v: '4', label: 'brainwave bands' },
+  { v: '15 Hz → 2.5 Hz', label: 'Beta down to Delta' },
+  { v: '0', label: 'data leaves your device' },
+  { v: '20 min', label: 'free, daily' },
+]
+
+function TheScience() {
   return (
-    <section
-      id="inside"
-      className={css({ position: 'relative', px: '5', pt: '20', pb: '10', maxW: '1080px', mx: 'auto' })}
-    >
-      <SectionHeading eyebrow="Inside the app" title="Native schematics, all the way down" />
-      <p
+    <section id="science" className={css({ position: 'relative', px: '7', py: '32', maxW: '1100px', mx: 'auto' })}>
+      <SectionIndex n="03" name="The science" />
+      <SplitReveal as="h2" className={cx(displayH2, css({ maxW: '820px' }))}>
+        Measured first. Made audible second.
+      </SplitReveal>
+      <FadeUp className={css({ mt: '7', maxW: '520px' })}>
+        <p className={bodyCopy}>
+          The engine cites the rPPG literature and general auditory-entrainment findings — and
+          claims nothing else. Attune shows only what it measured. SmartSound is not a medical
+          device.
+        </p>
+      </FadeUp>
+      <FadeUp
+        delay={0.25}
         className={css({
-          m: '0',
-          mt: '-6',
-          mb: '10',
-          textAlign: 'center',
-          fontSize: 'subhead',
-          lineHeight: '1.65',
-          color: 'var(--ss-ink-body)',
-          maxW: '560px',
-          mx: 'auto',
+          mt: '14',
+          display: 'grid',
+          gap: '10',
+          gridTemplateColumns: 'repeat(2, 1fr)',
+          md: { gridTemplateColumns: 'repeat(4, 1fr)' },
         })}
       >
-        System type, abyss-teal surfaces, and one signature material — Liquid Glass — on the
-        control layer. Every panel below is a screen the app actually ships.
-      </p>
-      <AppShowcase />
+        {NUMBERS.map((n) => (
+          <div key={n.label}>
+            <CountUp
+              value={n.v}
+              className={css({
+                display: 'block',
+                fontFamily: '"JetBrains Mono", ui-monospace, monospace',
+                fontSize: 'clamp(26px, 3.2vw, 44px)',
+                color: '#ededf3',
+                letterSpacing: '-0.02em',
+              })}
+            />
+            <span className={cx(monoLabel, css({ mt: '2', display: 'block', fontSize: '11px' }))}>
+              {n.label}
+            </span>
+          </div>
+        ))}
+      </FadeUp>
     </section>
   )
 }
 
 const PLANS = [
-  {
-    name: 'Free',
-    price: '$0',
-    per: 'forever',
-    lines: ['Explore every state', '20 minutes a day', 'No account needed'],
-  },
-  {
-    name: 'Pro',
-    price: '$9.99',
-    per: '/ month',
-    lines: ['Unlimited listening', 'Full Attune biofeedback', 'All scenes and sessions'],
-  },
-  {
-    name: 'Studio',
-    price: '$19.99',
-    per: '/ month',
-    lines: ['Everything in Pro', 'Developer sound controls', 'Early features first'],
-  },
+  { name: 'Free', price: '$0', per: 'forever', lines: ['Every state', '20 minutes a day', 'No account'] },
+  { name: 'Pro', price: '$9.99', per: '/ month', lines: ['Unlimited listening', 'Full Attune', 'All scenes'] },
+  { name: 'Studio', price: '$19.99', per: '/ month', lines: ['Everything in Pro', 'Sound controls', 'Early features'] },
 ]
 
-
-const STATS = [
-  { n: '0', label: 'Loops — every second is generated live' },
-  { n: '100%', label: 'On-device — your camera never uploads' },
-  { n: '2 min', label: 'From landing to your first session' },
-]
-
-/** Beat 6.5 — instrument-panel statistics, glowing against the abyss. */
-function StatsBeat() {
-  const reduce = useReducedMotion()
-  return (
-    <section className={css({ position: 'relative', px: '5', pt: '24', maxW: '1000px', mx: 'auto' })}>
-      <div className={css({ display: 'grid', gap: '10', md: { gridTemplateColumns: 'repeat(3, 1fr)' }, textAlign: 'center' })}>
-        {STATS.map((st) => (
-          <motion.div
-            key={st.n}
-            initial={reduce ? undefined : { opacity: 0, y: 24 }}
-            whileInView={reduce ? undefined : { opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: '-80px' }}
-            transition={enter}
-          >
-            <p
-              className={css({
-                m: '0',
-                fontFamily: 'display',
-                fontSize: 'clamp(3rem, 6.5vw, 5.4rem)',
-                fontWeight: '500',
-                letterSpacing: '-0.045em',
-                lineHeight: '1',
-                color: '#fde9ff',
-              })}
-            >
-              {st.n}
-            </p>
-            <p
-              className={css({
-                m: '0',
-                mt: '3',
-                fontSize: 'footnote',
-                fontWeight: '500',
-                letterSpacing: '0.055em',
-                textTransform: 'uppercase',
-                color: '#edfffe',
-              })}
-            >
-              {st.label}
-            </p>
-          </motion.div>
-        ))}
-      </div>
-    </section>
-  )
-}
-
-/** Beat 7 — plans: the real tiers, real prices, no dark patterns. */
-function PlansBeat() {
+function Pricing() {
   const navigate = useNavigate()
   const playClick = useClickSound()
   return (
-    <section
-      id="plans"
-      className={css({ position: 'relative', px: '5', pt: '20', maxW: '1000px', mx: 'auto' })}
-    >
-      <SectionHeading eyebrow="Plans" title="Start free, stay honest" />
-      <div className={css({ display: 'grid', gap: '5', md: { gridTemplateColumns: 'repeat(3, 1fr)' } })}>
+    <section id="pricing" className={css({ position: 'relative', px: '7', py: '32', maxW: '1100px', mx: 'auto' })}>
+      <SectionIndex n="04" name="Pricing" />
+      <SplitReveal as="h2" className={displayH2}>
+        Start free. Stay honest.
+      </SplitReveal>
+      <FadeUp className={css({ mt: '12', display: 'grid', gap: '6', md: { gridTemplateColumns: 'repeat(3, 1fr)' } })}>
         {PLANS.map((p, i) => (
           <div
             key={p.name}
-            className={cx(kelpCard, css({ position: 'relative' }))}
-            style={i === 1 ? { background: '#01514b' } : undefined}
+            className={css({ bg: '#1e1e2a', borderRadius: '4px', p: '7' })}
+            style={i === 1 ? { outline: `1px solid ${MERCURY}66` } : undefined}
           >
-            <p className={eyebrowMint}>{p.name}</p>
-            <p className={css({ m: '0', mt: '2', color: 'text' })}>
-              <span className={css({ fontFamily: 'display', fontSize: 'largeTitle', fontWeight: '600' })}>
+            <p className={monoLabel}>{p.name}</p>
+            <p className={css({ m: '0', mt: '3', color: '#ededf3' })}>
+              <span className={css({ fontSize: '40px' })} style={{ fontFamily: SERIF }}>
                 {p.price}
               </span>{' '}
-              <span className={css({ fontSize: 'footnote', color: 'var(--ss-ink-soft)' })}>{p.per}</span>
+              <span className={cx(monoLabel, css({ display: 'inline' }))}>{p.per}</span>
             </p>
             <ul
               className={css({
                 m: '0',
-                mt: '4',
+                mt: '5',
                 p: '0',
                 listStyle: 'none',
                 display: 'flex',
                 flexDirection: 'column',
                 gap: '2',
+                fontSize: '15px',
+                color: '#c3c3cc',
               })}
             >
               {p.lines.map((l) => (
-                <li
-                  key={l}
-                  className={css({
-                    fontSize: 'subhead',
-                    color: 'var(--ss-ink-body)',
-                    display: 'flex',
-                    gap: '2',
-                    alignItems: 'baseline',
-                  })}
-                >
-                  <span
-                    aria-hidden
-                    className={css({ display: 'inline-block', w: '7px', h: '6px', flexShrink: '0' })}
-                    style={{
-                      background: 'linear-gradient(135deg, #2fd4c4, #fad1ff)',
-                      clipPath: 'polygon(50% 0%, 100% 100%, 0% 100%)',
-                    }}
-                  />
-                  {l}
-                </li>
+                <li key={l}>— {l}</li>
               ))}
             </ul>
-            <span
-              aria-hidden
-              className={css({
-                position: 'absolute',
-                top: '5',
-                right: '5',
-                w: '32px',
-                h: '32px',
-                borderRadius: '6px',
-                bg: 'rgba(3, 81, 75, 0.5)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: 'white',
-                fontSize: 'footnote',
-              })}
-            >
-              ↗
-            </span>
           </div>
         ))}
-      </div>
-      <div className={css({ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '3', mt: '8' })}>
-        <button
-          onClick={() => {
-            playClick('primary')
-            void navigate({ to: '/onboarding/$step', params: { step: 'welcome' } })
-          }}
-          className={signalPill}
+      </FadeUp>
+      <FadeUp delay={0.2} className={css({ mt: '10', display: 'flex', alignItems: 'center', gap: '5' })}>
+        <Magnetic>
+          <button
+            data-cursor="PLAY"
+            onClick={() => {
+              playClick('primary')
+              void navigate({ to: '/onboarding/$step', params: { step: 'welcome' } })
+            }}
+            className={mercuryPill}
+          >
+            Start free
+          </button>
+        </Magnetic>
+        <span className={monoLabel}>Real prices · cancel anytime</span>
+      </FadeUp>
+    </section>
+  )
+}
+
+function Footer() {
+  return (
+    <footer className={css({ position: 'relative', bg: '#14141d', pt: '24', pb: '10', px: '7' })}>
+      <div className={css({ maxW: '1100px', mx: 'auto' })}>
+        <p
+          className={css({
+            m: '0',
+            fontSize: 'clamp(64px, 12vw, 190px)',
+            fontWeight: '400',
+            lineHeight: '1',
+            letterSpacing: '-0.02em',
+            color: '#ededf3',
+          })}
+          style={{ fontFamily: SERIF }}
         >
-          Start free <span aria-hidden>↗</span>
-        </button>
-        <p className={css({ m: '0', fontSize: 'caption', color: 'var(--ss-ink-soft)' })}>
-          Prices as shown in-app · annual saves more · cancel anytime
+          SmartSound
         </p>
-      </div>
-    </section>
-  )
-}
-
-/** Beat 8 — the closing statement over the ribbon, then a one-row footer. */
-function ClosingBeat() {
-  const navigate = useNavigate()
-  const playClick = useClickSound()
-  return (
-    <section
-      className={css({
-        position: 'relative',
-        minHeight: '96vh',
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        textAlign: 'center',
-        px: '5',
-        gap: '6',
-      })}
-    >
-      <TriangleText
-        as="h2"
-        text={'Your body has the answer.\nAsk SmartSound to play it.'}
-        fontSize={58}
-        fontWeight={630}
-        align="center"
-        height={150}
-        gap={4}
-        className={css({ w: '100%', maxW: '880px' })}
-      />
-      <button
-        onClick={() => {
-          playClick('primary')
-          void navigate({ to: '/onboarding/$step', params: { step: 'welcome' } })
-        }}
-        className={signalPill}
-      >
-        Start listening
-      </button>
-      <p className={css({ m: '0', fontSize: 'caption', color: 'var(--ss-ink-soft)' })}>
-        Free to explore · no account · the camera stays on your device
-      </p>
-    </section>
-  )
-}
-
-function FooterRow() {
-  const a = css({
-    fontSize: 'caption',
-    fontWeight: '600',
-    letterSpacing: '0.1em',
-    textTransform: 'uppercase',
-    color: 'var(--ss-ink-body)',
-    textDecoration: 'none',
-    px: '2.5',
-    _hover: { color: 'text' },
-  })
-  return (
-    <footer
-      className={css({
-        position: 'relative',
-        bg: '#011d1c',
-        display: 'flex',
-        flexWrap: 'wrap',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        gap: '4',
-        px: '6',
-        py: '16',
-        borderTop: '1px solid rgba(255,255,255,0.06)',
-      })}
-    >
-      <p className={css({ m: '0', fontSize: 'caption', color: 'var(--ss-ink-soft)' })}>
-        © 2026 SmartSound. Not a medical device.
-      </p>
-      <div>
-        <a className={a} href="#engine">Engine</a>
-        <a className={a} href="#inside">The app</a>
-        <a className={a} href="#plans">Plans</a>
-        <a className={a} href="#top">Top</a>
+        <div
+          className={css({
+            mt: '14',
+            display: 'grid',
+            gap: '8',
+            pb: '12',
+            borderBottom: '1px solid #70707d33',
+            sm: { gridTemplateColumns: 'repeat(3, 1fr)' },
+          })}
+        >
+          <div className={css({ display: 'flex', flexDirection: 'column', gap: '2.5', alignItems: 'flex-start' })}>
+            <a href="#press" className={navLink}>The press</a>
+            <a href="#attune" className={navLink}>Attune</a>
+          </div>
+          <div className={css({ display: 'flex', flexDirection: 'column', gap: '2.5', alignItems: 'flex-start' })}>
+            <a href="#science" className={navLink}>The science</a>
+            <a href="#pricing" className={navLink}>Pricing</a>
+          </div>
+          <div className={css({ display: 'flex', flexDirection: 'column', gap: '2.5', alignItems: 'flex-start' })}>
+            <a href="#top" className={navLink}>Top</a>
+          </div>
+        </div>
+        <div className={css({ mt: '6', display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', gap: '4' })}>
+          <span className={monoLabel}>Pressed at night · 2026</span>
+          <span className={monoLabel}>The camera stays on your device. Not a medical device.</span>
+        </div>
       </div>
     </footer>
   )
 }
 
 function Welcome() {
-  // The screen-glide scroll feel — wheel input lerps the real scroll position.
-  useSmoothScroll()
-  // The page fades in only once the counter reaches 100.
   const [ready, setReady] = useState(false)
-
-  // One swarm, one story: overall page progress drives the shape timeline.
   const progressRef = useRef(0)
-  const { scrollYProgress } = useScroll()
-  useMotionValueEvent(scrollYProgress, 'change', (v) => {
-    progressRef.current = v
+  useLenis((p) => {
+    progressRef.current = p
   })
 
   return (
-    <div
-      id="top"
-      className={cx('ss-scene-dark', css({ position: 'relative', bg: '#012624', color: 'text' }))}
-    >
-      <LoadingOverlay onDone={() => setReady(true)} />
-      <VoidNav />
+    <div id="top" className={css({ position: 'relative', bg: '#171721', color: '#ededf3' })}>
+      <Preloader onDone={() => setReady(true)} />
+      <CursorDot />
+      <Nav />
 
-      {/* THE canvas — fixed behind everything; scroll morphs it through
-          brain → terrain → dust (held) → bulb → globe (held) → network →
-          ribbon, with loner triangles drifting throughout. */}
-      <TriangleConstellation
-        shapes={['brain', 'dome', 'dust', 'bulb', 'bulb', 'globe', 'phone', 'phone', 'network', 'ribbon']}
-        mode="scroll"
-        progressRef={progressRef}
-        rotate="sway"
-        count={6400}
-        size={0.075}
-        ambient={110}
-        stageOffsets={{ brain: 1.7 }}
-        className={css({ position: 'fixed', inset: '0', zIndex: '0', transition: 'opacity 1.1s ease' })}
-        style={{ opacity: ready ? 1 : 0 }}
-      />
+      {/* The outlined swarm — a fixed continuous companion behind everything. */}
+      <div className={css({ transition: 'opacity 1s ease' })} style={{ opacity: ready ? 1 : 0 }}>
+        <Suspense fallback={null}>
+          <WireSwarm progressRef={progressRef} />
+        </Suspense>
+      </div>
 
       <div
-        className={css({ position: 'relative', zIndex: '1', transition: 'opacity 1.1s ease, transform 1.1s cubic-bezier(0.16, 1, 0.3, 1)' })}
-        style={{ opacity: ready ? 1 : 0, transform: ready ? 'none' : 'translateY(18px)' }}
+        className={css({ position: 'relative', zIndex: '1', transition: 'opacity 0.9s ease' })}
+        style={{ opacity: ready ? 1 : 0 }}
       >
-        <HeroBeat />
-        <NarrationBeat />
-        <DustBeat />
-        <BulbBeat />
-        <GlobeBeat />
-        <PhoneBeat />
-        <InsideBeat />
-        <StatsBeat />
-        <PlansBeat />
-        <ClosingBeat />
-        <FooterRow />
+        <Hero />
+        <Marquee
+          className={css({ fontStyle: 'italic', fontSize: '22px', color: '#70707d99', fontFamily: '"Instrument Serif", Georgia, serif' })}
+          text="BETA · ~15 Hz — ALPHA · ~10 Hz — THETA · ~6 Hz — DELTA · ~2.5 Hz — "
+        />
+        <ThePress />
+        <Attune />
+        <TheScience />
+        <Pricing />
+        <Footer />
       </div>
     </div>
   )

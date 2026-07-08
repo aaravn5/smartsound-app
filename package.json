@@ -11,7 +11,8 @@
     "typecheck": "panda codegen && tsr generate && tsc -b",
     "emails": "tsx --tsconfig tsconfig.app.json scripts/render-emails.tsx",
     "preview": "vite preview",
-    "contrast:audit": "node scripts/contrast-audit.mjs"
+    "contrast:audit": "node scripts/contrast-audit.mjs",
+    "make:assets": "blender -b -P tools/blender/make_tetra.py -- --out public/assets/3d/ && blender -b -P tools/blender/bake_env.py -- --out public/assets/3d/ && blender -b -P tools/blender/make_record.py -- --out public/assets/3d/ && blender -b -P tools/blender/render_og.py -- --out public/ --name og-home && ffmpeg -v error -y -i public/assets/3d/record-grooves.png -c:v libwebp -q:v 80 public/assets/3d/record-grooves.webp && rm -f public/assets/3d/record-grooves.png && test -s public/assets/3d/tetra-wire-lo.glb && test -s public/assets/3d/studio-night.hdr && test -s public/assets/3d/record.glb"
   },
   "dependencies": {
     "@radix-ui/react-slider": "^1.4.2",
@@ -23,6 +24,8 @@
     "@react-three/fiber": "^8.18.0",
     "@react-three/postprocessing": "^2.19.1",
     "@tanstack/react-router": "^1.58.3",
+    "gsap": "^3.15.0",
+    "lenis": "^1.3.25",
     "motion": "^11.11.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",

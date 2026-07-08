@@ -112,7 +112,7 @@ function AppShell() {
         height: '100dvh',
         overflow: 'hidden',
         color: 'text',
-        bg: '#012624',
+        bg: '#171721',
       })}
       style={
         {
