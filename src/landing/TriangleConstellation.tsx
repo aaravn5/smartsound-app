@@ -37,7 +37,7 @@ export type ShapeName =
   | 'ribbon'
   | 'phone'
 
-const HOVER_COLOR = new THREE.Color('#fad1ff')
+const DEFAULT_HOVER = '#fad1ff'
 const HOVER_RADIUS = 1.45
 
 // The SmartSound spectrum — its own signal identity (not the reference's
@@ -455,6 +455,8 @@ export interface TriangleConstellationProps {
   pulseTimeline?: number[]
   /** Award choreography: scroll-scrubbed rotation/drift/dolly + idle drift + pointer parallax. */
   choreo?: boolean
+  /** Pointer warmth color (the rationed accent). */
+  hoverColor?: string
 }
 
 function Cloud({
@@ -469,6 +471,7 @@ function Cloud({
   tintTimeline,
   pulseTimeline,
   choreo,
+  hoverColor,
   count,
   size,
   holdSeconds,
@@ -495,6 +498,7 @@ function Cloud({
   tintTimeline?: string[]
   pulseTimeline?: number[]
   choreo?: boolean
+  hoverColor?: string
 }) {
   const mesh = useRef<THREE.InstancedMesh>(null)
   const dummy = useMemo(() => new THREE.Object3D(), [])
@@ -544,6 +548,7 @@ function Cloud({
   const edgeMat = useRef<THREE.MeshStandardMaterial>(null)
   const parallax = useRef({ x: 0, y: 0 })
   const tints = useMemo(() => (tintTimeline ?? []).map((c) => new THREE.Color(c)), [tintTimeline])
+  const warm = useMemo(() => new THREE.Color(hoverColor ?? DEFAULT_HOVER), [hoverColor])
   const tintNow = useMemo(() => new THREE.Color('#ffffff'), [])
 
   useFrame((st, dt) => {
@@ -654,9 +659,9 @@ function Cloud({
       offsets[i3] *= settle
       offsets[i3 + 1] *= settle
       offsets[i3 + 2] *= settle
-      colors[i3] += (base[i3] + (HOVER_COLOR.r - base[i3]) * f - colors[i3]) * k
-      colors[i3 + 1] += (base[i3 + 1] + (HOVER_COLOR.g - base[i3 + 1]) * f - colors[i3 + 1]) * k
-      colors[i3 + 2] += (base[i3 + 2] + (HOVER_COLOR.b - base[i3 + 2]) * f - colors[i3 + 2]) * k
+      colors[i3] += (base[i3] + (warm.r - base[i3]) * f - colors[i3]) * k
+      colors[i3 + 1] += (base[i3 + 1] + (warm.g - base[i3 + 1]) * f - colors[i3 + 1]) * k
+      colors[i3 + 2] += (base[i3 + 2] + (warm.b - base[i3 + 2]) * f - colors[i3 + 2]) * k
 
       // Compose this solid: position + individual tumble + size variance.
       dummy.position.set(current[i3] + offsets[i3], current[i3 + 1] + offsets[i3 + 1], current[i3 + 2] + offsets[i3 + 2])
@@ -737,6 +742,7 @@ export function TriangleConstellation({
   tintTimeline,
   pulseTimeline,
   choreo,
+  hoverColor,
 }: TriangleConstellationProps) {
   const reduce = useReducedMotion()
   const hover = useRef({ x: 0, y: 0, active: false })
@@ -787,6 +793,7 @@ export function TriangleConstellation({
             tintTimeline={tintTimeline}
             pulseTimeline={pulseTimeline}
             choreo={choreo}
+            hoverColor={hoverColor}
           />
           {ambient > 0 && (
             <AmbientDust count={ambient} palette={paletteOverride ?? DEFAULT_PALETTE} animate={!reduce} />
