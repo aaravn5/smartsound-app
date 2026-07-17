@@ -3,6 +3,10 @@ import { createRoot } from 'react-dom/client'
 import { RouterProvider, createRouter } from '@tanstack/react-router'
 import { routeTree } from './routeTree.gen'
 import { EngineProvider } from '~/lib/engine-context'
+import '@fontsource/instrument-serif'
+import '@fontsource/instrument-serif/400-italic.css'
+import '@fontsource-variable/hanken-grotesk'
+import '@fontsource/jetbrains-mono'
 import './index.css'
 
 const router = createRouter({ routeTree, defaultPreload: 'intent' })

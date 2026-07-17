@@ -1,14 +1,27 @@
 <!doctype html>
-<html lang="en" data-theme="dark">
+<html lang="en" data-theme="light">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="color-scheme" content="dark light" />
+    <meta name="color-scheme" content="light dark" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta
       name="description"
       content="SmartSound reads your pulse from your camera and reshapes a generative soundscape in real time to steer you into focus, calm, or sleep."
     />
-    <title>SmartSound — audio that reads your body</title>
+    <title>SmartSound — calm, tuned to your body</title>
+    <script>
+      // Apply the stored theme before first paint — no flash. Dark is the
+      // native default; "Daylight" is the alternate.
+      (function () {
+        try {
+          var t = localStorage.getItem('ss_theme')
+          if (t !== 'light' && t !== 'dark') t = 'light'
+          document.documentElement.setAttribute('data-theme', t)
+          document.documentElement.style.colorScheme = t
+        } catch (e) {}
+      })()
+    </script>
   </head>
   <body>
     <div id="root"></div>

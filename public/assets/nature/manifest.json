@@ -1,0 +1,61 @@
+{
+  "version": 1,
+  "notes": "Nature Visual Overhaul asset manifest. Drop rendered files into this folder using the exact filenames below — the app probes for {id}.webm then {id}.avif at runtime and activates them with zero code changes. Missing files fall back to the bundled scene photograph, then to the procedural landscape. Keep videos to seamless ~10s loops, muted, no camera cuts.",
+  "scenes": [
+    {
+      "id": "focus",
+      "mode": "focus",
+      "family": "violet-hour pine forest, low fog",
+      "formats": {
+        "video": { "file": "focus.webm", "res": "1920x1080", "duration": "10s" },
+        "image": { "file": "focus.avif", "res": "2160x1440" }
+      },
+      "prompt_video": "Seamless 10-second looping ambient video, photoreal with a painterly softness: a still pine forest at violet hour, twenty minutes after sunset. Tall straight pine trunks in silhouette, layered front to back with knee-height fog drifting slowly between them from left to right. Muted dusk grading — deep violet-blue sky glow between the trees, desaturated blue-green needles, soft warm off-black shadows, no pure black. Motion: only the low fog drifting and the faintest sway in the highest branches; locked-off tripod framing, no camera movement, no cuts, first and last frames identical for a perfect loop. Composition: calm, uncluttered lower third of frame (ground fog and dark trunks only) for UI overlay. No people, no animals, no text, no buildings, no recognizable landmarks. Cinematic, serene, high dynamic range without crushed shadows.",
+      "prompt_image": "Photoreal-painterly still photograph, 3:2, high resolution: a still pine forest at violet hour, twenty minutes after sunset. Tall straight pine trunks in silhouette, layered depth, knee-height fog resting between them. Muted dusk grading — deep violet-blue sky glow between the trees, desaturated blue-green needles, soft warm off-black shadows, gentle film grain. Calm, uncluttered lower third (ground fog and dark trunks only) for UI overlay. No people, no animals, no text, no buildings, no recognizable landmarks. Serene, cinematic, painterly light."
+    },
+    {
+      "id": "flow",
+      "mode": "flow",
+      "family": "slow river through canyon at dusk",
+      "formats": {
+        "video": { "file": "flow.webm", "res": "1920x1080", "duration": "10s" },
+        "image": { "file": "flow.avif", "res": "2160x1440" }
+      },
+      "prompt_video": "Seamless 10-second looping ambient video, photoreal with a painterly softness: a wide, slow river gliding through a smooth sandstone canyon at dusk. Dusky indigo sky in a narrow band above the canyon rim, warm ember reflections from the last light on the water. Muted grading — desaturated terracotta rock, deep blue-violet shadows, warm off-black darks, no neon. Motion: only the water's slow laminar glide and soft specular shimmer; locked-off framing, no camera movement, no cuts, loop point invisible (continuous water flow, matched first and last frames). Composition: calm lower third — dark smooth water only — for UI overlay. No people, no boats, no text, no landmarks. Quiet, monumental, meditative.",
+      "prompt_image": "Photoreal-painterly still photograph, 3:2, high resolution: a wide, slow river through a smooth sandstone canyon at dusk. Narrow band of indigo sky above the rim, last warm light reflecting as soft embers on the water. Muted grading — desaturated terracotta rock, blue-violet shadow, warm off-black darks, gentle grain. Calm, dark, smooth water across the lower third for UI overlay. No people, no boats, no text, no landmarks. Quiet, monumental, meditative."
+    },
+    {
+      "id": "calm",
+      "mode": "calm",
+      "family": "coastal meadow, golden hour, long grass",
+      "formats": {
+        "video": { "file": "calm.webm", "res": "1920x1080", "duration": "10s" },
+        "image": { "file": "calm.avif", "res": "2160x1440" }
+      },
+      "prompt_video": "Seamless 10-second looping ambient video, photoreal with a painterly softness: a coastal meadow of long pale grass at late golden hour, the sea a soft haze line in the far background. Low warm sun out of frame, honey-gold rim light on the grass tips, muted dusk-adjacent grading — faded gold, sage green, hazy blue distance, warm off-black in the shadowed foreground. Motion: only the long grass swaying gently in a light onshore breeze, slightly out of phase across the field; locked-off framing, no camera movement, no cuts, wind cycle loops perfectly with identical first and last frames. Composition: calm, shadowed lower third of foreground grass for UI overlay. No people, no animals, no fences, no text, no landmarks. Warm, breathing, unhurried.",
+      "prompt_image": "Photoreal-painterly still photograph, 3:2, high resolution: a coastal meadow of long pale grass at late golden hour, sea as a hazy line in the distance. Honey-gold rim light on grass tips, muted grading — faded gold, sage green, hazy blue distance, warm off-black shadowed foreground, gentle grain. Calm, shadowed lower third for UI overlay. No people, no animals, no fences, no text, no landmarks. Warm and unhurried."
+    },
+    {
+      "id": "winddown",
+      "mode": "winddown",
+      "family": "moonlit lake, still water, amber horizon glow",
+      "formats": {
+        "video": { "file": "winddown.webm", "res": "1920x1080", "duration": "10s" },
+        "image": { "file": "winddown.avif", "res": "2160x1440" }
+      },
+      "prompt_video": "Seamless 10-second looping ambient video, photoreal with a painterly softness: a wide moonlit lake, almost perfectly still, with the last amber glow of the set sun resting on the horizon line. Deep blue-violet night sky above, thin horizontal bands of dark cloud, soft moon glow from high right (moon itself out of frame). Muted grading — indigo water, a restrained amber horizon band, warm off-black foreground shore, no pure black. Motion: only a slow, barely-perceptible ripple drifting across the water and the amber reflection breathing softly; locked-off framing, no camera movement, no cuts, ripple cycle loops seamlessly. Composition: calm, dark lower third (still water and shore) for UI overlay. No people, no boats, no buildings, no text, no landmarks. Hushed, heavy-lidded, end-of-day calm.",
+      "prompt_image": "Photoreal-painterly still photograph, 3:2, high resolution: a wide moonlit lake, nearly still, last amber glow of sunset on the horizon. Deep blue-violet sky, thin dark cloud bands, soft moonlight from high right, moon out of frame. Muted grading — indigo water, restrained amber horizon, warm off-black shore, gentle grain. Calm, dark lower third for UI overlay. No people, no boats, no buildings, no text, no landmarks. Hushed, end-of-day calm."
+    },
+    {
+      "id": "sleep",
+      "mode": "sleep",
+      "family": "moonlit lake, deep night variant — star field, dimmer",
+      "formats": {
+        "video": { "file": "sleep.webm", "res": "1920x1080", "duration": "10s" },
+        "image": { "file": "sleep.avif", "res": "2160x1440" }
+      },
+      "prompt_video": "Seamless 10-second looping ambient video, photoreal with a painterly softness: the same moonlit lake family, deeper into night — the amber horizon glow has faded to a faint ember thread, a sparse star field above, mirror-still water holding a dim moon path. Muted grading a full stop darker than dusk: near-black indigo water, deep blue-violet sky, warm off-black land silhouettes, nothing brighter than the thin moon path. Motion: only the moon path shimmering almost imperceptibly and one slow cloud band drifting; locked-off framing, no camera movement, no cuts, seamless loop with identical first and last frames. Composition: very dark, calm lower third for UI overlay. No people, no boats, no buildings, no text, no landmarks. The quietest image in the set — made for closed eyes.",
+      "prompt_image": "Photoreal-painterly still photograph, 3:2, high resolution: a moonlit lake deep in the night — faint ember thread of afterglow on the horizon, sparse stars, mirror-still water with a dim moon path. Muted grading a stop darker than dusk: near-black indigo water, deep blue-violet sky, warm off-black silhouettes, gentle grain. Very dark, calm lower third for UI overlay. No people, no boats, no buildings, no text, no landmarks. The quietest image in the set."
+    }
+  ]
+}

@@ -30,6 +30,8 @@ export interface SignalRingProps {
   respirationBpm?: number
   heartBpm?: number
   size?: number
+  /** Dynamic accessible label reflecting current band/state and live vs preview — falls back to a generic description. */
+  label?: string
 }
 
 const POINTS = 220
@@ -42,6 +44,7 @@ export function SignalRing({
   respirationBpm = 7,
   heartBpm = 64,
   size = 440,
+  label,
 }: SignalRingProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const state = useRef({ arousal, color, respirationBpm, heartBpm, getSpectrum, getPulse })
@@ -170,7 +173,7 @@ export function SignalRing({
       <canvas
         ref={canvasRef}
         role="img"
-        aria-label="Signal ring — the audio spectrum overlaid with your pulse"
+        aria-label={label ?? 'Signal ring — the audio spectrum overlaid with your pulse'}
         style={{ width: '100%', height: '100%' }}
       />
     </div>

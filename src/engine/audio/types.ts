@@ -28,4 +28,15 @@ export interface StateProfile extends EngineParams {
   targetArousal: number
   /** Musical root in Hz, derived from 440 Hz reference tuning (§7.2). */
   rootHz: number
+  /**
+   * Chord voicing (just-intonation ratios over rootHz) for the pad layer.
+   * Always 5 entries so the persistent pad voices can be retuned in place
+   * when the scape changes without recreating oscillators.
+   */
+  chordRatios: readonly number[]
+  /**
+   * Scale degrees (ratios over rootHz, one octave) the generative melodic
+   * layer quantizes to — a pentatonic-ish set tailored per scape.
+   */
+  scale: readonly number[]
 }
