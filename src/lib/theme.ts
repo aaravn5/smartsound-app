@@ -3,7 +3,7 @@ import { useSyncExternalStore } from 'react'
 /**
  * theme.ts — light / dark mode for SmartSound.
  *
- * Dark is SmartSound's native, immersive look; "Daylight" is the alternate.
+ * Daylight is SmartSound's native, minimal look; dark is the alternate.
  * The whole palette flips off a single `data-theme` attribute on <html>: every
  * Panda color token is a CSS var, and the light overrides live UNLAYERED in
  * src/index.css under `:root[data-theme='light']` (unlayered CSS beats Panda's
@@ -28,10 +28,10 @@ function readStored(): Theme | null {
   }
 }
 
-/** The active theme: explicit stored choice, else SmartSound's native dark. */
+/** The active theme: explicit stored choice, else SmartSound's native light. */
 export function currentTheme(): Theme {
-  if (typeof window === 'undefined') return 'dark'
-  return readStored() ?? 'dark'
+  if (typeof window === 'undefined') return 'light'
+  return readStored() ?? 'light'
 }
 
 function apply(theme: Theme): void {
@@ -62,5 +62,5 @@ function subscribe(listener: () => void): () => void {
 
 /** React binding — re-renders on theme change, returns the active theme. */
 export function useTheme(): Theme {
-  return useSyncExternalStore(subscribe, currentTheme, () => 'dark')
+  return useSyncExternalStore(subscribe, currentTheme, () => 'light')
 }

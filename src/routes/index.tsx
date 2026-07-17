@@ -1,719 +1,539 @@
-import { Suspense, useEffect, useRef, useState } from 'react'
-import { createFileRoute, useNavigate } from '@tanstack/react-router'
-import * as THREE from 'three'
-import { css, cx } from 'styled-system/css'
-import {
-  CountUp,
-  CursorDot,
-  FadeUp,
-  Magnetic,
-  Marquee,
-  SplitReveal,
-  useLenis,
-} from '~/landing/craft'
-import { WireSwarm } from '~/landing/WireSwarm'
-import { useClickSound } from '~/lib/click-sound'
+import { useEffect, useRef, useState, type RefObject } from 'react'
+import { createFileRoute, Link } from '@tanstack/react-router'
+import { css } from 'styled-system/css'
+import { CountUp, FadeUp, Magnetic, SplitReveal, useLenis } from '~/landing/craft'
+import { TriangleConstellation } from '~/landing/TriangleConstellation'
 import { useEngine } from '~/lib/engine-context'
 
 /**
- * Welcome — the bioluminescent laboratory at midnight.
+ * Welcome — quiet, white, and almost empty.
  *
- * Abyssal Ink canvas (near-black with a green undertone), restrained white
- * single-weight type carved by size and tracking, mono instrument labels,
- * and one lime signal that lights only micro-surfaces. The Blender-rendered
- * specimens (cortex, pressing, tetra frame, pulse coil) float on the dark
- * field and BLUR under the pointer like objects slipping out of focal depth.
- * The wire swarm rides behind everything in bone-white — high contrast by
- * construction — and the hero PLAY button starts the real engine right here
- * on the page. Nav is a single glass pill at the viewport's center.
+ * One idea per screen, set in generous space: a headline, a line of body, at
+ * most one action. The only ornament is the triangle constellation — and it is
+ * never decoration: it holds the shape the current section is about (a brain,
+ * a note, a waveform) and morphs between them as you scroll. Everything else
+ * is ink on daylight. Reduced motion collapses the theater and keeps the words.
  */
 export const Route = createFileRoute('/')({
   component: Welcome,
 })
 
-// Laboratory tokens: Abyssal Ink #222f30 · Bone #f7f7f5 · Lichen #c9cbbe ·
-// Graphite #4d5757 · Bioluminescent Lime #cef79e — inline below; rationed.
-const SANS = '"Hanken Grotesk Variable", "Inter Tight", Inter, system-ui, sans-serif'
+const BG = '#fbfbfd'
+const INK = '#1d1d1f'
+const MUTED = 'rgba(29, 29, 31, 0.60)'
+const FAINT = 'rgba(29, 29, 31, 0.36)'
+const HAIR = 'rgba(29, 29, 31, 0.09)'
 
-const mono = css({
+// Deep sea-teals with a little navy — legible as ink on daylight, still
+// unmistakably SmartSound. Pointer warmth stays the reserved yellow.
+const DAYLIGHT_PALETTE = [
+  '#0b7d74', '#0f9d92', '#0f9d92',
+  '#17b3a6', '#17b3a6', '#2fd4c4',
+  '#5ad0c5', '#1d3557', '#2c4a6e',
+]
+const HOVER_WARM = '#f0b429'
+
+const wrap = css({
+  maxW: '1080px',
+  mx: 'auto',
+  px: 'clamp(24px, 6vw, 64px)',
+})
+
+const display = css({
   m: '0',
-  fontFamily: '"JetBrains Mono", "Roboto Mono", ui-monospace, monospace',
-  fontSize: '13px',
-  letterSpacing: '-0.02em',
-  color: '#c9cbbe',
-  textTransform: 'uppercase',
+  fontFamily: 'display',
+  fontWeight: '600',
+  letterSpacing: '-0.03em',
+  lineHeight: '1.04',
+  color: INK,
 })
 
-const limeDot = css({
-  display: 'inline-block',
-  w: '6px',
-  h: '6px',
-  borderRadius: '9999px',
-  bg: '#cef79e',
-  flexShrink: '0',
+const body = css({
+  m: '0',
+  fontFamily: 'text',
+  fontSize: 'clamp(17px, 1.4vw, 19px)',
+  lineHeight: '1.6',
+  color: MUTED,
+  maxW: '34em',
 })
 
-/** 40×40 lime arrow chip — the only place the accent fills a shape. */
-const arrowChip = css({
+const pillCta = css({
   display: 'inline-flex',
   alignItems: 'center',
-  justifyContent: 'center',
-  w: '40px',
-  h: '40px',
-  borderRadius: '8px',
-  bg: '#cef79e',
-  color: '#222f30',
+  gap: '10px',
+  bg: INK,
+  color: '#ffffff',
+  textDecoration: 'none',
+  fontFamily: 'text',
+  fontSize: '17px',
+  fontWeight: '500',
+  borderRadius: '9999px',
+  px: '28px',
+  py: '14px',
   border: 'none',
   cursor: 'pointer',
-  fontSize: '16px',
-  flexShrink: '0',
-  transition: 'filter 0.15s ease',
-  _hover: { filter: 'brightness(1.06)' },
+  transition: 'transform 0.2s ease, background 0.2s ease',
+  _hover: { bg: '#000000' },
+  _focusVisible: { outline: '2px solid #0b7d74', outlineOffset: '3px' },
 })
 
-const ghostBtn = css({
-  display: 'inline-flex',
-  alignItems: 'center',
-  gap: '2',
-  borderRadius: '8px',
-  bg: 'transparent',
-  border: '1px solid #4d5757',
-  color: '#f7f7f5',
-  fontFamily: '"JetBrains Mono", ui-monospace, monospace',
-  fontSize: '13px',
-  letterSpacing: '-0.02em',
-  textTransform: 'uppercase',
-  px: '4',
-  py: '2.5',
-  cursor: 'pointer',
-  font: 'inherit',
-  transition: 'border-color 0.15s ease, background 0.15s ease',
-  _hover: { borderColor: '#c9cbbe', bg: '#ffffff0a' },
-})
-
-/** Preloader — abyssal curtain, bone wordmark, lime hairline, wipe. */
-function Preloader({ onDone }: { onDone: () => void }) {
-  const [pct, setPct] = useState(0)
-  const [leaving, setLeaving] = useState(false)
-  const [gone, setGone] = useState(false)
-
+/** 0..1 progress through a tall section, written to a ref every scroll frame. */
+function useSectionProgress(ref: RefObject<HTMLElement>) {
+  const progressRef = useRef(0)
   useEffect(() => {
-    if (
-      window.matchMedia('(prefers-reduced-motion: reduce)').matches ||
-      sessionStorage.getItem('ss_lab') === '1'
-    ) {
-      setGone(true)
-      onDone()
-      return
+    const measure = () => {
+      const el = ref.current
+      if (!el) return
+      const rect = el.getBoundingClientRect()
+      const span = rect.height - window.innerHeight
+      if (span <= 0) return
+      progressRef.current = Math.min(1, Math.max(0, -rect.top / span))
     }
-    let assets = 0
-    let fonts = 0
-    let shown = 0
-    let raf = 0
-    let finished = false
-    const start = performance.now()
-    const prev = THREE.DefaultLoadingManager.onProgress
-    THREE.DefaultLoadingManager.onProgress = (_u, loaded, total) => {
-      assets = total > 0 ? loaded / total : 1
-    }
-    void document.fonts.ready.then(() => {
-      fonts = 1
-    })
-    const assetGrace = window.setTimeout(() => {
-      if (assets === 0) assets = 1
-    }, 900)
-    const finish = () => {
-      if (finished) return
-      finished = true
-      sessionStorage.setItem('ss_lab', '1')
-      window.setTimeout(() => {
-        onDone()
-        setLeaving(true)
-        window.setTimeout(() => setGone(true), 850)
-      }, 200)
-    }
-    const tick = (t: number) => {
-      const real = fonts * 0.4 + assets * 0.6
-      const floor = Math.min(1, (t - start) / 1400)
-      shown += (Math.min(real, floor) * 100 - shown) * 0.12
-      setPct(Math.round(shown))
-      if (shown > 99.2) {
-        setPct(100)
-        finish()
-        return
-      }
-      raf = requestAnimationFrame(tick)
-    }
-    raf = requestAnimationFrame(tick)
-    const failsafe = window.setTimeout(() => {
-      setPct(100)
-      finish()
-    }, 5000)
+    measure()
+    window.addEventListener('scroll', measure, { passive: true })
+    window.addEventListener('resize', measure)
     return () => {
-      cancelAnimationFrame(raf)
-      window.clearTimeout(failsafe)
-      window.clearTimeout(assetGrace)
-      THREE.DefaultLoadingManager.onProgress = prev
+      window.removeEventListener('scroll', measure)
+      window.removeEventListener('resize', measure)
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
-
-  if (gone) return null
-  return (
-    <div
-      aria-hidden
-      className={css({ position: 'fixed', inset: '0', zIndex: '100', bg: '#222f30' })}
-      style={{
-        clipPath: leaving ? 'inset(0 0 100% 0)' : 'inset(0 0 0% 0)',
-        transition: 'clip-path 0.8s cubic-bezier(0.16, 1, 0.3, 1)',
-      }}
-    >
-      <div className={css({ position: 'absolute', inset: '0', display: 'flex', alignItems: 'center', justifyContent: 'center' })}>
-        <span className={css({ display: 'block', overflow: 'hidden' })}>
-          <span
-            className={css({
-              display: 'block',
-              fontSize: 'clamp(36px, 5.5vw, 72px)',
-              fontWeight: '400',
-              letterSpacing: '-0.02em',
-              color: '#f7f7f5',
-              animation: 'riseUp 1s cubic-bezier(0.16, 1, 0.3, 1) 0.2s both',
-            })}
-          >
-            SmartSound
-          </span>
-        </span>
-      </div>
-      <div className={css({ position: 'absolute', bottom: '88px', insetX: '32px', h: '1px', bg: '#4d5757' })}>
-        <div className={css({ h: '100%', bg: '#cef79e' })} style={{ width: `${pct}%`, transition: 'width 0.2s ease' }} />
-      </div>
-      <span
-        className={cx(mono, css({ position: 'absolute', bottom: '48px', left: '32px', fontSize: '14px', color: '#f7f7f5' }))}
-        style={{ fontVariantNumeric: 'tabular-nums' }}
-      >
-        {String(pct).padStart(2, '0')}
-      </span>
-      <span className={cx(mono, css({ position: 'absolute', bottom: '48px', right: '32px' }))}>
-        Cutting tonight&rsquo;s press…
-      </span>
-    </div>
-  )
+  }, [ref])
+  return progressRef
 }
 
-/** The single glass pill nav, pinned at the viewport center — ever so
- * slightly liquid: translucent ink, faint blur, hairline. */
-function CenterNav() {
-  const navigate = useNavigate()
-  const playClick = useClickSound()
-  const link = css({
-    fontFamily: '"JetBrains Mono", ui-monospace, monospace',
-    fontSize: '13px',
-    letterSpacing: '-0.02em',
-    textTransform: 'uppercase',
-    color: '#c9cbbe',
-    textDecoration: 'none',
-    px: '2',
-    py: '1',
-    borderRadius: '8px',
-    transition: 'color 0.15s ease, background 0.15s ease',
-    _hover: { color: '#222f30', bg: '#cef79e' },
-  })
+// ── nav ─────────────────────────────────────────────────────────────────────
+
+function Nav() {
   return (
-    <div
+    <header
       className={css({
         position: 'fixed',
-        top: '50%',
-        left: '50%',
-        transform: 'translate(-50%, -50%)',
-        zIndex: '50',
-        pointerEvents: 'none',
+        top: '0',
+        insetX: '0',
+        zIndex: '40',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        px: 'clamp(24px, 6vw, 64px)',
+        height: '64px',
+        bg: 'rgba(251, 251, 253, 0.72)',
+        backdropFilter: 'blur(20px) saturate(180%)',
+        borderBottom: `1px solid ${HAIR}`,
       })}
     >
-      <nav
+      <span
         className={css({
-          pointerEvents: 'auto',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '3',
-          borderRadius: '12px',
-          border: '1px solid #4d575788',
-          px: '4',
-          py: '2',
-          bg: 'rgba(34, 47, 48, 0.52)',
-          backdropFilter: 'blur(14px) saturate(150%)',
-          boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.07)',
+          fontFamily: 'display',
+          fontWeight: '600',
+          fontSize: '17px',
+          letterSpacing: '-0.02em',
+          color: INK,
         })}
-        style={{ WebkitBackdropFilter: 'blur(14px) saturate(150%)' }}
       >
-        <span className={css({ fontSize: '15px', fontWeight: '400', letterSpacing: '-0.01em', color: '#f7f7f5' })}>
-          SmartSound
-        </span>
-        <span aria-hidden className={limeDot} />
-        <a href="#press" className={cx(link, css({ display: 'none', sm: { display: 'inline' } }))}>Press</a>
-        <a href="#attune" className={cx(link, css({ display: 'none', sm: { display: 'inline' } }))}>Attune</a>
-        <a href="#science" className={cx(link, css({ display: 'none', sm: { display: 'inline' } }))}>Science</a>
-        <Magnetic>
-          <button
-            data-cursor="OPEN"
-            onClick={() => {
-              playClick('primary')
-              void navigate({ to: '/app' })
-            }}
-            className={css({
-              borderRadius: '8px',
-              bg: '#cef79e',
-              color: '#222f30',
-              fontFamily: '"JetBrains Mono", ui-monospace, monospace',
-              fontSize: '13px',
-              letterSpacing: '-0.02em',
-              textTransform: 'uppercase',
-              px: '3.5',
-              py: '2',
-              border: 'none',
-              cursor: 'pointer',
-              font: 'inherit',
-              transition: 'filter 0.15s ease',
-              _hover: { filter: 'brightness(1.06)' },
-            })}
-          >
-            Open app
-          </button>
-        </Magnetic>
-      </nav>
-    </div>
-  )
-}
-
-/** A specimen floating on the dark field — blurs under the pointer, like an
- * object drifting out of focal depth. */
-function Specimen({
-  src,
-  alt,
-  className,
-  rotate = 0,
-  cursor,
-  tagText,
-}: {
-  src: string
-  alt: string
-  className?: string
-  rotate?: number
-  cursor?: string
-  tagText?: string
-}) {
-  return (
-    <div className={cx(css({ position: 'absolute', pointerEvents: 'none' }), className)}>
-      <img
-        src={src}
-        alt={alt}
-        data-cursor={cursor}
-        draggable={false}
+        SmartSound
+      </span>
+      <Link
+        to="/app"
         className={css({
-          w: '100%',
-          h: 'auto',
-          pointerEvents: 'auto',
-          userSelect: 'none',
-          transition: 'filter 0.45s cubic-bezier(0.16, 1, 0.3, 1), transform 0.45s cubic-bezier(0.16, 1, 0.3, 1)',
-          _hover: { filter: 'blur(7px) brightness(1.05)', transform: 'scale(1.02)' },
-          '@media (prefers-reduced-motion: reduce)': { transition: 'none', _hover: { filter: 'none', transform: 'none' } },
+          fontFamily: 'text',
+          fontSize: '15px',
+          fontWeight: '500',
+          color: '#ffffff',
+          bg: INK,
+          textDecoration: 'none',
+          borderRadius: '9999px',
+          px: '18px',
+          py: '8px',
+          transition: 'background 0.2s ease',
+          _hover: { bg: '#000000' },
+          _focusVisible: { outline: '2px solid #0b7d74', outlineOffset: '3px' },
         })}
-        style={{ rotate: `${rotate}deg` }}
-      />
-      {tagText && (
-        <span
-          className={cx(
-            mono,
-            css({
-              position: 'absolute',
-              bottom: '2%',
-              left: '4%',
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '2',
-              pointerEvents: 'auto',
-            }),
-          )}
-        >
-          <span aria-hidden className={limeDot} />
-          {tagText}
-        </span>
-      )}
-    </div>
+      >
+        Open app
+      </Link>
+    </header>
   )
 }
 
-/** The hero PLAY control — starts the real engine on this page. */
-function IntroPlay() {
-  const playClick = useClickSound()
+// ── hero ────────────────────────────────────────────────────────────────────
+
+/** One-tap-to-sound: press play and a real Calm session starts, right here. */
+function HeroPlay() {
   const { status, start, stop } = useEngine()
   const running = status === 'running'
   return (
-    <div className={css({ display: 'flex', alignItems: 'center', gap: '4' })}>
-      <Magnetic>
-        <button
-          data-cursor={running ? 'STOP' : 'PLAY'}
-          aria-label={running ? 'Stop the session' : 'Play a calm session here'}
-          onClick={() => {
-            playClick('primary')
-            if (running) void stop()
-            else void start('calm')
-          }}
-          className={cx(arrowChip, css({ w: '56px', h: '56px' }))}
-        >
-          {running ? (
-            <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden>
-              <rect x="6.5" y="5.5" width="4" height="13" rx="1.3" fill="#222f30" />
-              <rect x="13.5" y="5.5" width="4" height="13" rx="1.3" fill="#222f30" />
-            </svg>
-          ) : (
-            <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden>
-              <path d="M8.5 5.9a1 1 0 0 1 1.52-.85l9.6 6.1a1 1 0 0 1 0 1.7l-9.6 6.1a1 1 0 0 1-1.52-.85V5.9z" fill="#222f30" />
-            </svg>
-          )}
-        </button>
-      </Magnetic>
-      <div>
-        <p className={cx(mono, css({ color: '#f7f7f5' }))}>{running ? 'Live · Calm · playing here' : 'Press play — it plays right here'}</p>
-        <p className={cx(mono, css({ mt: '1', fontSize: '12px' }))}>No account · 20 min free daily</p>
-      </div>
+    <div className={css({ display: 'flex', alignItems: 'center', gap: '14px' })}>
+      <button
+        type="button"
+        aria-label={running ? 'Stop the sample' : 'Play a live sample'}
+        onClick={() => {
+          if (running) void stop()
+          else void start('calm')
+        }}
+        className={css({
+          width: '52px',
+          height: '52px',
+          borderRadius: '50%',
+          border: `1px solid ${HAIR}`,
+          bg: '#ffffff',
+          color: INK,
+          cursor: 'pointer',
+          display: 'inline-flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          flexShrink: '0',
+          boxShadow: '0 1px 3px rgba(29, 29, 31, 0.08)',
+          transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+          _hover: { transform: 'scale(1.05)', boxShadow: '0 4px 14px rgba(29, 29, 31, 0.12)' },
+          _focusVisible: { outline: '2px solid #0b7d74', outlineOffset: '3px' },
+        })}
+      >
+        {running ? (
+          <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden>
+            <rect x="3" y="3" width="10" height="10" rx="2" fill="currentColor" />
+          </svg>
+        ) : (
+          <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden>
+            <path
+              d="M4.5 2.9a1 1 0 0 1 1.53-.85l8 5.1a1 1 0 0 1 0 1.7l-8 5.1a1 1 0 0 1-1.53-.85V2.9z"
+              fill="currentColor"
+            />
+          </svg>
+        )}
+      </button>
+      <span className={css({ fontFamily: 'text', fontSize: '15px', color: MUTED })}>
+        {running ? 'Playing — a live Calm session' : 'Hear it. It plays right here.'}
+      </span>
     </div>
   )
 }
 
 function Hero() {
   return (
-    <section className={css({ position: 'relative', minHeight: '112vh' })}>
-      {/* Specimens — hyperreal Blender renders on the dark field. */}
-      <Specimen
-        src="/assets/objects/brain.webp"
-        alt="Rendered cortex specimen"
-        className={css({ top: '2%', right: '-6%', w: 'min(46vw, 520px)', zIndex: '1' })}
-        rotate={-8}
-        cursor="THE CORTEX"
-        tagText="Specimen 01 · The cortex"
+    <section
+      className={css({
+        position: 'relative',
+        minHeight: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+      })}
+    >
+      {/* The brain, breathing quietly on the right — daylight teal ink. */}
+      <TriangleConstellation
+        shapes={['brain']}
+        mode="static"
+        rotate="sway"
+        count={3000}
+        size={0.062}
+        cameraZ={6.6}
+        particleOpacity={0.92}
+        paletteOverride={DAYLIGHT_PALETTE}
+        hoverColor={HOVER_WARM}
+        stageOffsets={{ brain: 1.55 }}
+        className={css({
+          position: 'absolute',
+          inset: '0',
+          display: 'none',
+          md: { display: 'block' },
+        })}
       />
-      <Specimen
-        src="/assets/objects/record.webp"
-        alt="Tonight's pressing — glossy vinyl with a lime label"
-        className={css({ bottom: '-6%', left: '-5%', w: 'min(42vw, 470px)', zIndex: '1', display: 'none', sm: { display: 'block' } })}
-        rotate={6}
-        cursor="PLAY"
-        tagText="Specimen 02 · Tonight's press"
-      />
-      <Specimen
-        src="/assets/objects/tetra.webp"
-        alt="Wire tetrahedron"
-        className={css({ top: '58%', right: '20%', w: 'min(20vw, 210px)', zIndex: '1', display: 'none', md: { display: 'block' } })}
-        rotate={12}
-        cursor="DRAG"
-      />
-
-      <div className={css({ position: 'relative', zIndex: '2', maxW: '1200px', mx: 'auto', px: '6', pt: '13vh', sm: { px: '10' } })}>
-        <p className={cx(mono, css({ mb: '5', display: 'inline-flex', alignItems: 'center', gap: '2' }))}>
-          <span aria-hidden className={limeDot} />
-          SmartSound — Neuroacoustic press · est. 2026
-        </p>
-        <SplitReveal
-          as="h1"
-          className={css({
-            m: '0',
-            fontSize: 'clamp(52px, 9.8vw, 158px)',
-            fontWeight: '400',
-            lineHeight: '1.0',
-            letterSpacing: '-0.03em',
-            color: '#f7f7f5',
-            maxW: '1100px',
-          })}
-        >
-          Stop chasing calm. Start hearing it.
-        </SplitReveal>
-        <FadeUp className={css({ mt: '10', maxW: '460px' })}>
-          <p className={css({ m: '0', fontSize: '19px', fontWeight: '400', lineHeight: '1.3', letterSpacing: '-0.001em', color: '#c9cbbe' })}>
-            Every session is pressed live from your pulse — a record cut for tonight only,
-            played once, never repeated. The camera stays on your device.
+      <div className={`${wrap} ${css({ position: 'relative', zIndex: '1', width: '100%' })}`}>
+        <div className={css({ maxW: '620px', display: 'grid', gap: '28px' })}>
+          <h1 className={display} style={{ fontSize: 'clamp(46px, 7.4vw, 104px)' }}>
+            <SplitReveal as="span" className={css({ display: 'block' })}>
+              Calm,
+            </SplitReveal>
+            <SplitReveal as="span" className={css({ display: 'block' })} delay={0.08}>
+              engineered.
+            </SplitReveal>
+          </h1>
+          <p className={body}>
+            SmartSound composes functional soundscapes that follow your nervous
+            system — focus when you need it, rest when you don't.
           </p>
-          <div className={css({ mt: '8' })}>
-            <IntroPlay />
+          <div
+            className={css({
+              display: 'flex',
+              alignItems: 'center',
+              gap: '22px',
+              flexWrap: 'wrap',
+            })}
+          >
+            <Magnetic>
+              <Link to="/app" className={pillCta}>
+                Start free
+              </Link>
+            </Magnetic>
+            <HeroPlay />
           </div>
-        </FadeUp>
+        </div>
       </div>
       <span
         aria-hidden
-        className={cx(
-          mono,
-          css({
-            position: 'absolute',
-            bottom: '24px',
-            left: '50%',
-            transform: 'translateX(-50%)',
-            animation: 'cuePulse 1s ease-in-out infinite',
-            '@media (prefers-reduced-motion: reduce)': { animation: 'none' },
-          }),
-        )}
+        className={css({
+          position: 'absolute',
+          bottom: '28px',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          fontFamily: 'text',
+          fontSize: '13px',
+          letterSpacing: '0.08em',
+          color: FAINT,
+        })}
       >
-        Scroll ↓
+        scroll
       </span>
     </section>
   )
 }
 
-/** Section counter pill — the table-of-contents voice. */
-function Counter({ n, name }: { n: string; name: string }) {
+// ── the morph journey — one object, three necessary shapes ─────────────────
+
+const CHAPTERS = [
+  {
+    shape: 'It starts as your brain.',
+    line: 'Every session begins from your state — the hour, your rhythm, what you ask of it.',
+  },
+  {
+    shape: 'It becomes music.',
+    line: 'The engine composes in real time. No loops, no playlists — sound written for this minute.',
+  },
+  {
+    shape: 'It moves like a waveform.',
+    line: 'A gentle pulse under the music nudges attention along, or lets it drift off.',
+  },
+] as const
+
+function MorphJourney() {
+  const sectionRef = useRef<HTMLElement>(null)
+  const progressRef = useSectionProgress(sectionRef)
+  const [chapter, setChapter] = useState(0)
+
+  // Captions swap only when the scrubbed shape actually changes.
+  useEffect(() => {
+    let raf = 0
+    const tick = () => {
+      const idx = Math.min(
+        CHAPTERS.length - 1,
+        Math.floor(progressRef.current * CHAPTERS.length),
+      )
+      setChapter((cur) => (cur === idx ? cur : idx))
+      raf = requestAnimationFrame(tick)
+    }
+    raf = requestAnimationFrame(tick)
+    return () => cancelAnimationFrame(raf)
+  }, [progressRef])
+
   return (
-    <p
-      className={cx(
-        mono,
-        css({
-          display: 'inline-flex',
-          alignItems: 'center',
-          gap: '2',
-          border: '1px solid #4d5757',
-          borderRadius: '9999px',
-          px: '3',
-          py: '1.5',
-          mb: '8',
-        }),
-      )}
+    <section
+      ref={sectionRef}
+      aria-label="How SmartSound works"
+      className={css({ position: 'relative', height: '340vh' })}
     >
-      {n} / {name}
-    </p>
-  )
-}
-
-const CATALOGUE = [
-  { n: '01', title: 'Deep Focus', band: 'Beta · ~15 Hz', year: '2026' },
-  { n: '02', title: 'Open Calm', band: 'Alpha · ~10 Hz', year: '2026' },
-  { n: '03', title: 'Slow Drift', band: 'Theta · ~6 Hz', year: '2026' },
-  { n: '04', title: 'First Sleep', band: 'Delta · ~2.5 Hz', year: '2026' },
-]
-
-function ThePress() {
-  const navigate = useNavigate()
-  const playClick = useClickSound()
-  return (
-    <section id="press" className={css({ position: 'relative', maxW: '1200px', mx: 'auto', px: '6', py: '28', sm: { px: '10' } })}>
-      <Counter n="01" name="The press" />
-      <SplitReveal
-        as="h2"
+      <div
         className={css({
-          m: '0',
-          mb: '12',
-          fontSize: 'clamp(34px, 5.4vw, 75px)',
-          fontWeight: '400',
-          lineHeight: '1.1',
-          letterSpacing: '-0.02em',
-          color: '#f7f7f5',
-          maxW: '820px',
+          position: 'sticky',
+          top: '0',
+          height: '100vh',
+          overflow: 'hidden',
+          display: 'flex',
+          alignItems: 'flex-end',
         })}
       >
-        Four bands. Pressed nightly.
-      </SplitReveal>
-      <FadeUp>
-        <div className={css({ borderTop: '1px solid #4d5757' })}>
-          {CATALOGUE.map((c) => (
-            <button
-              key={c.n}
-              data-cursor="PLAY"
-              onClick={() => {
-                playClick('tap')
-                void navigate({ to: '/onboarding/$step', params: { step: 'welcome' } })
-              }}
-              className={css({
-                display: 'flex',
-                alignItems: 'center',
-                gap: '4',
-                w: '100%',
-                textAlign: 'left',
-                bg: 'transparent',
-                border: 'none',
-                borderBottom: '1px solid #4d5757',
-                py: '5',
-                px: '2',
-                cursor: 'pointer',
-                font: 'inherit',
-                transition: 'background 0.15s ease',
-                _hover: { bg: '#ffffff0a' },
-              })}
+        <TriangleConstellation
+          shapes={['brain', 'note', 'waveform']}
+          mode="scroll"
+          progressRef={progressRef}
+          rotate="sway"
+          count={3600}
+          size={0.06}
+          cameraZ={6.4}
+          particleOpacity={0.92}
+          paletteOverride={DAYLIGHT_PALETTE}
+          hoverColor={HOVER_WARM}
+          className={css({ position: 'absolute', inset: '0' })}
+        />
+        <div
+          className={`${wrap} ${css({
+            position: 'relative',
+            zIndex: '1',
+            width: '100%',
+            pb: 'clamp(48px, 9vh, 96px)',
+          })}`}
+        >
+          <div aria-live="polite" className={css({ maxW: '520px', display: 'grid', gap: '12px' })}>
+            <h2
+              key={`h-${chapter}`}
+              className={`${display} ${css({ animation: 'riseUp 0.6s ease both' })}`}
+              style={{ fontSize: 'clamp(28px, 3.6vw, 44px)' }}
             >
-              <span className={cx(mono, css({ w: '30px' }))}>{c.n}</span>
-              <span aria-hidden className={limeDot} />
-              <span className={css({ flex: '1', fontSize: '22px', fontWeight: '400', letterSpacing: '-0.006em', color: '#f7f7f5' })}>
-                {c.title}
-              </span>
-              <span className={cx(mono, css({ display: 'none', sm: { display: 'inline' } }))}>{c.band}</span>
-              <span className={mono}>{c.year}</span>
-              <span className={arrowChip} aria-hidden>
-                ↗
-              </span>
-            </button>
-          ))}
-        </div>
-      </FadeUp>
-    </section>
-  )
-}
-
-/** The pulse trace — bone hairline with lime systolic peaks, drawn on entry. */
-function PulseTrace() {
-  const ref = useRef<SVGPathElement>(null)
-  useEffect(() => {
-    const path = ref.current
-    if (!path) return
-    const len = path.getTotalLength()
-    path.style.strokeDasharray = `${len}`
-    path.style.strokeDashoffset = `${len}`
-    const io = new IntersectionObserver(
-      ([e]) => {
-        if (!e.isIntersecting) return
-        io.disconnect()
-        path.style.transition = 'stroke-dashoffset 2.2s cubic-bezier(0.16, 1, 0.3, 1)'
-        path.style.strokeDashoffset = '0'
-      },
-      { rootMargin: '-80px' },
-    )
-    io.observe(path)
-    return () => io.disconnect()
-  }, [])
-  return (
-    <svg viewBox="0 0 600 80" className={css({ w: '100%', maxW: '480px', h: 'auto' })} aria-hidden>
-      <path
-        d="M166 40 L180 12 L194 66 M316 38 L330 10 L344 68 M486 40 L500 14 L514 64"
-        fill="none"
-        stroke="#cef79e"
-        strokeWidth="1.6"
-        opacity="0.9"
-      />
-      <path
-        ref={ref}
-        d="M0 46 H150 L166 40 L180 12 L194 66 L208 42 H300 L316 38 L330 10 L344 68 L358 44 H470 L486 40 L500 14 L514 64 L528 44 H600"
-        fill="none"
-        stroke="#f7f7f5"
-        strokeWidth="1.2"
-      />
-    </svg>
-  )
-}
-
-function Attune() {
-  return (
-    <section id="attune" className={css({ position: 'relative', maxW: '1200px', mx: 'auto', px: '6', py: '28', sm: { px: '10' } })}>
-      <Counter n="02" name="Attune" />
-      <div className={css({ display: 'flex', gap: '14', alignItems: 'flex-start', flexWrap: 'wrap' })}>
-        <div className={css({ flex: '1', minW: '300px', maxW: '680px' })}>
-          <SplitReveal
-            as="h2"
-            className={css({
-              m: '0',
-              fontSize: 'clamp(34px, 5.4vw, 75px)',
-              fontWeight: '400',
-              lineHeight: '1.1',
-              letterSpacing: '-0.02em',
-              color: '#f7f7f5',
-            })}
-          >
-            The stylus is your heartbeat.
-          </SplitReveal>
-          <FadeUp className={css({ mt: '7', maxW: '440px' })}>
-            <p className={css({ m: '0', fontSize: '18px', fontWeight: '400', lineHeight: '1.3', letterSpacing: '-0.001em', color: '#c9cbbe' })}>
-              Attune reads the micro-flush of your skin through the camera — remote
-              photoplethysmography — and lets your pulse steer tempo, density and brightness.
-              Processed on your device. Never uploaded.
+              {CHAPTERS[chapter].shape}
+            </h2>
+            <p
+              key={`p-${chapter}`}
+              className={`${body} ${css({ animation: 'riseUp 0.6s 0.06s ease both' })}`}
+            >
+              {CHAPTERS[chapter].line}
             </p>
-            <div className={css({ mt: '8' })}>
-              <PulseTrace />
-              <p className={cx(mono, css({ mt: '2', display: 'inline-flex', alignItems: 'center', gap: '2' }))}>
-                <span aria-hidden className={limeDot} />
-                62 BPM · live · on-device
-              </p>
+            <div className={css({ display: 'flex', gap: '8px', mt: '10px' })} aria-hidden>
+              {CHAPTERS.map((_, i) => (
+                <span
+                  key={i}
+                  className={css({
+                    width: '28px',
+                    height: '2px',
+                    borderRadius: '1px',
+                    transition: 'background 0.4s ease',
+                  })}
+                  style={{ background: i === chapter ? INK : HAIR }}
+                />
+              ))}
             </div>
-          </FadeUp>
+          </div>
         </div>
-        <FadeUp delay={0.3} className={css({ position: 'relative' })}>
-          <Specimen
-            src="/assets/objects/coil.webp"
-            alt="Pulse coil specimen"
-            className={css({ position: 'relative!', w: 'min(60vw, 380px)' })}
-            rotate={-4}
-            cursor="ATTUNE"
-            tagText="Specimen 03 · Pulse coil"
-          />
-        </FadeUp>
       </div>
     </section>
   )
 }
 
-const NUMBERS = [
-  { v: '4', label: 'Brainwave bands' },
-  { v: '15 Hz → 2.5 Hz', label: 'Beta down to Delta' },
-  { v: '0', label: 'Data leaves your device' },
-  { v: '20 min', label: 'Free, daily' },
-]
+// ── three states, one sentence each ─────────────────────────────────────────
 
-/** The light flip — Bone White band, white card, counters in ink. */
-function TheScience() {
+const STATES = [
+  {
+    name: 'Focus',
+    tint: '#6f7ff0',
+    line: 'Beta-band sessions that hold attention through deep work.',
+  },
+  {
+    name: 'Relax',
+    tint: '#5fb8c9',
+    line: 'Alpha warmth that lets your shoulders drop between things.',
+  },
+  {
+    name: 'Sleep',
+    tint: '#b78fd6',
+    line: 'Theta descents that hand you over to the night, gently.',
+  },
+] as const
+
+function States() {
   return (
-    <section id="science" className={css({ position: 'relative', bg: '#f7f7f5', py: '28' })}>
-      <div className={css({ maxW: '1200px', mx: 'auto', px: '6', sm: { px: '10' } })}>
-        <p
-          className={cx(
-            mono,
-            css({
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '2',
-              border: '1px solid #c9cbbe',
-              borderRadius: '9999px',
-              px: '3',
-              py: '1.5',
-              mb: '8',
-              color: '#4d5757',
-            }),
-          )}
-        >
-          03 / The science
-        </p>
-        <SplitReveal
-          as="h2"
+    <section className={css({ py: 'clamp(120px, 18vh, 220px)' })}>
+      <div className={wrap}>
+        <FadeUp>
+          <h2 className={display} style={{ fontSize: 'clamp(32px, 4.6vw, 56px)', maxWidth: '14em' }}>
+            Three states. One instrument.
+          </h2>
+        </FadeUp>
+        <div
           className={css({
-            m: '0',
-            fontSize: 'clamp(34px, 5.4vw, 75px)',
-            fontWeight: '400',
-            lineHeight: '1.1',
-            letterSpacing: '-0.02em',
-            color: '#222f30',
-            maxW: '860px',
+            display: 'grid',
+            gap: 'clamp(40px, 6vw, 72px)',
+            gridTemplateColumns: '1fr',
+            md: { gridTemplateColumns: 'repeat(3, 1fr)' },
+            mt: 'clamp(56px, 8vh, 96px)',
           })}
         >
-          Measured first. Made audible second.
-        </SplitReveal>
-        <FadeUp className={css({ mt: '10' })}>
-          <div className={css({ bg: '#ffffff', borderRadius: '20px', p: '10', border: '1px solid #c9cbbe' })}>
-            <p className={css({ m: '0', mb: '10', maxW: '560px', fontSize: '18px', lineHeight: '1.3', color: '#4d5757' })}>
-              The engine cites the rPPG literature and general auditory-entrainment findings —
-              and claims nothing else. Attune shows only what it measured. SmartSound is not a
-              medical device.
-            </p>
-            <div className={css({ display: 'grid', gap: '8', gridTemplateColumns: 'repeat(2, 1fr)', md: { gridTemplateColumns: 'repeat(4, 1fr)' } })}>
-              {NUMBERS.map((n) => (
-                <div key={n.label}>
-                  <CountUp
-                    value={n.v}
-                    className={css({
-                      display: 'block',
-                      fontSize: 'clamp(30px, 3.6vw, 52px)',
-                      fontWeight: '400',
-                      letterSpacing: '-0.02em',
-                      color: '#222f30',
-                    })}
-                  />
-                  <span className={cx(mono, css({ mt: '1', display: 'inline-flex', alignItems: 'center', gap: '2', fontSize: '12px', color: '#4d5757' }))}>
-                    <span aria-hidden className={limeDot} />
-                    {n.label}
-                  </span>
-                </div>
-              ))}
-            </div>
+          {STATES.map((s, i) => (
+            <FadeUp key={s.name} delay={0.1 + i * 0.08}>
+              <div className={css({ display: 'grid', gap: '14px' })}>
+                <span
+                  aria-hidden
+                  className={css({ width: '10px', height: '10px', borderRadius: '50%' })}
+                  style={{ background: s.tint }}
+                />
+                <h3 className={display} style={{ fontSize: '24px' }}>
+                  {s.name}
+                </h3>
+                <p className={body} style={{ fontSize: '16px' }}>
+                  {s.line}
+                </p>
+              </div>
+            </FadeUp>
+          ))}
+        </div>
+      </div>
+    </section>
+  )
+}
+
+// ── the promise, in three numbers ───────────────────────────────────────────
+
+function Science() {
+  return (
+    <section
+      className={css({ py: 'clamp(120px, 18vh, 220px)', borderTop: `1px solid ${HAIR}` })}
+    >
+      <div className={wrap}>
+        <FadeUp>
+          <p className={body} style={{ maxWidth: '38em' }}>
+            Designed with the auditory-stimulation research on neural
+            phase-locking — and honest about what that means: gentle help,
+            not a miracle multiplier.
+          </p>
+        </FadeUp>
+        <div
+          className={css({
+            display: 'grid',
+            gap: 'clamp(40px, 6vw, 72px)',
+            gridTemplateColumns: '1fr',
+            sm: { gridTemplateColumns: 'repeat(3, 1fr)' },
+            mt: 'clamp(48px, 7vh, 80px)',
+          })}
+        >
+          {[
+            {
+              value: '4 bands',
+              label: 'Beta · Alpha · Theta · Delta, each tuned to a state',
+            },
+            { value: '100%', label: 'composed in real time — nothing is a loop' },
+            { value: '0 accounts', label: 'needed to press play; your sessions stay on-device' },
+          ].map((stat, i) => (
+            <FadeUp key={stat.label} delay={0.1 + i * 0.08}>
+              <div className={css({ display: 'grid', gap: '8px' })}>
+                <span className={display} style={{ fontSize: 'clamp(40px, 5vw, 64px)' }}>
+                  <CountUp value={stat.value} />
+                </span>
+                <p className={body} style={{ fontSize: '15px' }}>
+                  {stat.label}
+                </p>
+              </div>
+            </FadeUp>
+          ))}
+        </div>
+      </div>
+    </section>
+  )
+}
+
+// ── close ───────────────────────────────────────────────────────────────────
+
+function Close() {
+  return (
+    <section
+      className={css({
+        py: 'clamp(140px, 22vh, 260px)',
+        borderTop: `1px solid ${HAIR}`,
+        textAlign: 'center',
+      })}
+    >
+      <div className={wrap}>
+        <FadeUp>
+          <h2 className={display} style={{ fontSize: 'clamp(36px, 5.4vw, 72px)' }}>
+            Free to begin.
+          </h2>
+        </FadeUp>
+        <FadeUp delay={0.12}>
+          <p className={`${body} ${css({ mx: 'auto', mt: '20px' })}`}>
+            No card, no trial clock. Press play tonight; upgrade only if it earns it.
+          </p>
+        </FadeUp>
+        <FadeUp delay={0.2}>
+          <div className={css({ mt: '36px', display: 'flex', justifyContent: 'center' })}>
+            <Magnetic>
+              <Link to="/app" className={pillCta}>
+                Open SmartSound
+              </Link>
+            </Magnetic>
           </div>
         </FadeUp>
       </div>
@@ -721,170 +541,56 @@ function TheScience() {
   )
 }
 
-const PLANS = [
-  { n: '01', name: 'Free', price: '$0 forever', lines: 'Every state · 20 min a day · no account' },
-  { n: '02', name: 'Pro', price: '$9.99 / month', lines: 'Unlimited · full Attune · all scenes' },
-  { n: '03', name: 'Studio', price: '$19.99 / month', lines: 'Everything in Pro · sound controls' },
-]
-
-function Pricing() {
-  const navigate = useNavigate()
-  const playClick = useClickSound()
-  return (
-    <section id="pricing" className={css({ position: 'relative', maxW: '1200px', mx: 'auto', px: '6', py: '28', sm: { px: '10' } })}>
-      <Counter n="04" name="Pricing" />
-      <SplitReveal
-        as="h2"
-        className={css({
-          m: '0',
-          mb: '12',
-          fontSize: 'clamp(34px, 5.4vw, 75px)',
-          fontWeight: '400',
-          lineHeight: '1.1',
-          letterSpacing: '-0.02em',
-          color: '#f7f7f5',
-        })}
-      >
-        Start free. Stay honest.
-      </SplitReveal>
-      <FadeUp>
-        <div className={css({ borderTop: '1px solid #4d5757', maxW: '900px' })}>
-          {PLANS.map((p) => (
-            <div
-              key={p.n}
-              className={css({
-                display: 'flex',
-                alignItems: 'baseline',
-                gap: '4',
-                borderBottom: '1px solid #4d5757',
-                py: '5',
-                px: '2',
-                transition: 'background 0.15s ease',
-                _hover: { bg: '#ffffff0a' },
-              })}
-            >
-              <span className={cx(mono, css({ w: '30px' }))}>{p.n}</span>
-              <span className={css({ w: '92px', fontSize: '22px', fontWeight: '400', letterSpacing: '-0.006em', color: '#f7f7f5' })}>
-                {p.name}
-              </span>
-              <span className={cx(mono, css({ flex: '1', textTransform: 'none' }))}>{p.lines}</span>
-              <span className={css({ fontSize: '16px', fontWeight: '400', color: '#f7f7f5' })}>{p.price}</span>
-            </div>
-          ))}
-        </div>
-        <div className={css({ mt: '8', display: 'flex', alignItems: 'center', gap: '4' })}>
-          <Magnetic>
-            <button
-              data-cursor="PLAY"
-              onClick={() => {
-                playClick('primary')
-                void navigate({ to: '/onboarding/$step', params: { step: 'welcome' } })
-              }}
-              className={ghostBtn}
-            >
-              Start free <span aria-hidden>→</span>
-            </button>
-          </Magnetic>
-          <span className={mono}>Real prices · cancel anytime</span>
-        </div>
-      </FadeUp>
-    </section>
-  )
-}
-
-/** Footer — the absolute-dark closure. */
 function Footer() {
   return (
-    <footer className={css({ position: 'relative', bg: '#000000', px: '6', py: '20', sm: { px: '10' } })}>
-      <div className={css({ maxW: '1200px', mx: 'auto' })}>
-        <p
+    <footer className={css({ borderTop: `1px solid ${HAIR}`, py: '32px' })}>
+      <div
+        className={`${wrap} ${css({
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: '16px',
+          flexWrap: 'wrap',
+        })}`}
+      >
+        <span className={css({ fontFamily: 'text', fontSize: '13px', color: FAINT })}>
+          © 2026 SmartSound
+        </span>
+        <Link
+          to="/app"
           className={css({
-            m: '0',
-            fontSize: 'clamp(52px, 11vw, 158px)',
-            fontWeight: '400',
-            lineHeight: '1',
-            letterSpacing: '-0.03em',
-            color: '#f7f7f5',
+            fontFamily: 'text',
+            fontSize: '13px',
+            color: MUTED,
+            textDecoration: 'none',
+            _hover: { color: INK },
           })}
         >
-          SmartSound.
-        </p>
-        <div className={css({ mt: '12', display: 'flex', flexWrap: 'wrap', gap: '5' })}>
-          {[
-            ['Press', '#press'],
-            ['Attune', '#attune'],
-            ['Science', '#science'],
-            ['Pricing', '#pricing'],
-            ['Top', '#top'],
-          ].map(([l, href]) => (
-            <a
-              key={l}
-              href={href}
-              className={cx(
-                mono,
-                css({
-                  textDecoration: 'none',
-                  transition: 'color 0.15s ease',
-                  _hover: { color: '#cef79e' },
-                }),
-              )}
-            >
-              {l}
-            </a>
-          ))}
-        </div>
-        <div className={css({ mt: '10', display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', gap: '3' })}>
-          <span className={cx(mono, css({ color: '#4d5757' }))}>Pressed at night · 2026</span>
-          <span className={cx(mono, css({ color: '#4d5757' }))}>
-            The camera stays on your device · not a medical device
-          </span>
-        </div>
+          Open app →
+        </Link>
       </div>
     </footer>
   )
 }
 
+// ── page ────────────────────────────────────────────────────────────────────
+
 function Welcome() {
-  const [ready, setReady] = useState(false)
-  const progressRef = useRef(0)
-  useLenis((p) => {
-    progressRef.current = p
-  })
-
+  useLenis()
   return (
-    <div id="top" className={css({ position: 'relative', bg: '#222f30', color: '#f7f7f5' })} style={{ fontFamily: SANS }}>
-      <Preloader onDone={() => setReady(true)} />
-      <CursorDot />
-      <CenterNav />
-
-      {/* The bone-white wire swarm — high contrast on the abyssal field. */}
-      <div className={css({ transition: 'opacity 1s ease' })} style={{ opacity: ready ? 0.85 : 0 }}>
-        <Suspense fallback={null}>
-          <WireSwarm progressRef={progressRef} />
-        </Suspense>
-      </div>
-
-      <div
-        className={css({ position: 'relative', zIndex: '1', transition: 'opacity 0.9s ease' })}
-        style={{ opacity: ready ? 1 : 0 }}
-      >
+    <div
+      className={css({ minHeight: '100vh' })}
+      style={{ background: BG, color: INK, colorScheme: 'light' }}
+    >
+      <Nav />
+      <main>
         <Hero />
-        <Marquee
-          className={css({
-            fontSize: '18px',
-            fontWeight: '400',
-            letterSpacing: '-0.006em',
-            color: '#c9cbbe99',
-            borderColor: '#4d5757',
-          })}
-          text="BETA · ~15 Hz — ALPHA · ~10 Hz — THETA · ~6 Hz — DELTA · ~2.5 Hz — "
-        />
-        <ThePress />
-        <Attune />
-        <TheScience />
-        <Pricing />
-        <Footer />
-      </div>
+        <MorphJourney />
+        <States />
+        <Science />
+        <Close />
+      </main>
+      <Footer />
     </div>
   )
 }

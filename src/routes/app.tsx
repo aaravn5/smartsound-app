@@ -112,7 +112,7 @@ function AppShell() {
         height: '100dvh',
         overflow: 'hidden',
         color: 'text',
-        bg: '#171721',
+        bg: 'bg',
       })}
       style={
         {
@@ -128,23 +128,23 @@ function AppShell() {
           while the landscape remains clearly visible behind it. */}
       <Scene variant={tab.scene} scrim="page" />
 
-      {/* Ambient nanobot field — a sparse triangle constellation drifting
-          between forms behind every tab, tying the app to the landing's
-          idiom without competing with content. */}
+      {/* A whisper of the landing's triangle idiom — sparse, deep-teal on the
+          daylight canvas, quiet enough to never compete with content. */}
       <TriangleConstellation
         shapes={['sphere', 'network', 'brain']}
         mode="auto"
         rotate="spin"
-        count={1100}
-        size={0.06}
-        holdSeconds={9}
-        particleOpacity={0.4}
-        cameraZ={8.5}
+        count={700}
+        size={0.055}
+        holdSeconds={11}
+        particleOpacity={0.5}
+        cameraZ={9}
+        paletteOverride={['#0b7d74', '#0f9d92', '#17b3a6', '#5ad0c5', '#2c3d5a']}
         className={css({
           position: 'absolute',
           inset: '0',
           pointerEvents: 'none',
-          opacity: '0.35',
+          opacity: '0.16',
         })}
       />
 

@@ -128,5 +128,6 @@
   --ss-text-glow: 0 1px 2px rgba(4, 8, 20, 0.6), 0 2px 18px rgba(4, 8, 20, 0.55);
 }
 
-/* The canvas is Deep Space before a single component mounts. */
-html, body { background: #222f30; }
+/* The canvas is airy daylight before a single component mounts; the token
+   takes over the moment the theme vars resolve. */
+html, body { background: var(--colors-base, #f4f6fb); }
