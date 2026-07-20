@@ -72,6 +72,15 @@ const ProgressIcon = () => (
     <circle cx="12" cy="12" r="2.3" />
   </svg>
 )
+/** a record with a stylus — The Studio. */
+const StudioIcon = () => (
+  <svg {...iconAttrs}>
+    <circle cx="11" cy="13" r="7.6" />
+    <circle cx="11" cy="13" r="2.2" />
+    <path d="M21 3.4l-6.2 7.2" />
+    <circle cx="21" cy="3.4" r="1.1" />
+  </svg>
+)
 /** person.crop.circle. */
 const ProfileIcon = () => (
   <svg {...iconAttrs}>
@@ -85,6 +94,7 @@ const TABS: Tab[] = [
   { to: '/app', label: 'Today', icon: <TodayIcon />, exact: true, title: 'Today — SmartSound' },
   { to: '/app/explore', label: 'Library', icon: <LibraryIcon />, title: 'The Library — SmartSound' },
   { to: '/app/player', label: 'Player', icon: <PlayerIcon />, title: 'Player — SmartSound' },
+  { to: '/app/studio', label: 'Studio', icon: <StudioIcon />, title: 'The Studio — SmartSound' },
   { to: '/app/progress', label: 'Progress', icon: <ProgressIcon />, title: 'Progress — SmartSound' },
   { to: '/app/profile', label: 'Profile', icon: <ProfileIcon />, title: 'Profile — SmartSound' },
 ]

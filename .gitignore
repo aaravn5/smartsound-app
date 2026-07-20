@@ -12,3 +12,5 @@ src/routeTree.gen.ts
 # TS build cache
 *.tsbuildinfo
 .playwright-cli/
+serve.log
+nohup.out
