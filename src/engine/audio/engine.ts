@@ -117,6 +117,9 @@ function softReverbImpulse(ctx: AudioContext, seconds = 3.2, decay = 3.0): Audio
   return buf
 }
 
+/** MIDI note number → frequency (A4 = 440). */
+const midiHz = (m: number) => 440 * Math.pow(2, (m - 69) / 12)
+
 /** brightness 0..1 → filter cutoff Hz, perceptually spaced. */
 const brightnessHz = (b: number) => 220 * Math.pow(36, Math.min(1, Math.max(0, b)))
 
@@ -180,6 +183,21 @@ export class SoundscapeEngine {
   private melodyDry!: GainNode
   private melodyWet!: GainNode
   private nextMelodyTime = 0
+
+  // ── Studio additions (score layer + atmospheres) ──────────────────────────
+  // Score bus: the piano's output — dry + a generous reverb send, and
+  // deliberately NEVER entrainment-AM'd, so the music never pulses.
+  private musicBus!: GainNode
+  private musicDry!: GainNode
+  private musicWet!: GainNode
+  private musicLevel = 0.9
+  // Atmosphere input: Serene's synthesized weather layers sum here.
+  private atmoIn!: GainNode
+  private strikeBuf: AudioBuffer | null = null
+  /** When the score steers harmony, bells quantize to these frequencies. */
+  currentChordHz: number[] | null = null
+  /** One entry per scheduled piano note — the deck flashes them as sparks. */
+  readonly noteFlashes: { t: number; midi: number; vel: number }[] = []
 
   private entrainLFO!: OscillatorNode
   private padDepth!: GainNode
@@ -402,6 +420,21 @@ export class SoundscapeEngine {
     this.melodyDry.connect(this.bus)
     this.melodyWet.connect(this.reverbSend)
 
+    // ── studio buses ──
+    this.musicBus = ctx.createGain()
+    this.musicBus.gain.value = this.musicLevel
+    this.musicDry = ctx.createGain()
+    this.musicDry.gain.value = 0.9
+    this.musicWet = ctx.createGain()
+    this.musicWet.gain.value = 0.55
+    this.musicBus.connect(this.musicDry)
+    this.musicBus.connect(this.musicWet)
+    this.musicDry.connect(this.bus)
+    this.musicWet.connect(this.reverbSend)
+    this.atmoIn = ctx.createGain()
+    this.atmoIn.gain.value = 1
+    this.atmoIn.connect(this.bus)
+
     // start everything
     this.padVoices.forEach((v) => { v.oscA.start(now); v.oscB.start(now) })
     this.noiseSrc.start(now)
@@ -451,10 +484,16 @@ export class SoundscapeEngine {
 
   /** Sparse, irregularly-timed melodic pluck — quantized to the scape's scale. */
   private scheduleMelodyNote(t: number) {
-    const scale = this.profile.scale
-    const ratio = scale[Math.floor(Math.random() * scale.length)]
-    const octaveMul = Math.random() < 0.7 ? 2 : 4
-    const freq = this.profile.rootHz * ratio * octaveMul
+    let freq: number
+    if (this.currentChordHz && this.currentChordHz.length) {
+      const f = this.currentChordHz[Math.floor(Math.random() * this.currentChordHz.length)]
+      freq = f * (Math.random() < 0.7 ? 1 : 2)
+    } else {
+      const scale = this.profile.scale
+      const ratio = scale[Math.floor(Math.random() * scale.length)]
+      const octaveMul = Math.random() < 0.7 ? 2 : 4
+      freq = this.profile.rootHz * ratio * octaveMul
+    }
     this.pluckMelody(t, freq)
     const density = Math.min(1, Math.max(0, this.params.density))
     const meanGap = 15 - density * 9 // denser scapes → notes arrive more often
@@ -534,6 +573,107 @@ export class SoundscapeEngine {
     this.setParams({ neuralDepth: Math.min(1, Math.max(0, depth)) }, 0.6)
   }
 
+  /** The audio-graph entry point for the studio's atmosphere layers. */
+  get atmosphereInput(): GainNode | null {
+    return this.running ? this.atmoIn : null
+  }
+
+  /** Score volume — a real gain on the un-AM'd music bus. */
+  setMusicLevel(level: number) {
+    this.musicLevel = level
+    if (this.ctx && this.running)
+      this.musicBus.gain.setTargetAtTime(level, this.ctx.currentTime, 0.4)
+  }
+
+  /** The score steers the harmony: pad voices + sub/bass follow the chord. */
+  setChord(bassMidi: number, toneMidis: number[], glide = 1.2) {
+    if (!this.ctx || !this.running) return
+    const now = this.ctx.currentTime
+    const freqs = toneMidis.map(midiHz)
+    this.currentChordHz = freqs
+    this.padVoices.forEach((v, i) => {
+      const f = i < freqs.length ? freqs[i] : freqs[i - freqs.length] * 2
+      v.oscA.frequency.setTargetAtTime(f, now, glide / 3)
+      v.oscB.frequency.setTargetAtTime(f, now, glide / 3)
+    })
+    let sub = midiHz(bassMidi)
+    while (sub > 55) sub /= 2
+    while (sub < 27) sub *= 2
+    this.subOsc.frequency.setTargetAtTime(sub, now, glide / 2)
+    this.bassOsc.frequency.setTargetAtTime(sub * 2, now, glide / 2)
+  }
+
+  /** Return the pad/sub to the profile voicing (score off / sleep). */
+  resetChord() {
+    if (!this.ctx || !this.running) return
+    this.currentChordHz = null
+    const now = this.ctx.currentTime
+    const p = this.profile
+    this.padVoices.forEach((v, i) => {
+      const f = p.rootHz * p.chordRatios[i]
+      v.oscA.frequency.setTargetAtTime(f, now, 0.6)
+      v.oscB.frequency.setTargetAtTime(f, now, 0.6)
+    })
+    this.subOsc.frequency.setTargetAtTime(p.rootHz / 4, now, 0.6)
+    this.bassOsc.frequency.setTargetAtTime(p.rootHz / 2, now, 0.6)
+  }
+
+  /** The studio's piano voice: 3 partials + a hammer whisper, per-note LP. */
+  piano(t: number, midi: number, vel: number, dur: number, pan = 0) {
+    const ctx = this.ctx
+    if (!ctx || !this.running) return
+    this.noteFlashes.push({ t, midi, vel })
+    const f = midiHz(midi)
+    const g = ctx.createGain()
+    g.gain.setValueAtTime(0.0001, t)
+    g.gain.linearRampToValueAtTime(vel, t + 0.008)
+    g.gain.setTargetAtTime(vel * 0.28, t + 0.01, 0.85)
+    g.gain.setTargetAtTime(0.0001, t + dur, 0.13)
+    const lp = ctx.createBiquadFilter()
+    lp.type = 'lowpass'
+    lp.frequency.value = Math.min(9000, 900 + vel * 14000 + f * 1.5)
+    lp.Q.value = 0.4
+    const pn = ctx.createStereoPanner()
+    pn.pan.value = Math.max(-0.55, Math.min(0.55, pan + (midi - 62) / 60))
+    const stopAt = t + dur + 1.6
+    const partials: [number, number][] = [[1, 1], [2.0015, 0.34], [2.998, 0.14]]
+    for (const [mul, amp] of partials) {
+      const o = ctx.createOscillator()
+      o.type = 'sine'
+      o.frequency.value = f * mul
+      const og = ctx.createGain()
+      og.gain.value = amp
+      o.connect(og)
+      og.connect(g)
+      o.start(t)
+      o.stop(stopAt)
+    }
+    if (!this.strikeBuf) {
+      const len = Math.floor(ctx.sampleRate * 0.1)
+      const buf = ctx.createBuffer(1, len, ctx.sampleRate)
+      const d = buf.getChannelData(0)
+      for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * 0.5
+      this.strikeBuf = buf
+    }
+    const nb = ctx.createBufferSource()
+    nb.buffer = this.strikeBuf
+    const nf = ctx.createBiquadFilter()
+    nf.type = 'bandpass'
+    nf.frequency.value = Math.min(8000, f * 3)
+    nf.Q.value = 1.2
+    const ng = ctx.createGain()
+    ng.gain.setValueAtTime(vel * 0.5, t)
+    ng.gain.exponentialRampToValueAtTime(0.0001, t + 0.045)
+    nb.connect(nf)
+    nf.connect(ng)
+    ng.connect(g)
+    nb.start(t)
+    nb.stop(t + 0.1)
+    g.connect(lp)
+    lp.connect(pn)
+    pn.connect(this.musicBus)
+  }
+
   /** Live FFT for the signal ring (§11 — real bins, not fake bars). */
   getSpectrum(): Uint8Array {
     if (this.analyser) this.analyser.getByteFrequencyData(this.freqData)
@@ -557,6 +697,8 @@ export class SoundscapeEngine {
     if (this.schedulerId != null) window.clearInterval(this.schedulerId)
     this.schedulerId = null
     this.running = false
+    this.noteFlashes.length = 0
+    this.currentChordHz = null
     await new Promise((r) => setTimeout(r, 700))
     try {
       this.padVoices.forEach((v) => { v.oscA.stop(); v.oscB.stop() })

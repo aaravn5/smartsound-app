@@ -43,6 +43,8 @@ interface EngineContextValue {
   /** Real arousal samples from this session, for Insights. */
   getArousalHistory: () => ArousalSample[]
   clearHistory: () => void
+  /** The raw engine — the Studio drives its score/atmosphere buses directly. */
+  getEngine: () => SoundscapeEngine
 }
 
 export interface ArousalSample {
@@ -216,17 +218,18 @@ export function EngineProvider({ children }: { children: ReactNode }) {
 
   const getArousalHistory = useCallback(() => arousalHist.current, [])
   const clearHistory = useCallback(() => { arousalHist.current = [] }, [])
+  const getEngine = useCallback(() => engine, [engine])
 
   const value = useMemo<EngineContextValue>(
     () => ({
       status, profile, params, arousal, reading, baseline, bioStatus, activeScenario,
       start, startScenario, stop, selectState, setNeuralIntensity, startAttune, stopAttune,
-      captureBaseline, getSpectrum, getPulse, getArousalHistory, clearHistory,
+      captureBaseline, getSpectrum, getPulse, getArousalHistory, clearHistory, getEngine,
     }),
     [
       status, profile, params, arousal, reading, baseline, bioStatus, activeScenario,
       start, startScenario, stop, selectState, setNeuralIntensity, startAttune, stopAttune,
-      captureBaseline, getSpectrum, getPulse, getArousalHistory, clearHistory,
+      captureBaseline, getSpectrum, getPulse, getArousalHistory, clearHistory, getEngine,
     ],
   )
 
